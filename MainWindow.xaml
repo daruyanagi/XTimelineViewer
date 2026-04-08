@@ -4,44 +4,69 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="XTimelineViewer">
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-          AllowDrop="True"
-          DragOver="MainArea_DragOver"
-          Drop="MainArea_Drop">
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <!-- Empty state hint -->
-        <Border x:Name="DropHintBorder"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                BorderBrush="{ThemeResource SystemControlForegroundBaseMediumBrush}"
-                BorderThickness="2"
-                CornerRadius="12"
-                Padding="60,40">
-            <StackPanel Spacing="16" HorizontalAlignment="Center">
-                <TextBlock Text="🐦"
-                           FontSize="52"
-                           HorizontalAlignment="Center"/>
-                <TextBlock Text="X の URL ショートカットをドロップ"
-                           FontSize="18"
-                           FontWeight="SemiBold"
-                           HorizontalAlignment="Center"/>
-                <TextBlock Text="タイムラインが横並びで追加されます"
-                           FontSize="13"
-                           Opacity="0.6"
-                           HorizontalAlignment="Center"/>
-            </StackPanel>
-        </Border>
+        <!-- Toolbar -->
+        <Grid Grid.Row="0"
+              Background="{ThemeResource LayerFillColorDefaultBrush}"
+              BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+              BorderThickness="0,0,0,1"
+              Padding="8,4">
+            <Button x:Name="ThemeToggleBtn"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Width="32" Height="32"
+                    Padding="0"
+                    FontSize="16"
+                    Click="ThemeToggleBtn_Click">
+                <ToolTipService.ToolTip>テーマ切り替え</ToolTipService.ToolTip>
+            </Button>
+        </Grid>
 
-        <!-- Timeline scroll area -->
-        <ScrollViewer x:Name="TimelineScroll"
-                      HorizontalScrollMode="Enabled"
-                      HorizontalScrollBarVisibility="Auto"
-                      VerticalScrollMode="Disabled"
-                      VerticalScrollBarVisibility="Hidden"
-                      Visibility="Collapsed">
-            <StackPanel x:Name="TimelinePanel"
-                        Orientation="Horizontal"
-                        Padding="4"/>
-        </ScrollViewer>
+        <!-- Content area -->
+        <Grid Grid.Row="1"
+              AllowDrop="True"
+              DragOver="MainArea_DragOver"
+              Drop="MainArea_Drop">
+
+            <!-- Empty state hint -->
+            <Border x:Name="DropHintBorder"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BorderBrush="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                    BorderThickness="2"
+                    CornerRadius="12"
+                    Padding="60,40">
+                <StackPanel Spacing="16" HorizontalAlignment="Center">
+                    <TextBlock Text="🐦"
+                               FontSize="52"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="X の URL ショートカットをドロップ"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="タイムラインが横並びで追加されます"
+                               FontSize="13"
+                               Opacity="0.6"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Timeline scroll area -->
+            <ScrollViewer x:Name="TimelineScroll"
+                          HorizontalScrollMode="Enabled"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollMode="Disabled"
+                          VerticalScrollBarVisibility="Hidden"
+                          Visibility="Collapsed">
+                <StackPanel x:Name="TimelinePanel"
+                            Orientation="Horizontal"
+                            Padding="4"/>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </Window>

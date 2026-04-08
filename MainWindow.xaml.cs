@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
+using Microsoft.Web.WebView2.Core;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage;
@@ -30,6 +31,7 @@ namespace XTimelineViewer
         private Grid? _draggingPane;
         private Grid? _focusedHeaderGrid;
         private readonly List<Action> _headerRefreshers = [];
+        private readonly List<WebView2> _webViews = [];
 
         public MainWindow()
         {
@@ -37,7 +39,51 @@ namespace XTimelineViewer
             AppWindow.Resize(new SizeInt32(1400, 900));
             Title = $"XTimelineViewer — {SaveFilePath}";
             Closed += async (s, e) => await SaveTimelinesAsync();
+            ((FrameworkElement)Content).ActualThemeChanged += (s, e) => { UpdateThemeToggleBtn(); ApplyThemeToWebViews(); };
+            UpdateThemeToggleBtn();
             _ = RestoreTimelinesAsync();
+        }
+
+        // ── Theme ─────────────────────────────────────────────────────────────
+
+        private void UpdateThemeToggleBtn()
+        {
+            var root = (FrameworkElement)Content;
+            var (icon, tip) = root.RequestedTheme switch
+            {
+                ElementTheme.Light => ("☀", "ライト"),
+                ElementTheme.Dark  => ("🌙", "ダーク"),
+                _                  => ("⊙", "システム"),
+            };
+            ThemeToggleBtn.Content = icon;
+            ToolTipService.SetToolTip(ThemeToggleBtn, tip);
+        }
+
+        private void ThemeToggleBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var root = (FrameworkElement)Content;
+            root.RequestedTheme = root.RequestedTheme switch
+            {
+                ElementTheme.Light => ElementTheme.Dark,
+                ElementTheme.Dark  => ElementTheme.Default,
+                _                  => ElementTheme.Light,
+            };
+            UpdateThemeToggleBtn();
+            ApplyThemeToWebViews();
+        }
+
+        private void ApplyThemeToWebViews()
+        {
+            var root   = (FrameworkElement)Content;
+            var scheme = root.RequestedTheme switch
+            {
+                ElementTheme.Light => CoreWebView2PreferredColorScheme.Light,
+                ElementTheme.Dark  => CoreWebView2PreferredColorScheme.Dark,
+                _                  => CoreWebView2PreferredColorScheme.Auto,
+            };
+            foreach (var wv in _webViews)
+                if (wv.CoreWebView2 is not null)
+                    wv.CoreWebView2.Profile.PreferredColorScheme = scheme;
         }
 
         // ── Persistence ───────────────────────────────────────────────────────
@@ -205,7 +251,7 @@ namespace XTimelineViewer
             headerGrid.Children.Add(buttonPanel);
 
             // WebView2
-            var webView = new Microsoft.UI.Xaml.Controls.WebView2
+            var webView = new WebView2
             {
                 VerticalAlignment   = VerticalAlignment.Stretch,
                 HorizontalAlignment = HorizontalAlignment.Stretch
@@ -215,6 +261,7 @@ namespace XTimelineViewer
             pane.Children.Add(headerGrid);
             pane.Children.Add(webView);
             TimelinePanel.Children.Add(pane);
+            _webViews.Add(webView);
 
             // ── Focus ─────────────────────────────────────────────────────────
 
@@ -336,6 +383,7 @@ namespace XTimelineViewer
             closeBtn.Click += (s, e) =>
             {
                 _configs.Remove(cfg);
+                _webViews.Remove(webView);
                 _headerRefreshers.Remove(refreshHeader);
                 if (_focusedHeaderGrid == headerGrid)
                 {
@@ -377,10 +425,10 @@ namespace XTimelineViewer
             await webView.CoreWebView2.ExecuteScriptAsync(BuildHideHeaderJs(hide));
         }
 
-        private static async Task InitWebViewAsync(
-            Microsoft.UI.Xaml.Controls.WebView2 webView, TimelineConfig cfg)
+        private async Task InitWebViewAsync(WebView2 webView, TimelineConfig cfg)
         {
             await webView.EnsureCoreWebView2Async();
+            ApplyThemeToWebViews();
 
             // 外部リンクをシステム既定ブラウザーで開く
             webView.CoreWebView2.NewWindowRequested += async (s, args) =>
