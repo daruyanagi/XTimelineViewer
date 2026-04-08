@@ -1,0 +1,47 @@
+<Window
+    x:Class="XTimelineViewer.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="XTimelineViewer">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+          AllowDrop="True"
+          DragOver="MainArea_DragOver"
+          Drop="MainArea_Drop">
+
+        <!-- Empty state hint -->
+        <Border x:Name="DropHintBorder"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                BorderBrush="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                BorderThickness="2"
+                CornerRadius="12"
+                Padding="60,40">
+            <StackPanel Spacing="16" HorizontalAlignment="Center">
+                <TextBlock Text="🐦"
+                           FontSize="52"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="X の URL ショートカットをドロップ"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="タイムラインが横並びで追加されます"
+                           FontSize="13"
+                           Opacity="0.6"
+                           HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Timeline scroll area -->
+        <ScrollViewer x:Name="TimelineScroll"
+                      HorizontalScrollMode="Enabled"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollMode="Disabled"
+                      VerticalScrollBarVisibility="Hidden"
+                      Visibility="Collapsed">
+            <StackPanel x:Name="TimelinePanel"
+                        Orientation="Horizontal"
+                        Padding="4"/>
+        </ScrollViewer>
+    </Grid>
+</Window>
