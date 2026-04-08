@@ -30,15 +30,19 @@
                     <TextBlock Text="投稿" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
-            <Button x:Name="ThemeToggleBtn"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Width="32" Height="32"
-                    Padding="0"
-                    FontSize="16"
-                    Click="ThemeToggleBtn_Click">
-                <ToolTipService.ToolTip>テーマ切り替え</ToolTipService.ToolTip>
-            </Button>
+            <StackPanel x:Name="RightToolbar"
+                        Orientation="Horizontal"
+                        Spacing="4"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center">
+                <Button x:Name="ThemeToggleBtn"
+                        Width="32" Height="32"
+                        Padding="0"
+                        FontSize="16"
+                        Click="ThemeToggleBtn_Click">
+                    <ToolTipService.ToolTip>テーマ切り替え</ToolTipService.ToolTip>
+                </Button>
+            </StackPanel>
         </Grid>
 
         <!-- Content area -->

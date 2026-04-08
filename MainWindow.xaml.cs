@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
@@ -33,6 +34,30 @@ namespace XTimelineViewer
         private Grid? _focusedHeaderGrid;
         private readonly List<Action> _headerRefreshers = [];
         private readonly List<WebView2> _webViews = [];
+        private bool _extensionsLoaded = false;
+        private CoreWebView2Environment? _webViewEnv;
+
+        private static readonly string EdgeDevAppDir =
+            @"C:\Program Files (x86)\Microsoft\Edge Dev\Application";
+
+        private static string? FindEdgeDevVersionFolder()
+        {
+            if (!Directory.Exists(EdgeDevAppDir)) return null;
+            return Directory.GetDirectories(EdgeDevAppDir)
+                .Where(d => Version.TryParse(Path.GetFileName(d), out _))
+                .OrderByDescending(d => Version.Parse(Path.GetFileName(d)))
+                .FirstOrDefault();
+        }
+
+        private async Task<CoreWebView2Environment> GetOrCreateEnvAsync()
+        {
+            if (_webViewEnv is not null) return _webViewEnv;
+            var versionFolder = FindEdgeDevVersionFolder();
+            var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
+            _webViewEnv = await CoreWebView2Environment.CreateWithOptionsAsync(
+                versionFolder ?? "", userDataFolder: "", options);
+            return _webViewEnv;
+        }
 
         public MainWindow()
         {
@@ -515,10 +540,160 @@ namespace XTimelineViewer
             await webView.CoreWebView2.ExecuteScriptAsync(BuildHideComposeJs(hide));
         }
 
+        private async Task LoadExtensionsAsync(WebView2 webView)
+        {
+            if (_extensionsLoaded) return;
+            _extensionsLoaded = true;
+
+            var extensionsDir = Path.Combine(AppContext.BaseDirectory, "extensions");
+            if (!Directory.Exists(extensionsDir)) return;
+
+            var errors = new System.Text.StringBuilder();
+
+            foreach (var extDir in Directory.GetDirectories(extensionsDir))
+            {
+                try
+                {
+                    var ext = await webView.CoreWebView2.Profile.AddBrowserExtensionAsync(extDir);
+                    AddExtensionButton(ext, extDir);
+                }
+                catch (Exception ex)
+                {
+                    errors.AppendLine($"・{Path.GetFileName(extDir)}");
+                    errors.AppendLine($"  {ex}");
+                }
+            }
+
+            if (errors.Length > 0)
+            {
+                var dlg = new ContentDialog
+                {
+                    Title           = "拡張機能の読み込みに失敗しました",
+                    Content         = new ScrollViewer
+                    {
+                        MaxHeight = 300,
+                        Content   = new TextBlock
+                        {
+                            Text       = errors.ToString().TrimEnd()
+                            + "\n\n" + _webViewEnv!.BrowserVersionString,
+                            FontFamily = new FontFamily("Cascadia Mono, Consolas, Courier New"),
+                            FontSize   = 12,
+                            IsTextSelectionEnabled = true,
+                            TextWrapping = TextWrapping.Wrap
+                        }
+                    },
+                    CloseButtonText = "閉じる",
+                    XamlRoot        = Content.XamlRoot
+                };
+                await dlg.ShowAsync();
+            }
+        }
+
+        private void AddExtensionButton(CoreWebView2BrowserExtension ext, string extDir)
+        {
+            // マニフェストから名前と options_ui.page を取得
+            string name       = ext.Name;
+            string? optPage   = null;
+            var manifestPath  = Path.Combine(extDir, "manifest.json");
+            if (File.Exists(manifestPath))
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
+                if (doc.RootElement.TryGetProperty("options_ui", out var optUi) &&
+                    optUi.TryGetProperty("page", out var page))
+                    optPage = page.GetString();
+            }
+            if (optPage is null) return; // options_ui がない拡張は追加しない
+
+            var btn = new Button
+            {
+                Content = "🧩",
+                Width   = 32,
+                Height  = 32,
+                Padding = new Thickness(0),
+                FontSize = 16,
+            };
+            ToolTipService.SetToolTip(btn, $"{name} の設定");
+
+            var optPageUrl = $"chrome-extension://{ext.Id}/{optPage}";
+            btn.Click += async (_, _) =>
+            {
+                var optWebView = new WebView2 { Width = 480, MinHeight = 200 };
+                var dlg = new ContentDialog
+                {
+                    Title           = $"{name} の設定",
+                    Content         = optWebView,
+                    CloseButtonText = "閉じる",
+                    XamlRoot        = Content.XamlRoot
+                };
+                var env = await GetOrCreateEnvAsync();
+                await optWebView.EnsureCoreWebView2Async(env);
+                optWebView.Source = new Uri(optPageUrl);
+                await dlg.ShowAsync();
+            };
+
+            // ThemeToggleBtn の左隣に挿入
+            int themeIdx = RightToolbar.Children.IndexOf(ThemeToggleBtn);
+            RightToolbar.Children.Insert(themeIdx, btn);
+        }
+
+        private static readonly string LogFilePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "XTimelineViewer", "error.log");
+
+        private static void LogError(string context, Exception ex)
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(LogFilePath)!);
+                File.AppendAllText(LogFilePath,
+                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {context}\n{ex}\n\n");
+            }
+            catch { /* ログ書き込み失敗は無視 */ }
+        }
+
         private async Task InitWebViewAsync(WebView2 webView, TimelineConfig cfg)
         {
-            await webView.EnsureCoreWebView2Async();
-            ApplyThemeToWebViews();
+            try
+            {
+                var env = await GetOrCreateEnvAsync();
+                await webView.EnsureCoreWebView2Async(env);
+                await LoadExtensionsAsync(webView);
+                ApplyThemeToWebViews();
+            }
+            catch (Exception ex)
+            {
+                LogError($"InitWebViewAsync (url={cfg.Url})", ex);
+
+                // XamlRoot が準備できていない場合があるので、ループで待機する
+                for (int i = 0; i < 20 && Content.XamlRoot is null; i++)
+                    await Task.Delay(100);
+
+                if (Content.XamlRoot is not null)
+                {
+                    var dlg = new ContentDialog
+                    {
+                        Title           = "WebView2 の初期化に失敗しました",
+                        Content         = new ScrollViewer
+                        {
+                            MaxHeight = 300,
+                            Content   = new TextBlock
+                            {
+                                Text = $"EdgeDevAppDir: {EdgeDevAppDir}\n\nログ: {LogFilePath}\n\n{ex}",
+                                FontFamily = new FontFamily("Cascadia Mono, Consolas, Courier New"),
+                                FontSize   = 12,
+                                IsTextSelectionEnabled = true,
+                                TextWrapping = TextWrapping.Wrap
+                            }
+                        },
+                        CloseButtonText = "閉じる",
+                        XamlRoot        = Content.XamlRoot
+                    };
+                    await dlg.ShowAsync();
+                }
+                return;
+            }
+
+
 
             // 外部リンクをシステム既定ブラウザーで開く
             webView.CoreWebView2.NewWindowRequested += async (s, args) =>

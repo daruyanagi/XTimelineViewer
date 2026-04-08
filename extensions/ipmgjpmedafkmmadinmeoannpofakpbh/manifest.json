@@ -1,0 +1,19 @@
+{
+"update_url": "https://clients2.google.com/service/update2/crx",
+
+    "manifest_version": 3,
+    "name": "TwitterTimelineLoader",
+    "description": "スクロールが一番上の時に、Twitterホームのタイムラインを自動更新します。",
+    "version": "1.06",
+    "icons": {"128": "128.png"},
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": false
+    },
+    "content_scripts": [{
+        "matches": ["https://twitter.com/*",
+                    "https://x.com/*"],
+        "js": ["TLLoader_main.js"]
+    }],
+    "permissions": ["storage"]
+}
