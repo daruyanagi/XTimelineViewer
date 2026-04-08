@@ -96,7 +96,8 @@ namespace XTimelineViewer
                 XamlRoot        = Content.XamlRoot
             };
 
-            await webView.EnsureCoreWebView2Async();
+            var env = await GetOrCreateEnvAsync();
+            await webView.EnsureCoreWebView2Async(env);
 
             bool composerReady = false;
 
