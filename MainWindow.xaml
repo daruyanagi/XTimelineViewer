@@ -16,6 +16,20 @@
               BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
               BorderThickness="0,0,0,1"
               Padding="8,4">
+            <Button x:Name="PostBtn"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Height="32"
+                    Padding="12,0"
+                    FontSize="14"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Click="PostBtn_Click">
+                <ToolTipService.ToolTip>新規投稿</ToolTipService.ToolTip>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="✏" VerticalAlignment="Center"/>
+                    <TextBlock Text="投稿" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
             <Button x:Name="ThemeToggleBtn"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"

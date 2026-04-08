@@ -18,7 +18,8 @@ namespace XTimelineViewer
     {
         public string Url        { get; set; } = "";
         public double Width      { get; set; } = 350;
-        public bool   HideHeader { get; set; } = false;
+        public bool   HideHeader  { get; set; } = false;
+        public bool   HideCompose { get; set; } = true;
     }
 
     public sealed partial class MainWindow : Window
@@ -57,6 +58,52 @@ namespace XTimelineViewer
             };
             ThemeToggleBtn.Content = icon;
             ToolTipService.SetToolTip(ThemeToggleBtn, tip);
+        }
+
+        private async void PostBtn_Click(object _, RoutedEventArgs __)
+        {
+            var webView = new WebView2 { Width = 500, MinHeight = 520 };
+
+            var dlg = new ContentDialog
+            {
+                Content         = webView,
+                CloseButtonText = "閉じる",
+                XamlRoot        = Content.XamlRoot
+            };
+
+            await webView.EnsureCoreWebView2Async();
+
+            bool composerReady = false;
+
+            webView.CoreWebView2.NavigationCompleted += async (s, args) =>
+            {
+                if (!args.IsSuccess) return;
+                composerReady = true;
+                await webView.CoreWebView2.ExecuteScriptAsync("""
+                    (function() {
+                        var id = 'xtv-compose-style';
+                        if (document.getElementById(id)) return;
+                        var s = document.createElement('style');
+                        s.id = id;
+                        s.textContent =
+                            '[data-testid="primaryColumn"],' +
+                            '[data-testid="sidebarColumn"],' +
+                            'header[role="banner"],' +
+                            '[data-testid="modalBackdrop"]' +
+                            '{display:none!important}';
+                        document.head.appendChild(s);
+                    })();
+                    """);
+            };
+
+            webView.CoreWebView2.NavigationStarting += (s, args) =>
+            {
+                if (composerReady && !args.Uri.Contains("/compose/post"))
+                    dlg.Hide();
+            };
+
+            webView.Source = new Uri("https://x.com/compose/post");
+            await dlg.ShowAsync();
         }
 
         private void ThemeToggleBtn_Click(object sender, RoutedEventArgs e)
@@ -351,6 +398,13 @@ namespace XTimelineViewer
                     OffContent = "表示"
                 };
 
+                var hideComposeToggle = new ToggleSwitch
+                {
+                    IsOn       = cfg.HideCompose,
+                    OnContent  = "非表示",
+                    OffContent = "表示"
+                };
+
                 var panel = new StackPanel { Spacing = 8 };
                 panel.Children.Add(new TextBlock { Text = "タイムラインの幅（px）" });
                 panel.Children.Add(widthBox);
@@ -360,6 +414,12 @@ namespace XTimelineViewer
                     Margin = new Thickness(0, 8, 0, 0)
                 });
                 panel.Children.Add(hideHeaderToggle);
+                panel.Children.Add(new TextBlock
+                {
+                    Text   = "投稿画面",
+                    Margin = new Thickness(0, 8, 0, 0)
+                });
+                panel.Children.Add(hideComposeToggle);
 
                 var dlg = new ContentDialog
                 {
@@ -379,6 +439,10 @@ namespace XTimelineViewer
                     cfg.HideHeader = hideHeaderToggle.IsOn;
                     if (webView.CoreWebView2 is not null)
                         await ApplyHideHeaderAsync(webView, cfg.HideHeader);
+
+                    cfg.HideCompose = hideComposeToggle.IsOn;
+                    if (webView.CoreWebView2 is not null)
+                        await ApplyHideComposeAsync(webView, cfg.HideCompose);
 
                     await SaveTimelinesAsync();
                 }
@@ -431,6 +495,26 @@ namespace XTimelineViewer
             await webView.CoreWebView2.ExecuteScriptAsync(BuildHideHeaderJs(hide));
         }
 
+        private static string BuildHideComposeJs(bool hide) => $$"""
+            (function(hide){
+                var id='xtv-hide-compose';
+                var s=document.getElementById(id);
+                if(hide){
+                    if(!s){s=document.createElement('style');s.id=id;
+                           s.textContent='.r-1h8ys4a{display:none!important}';
+                           document.head.appendChild(s);}
+                }else{
+                    if(s)s.remove();
+                }
+            })({{(hide ? "true" : "false")}});
+            """;
+
+        private static async Task ApplyHideComposeAsync(
+            Microsoft.UI.Xaml.Controls.WebView2 webView, bool hide)
+        {
+            await webView.CoreWebView2.ExecuteScriptAsync(BuildHideComposeJs(hide));
+        }
+
         private async Task InitWebViewAsync(WebView2 webView, TimelineConfig cfg)
         {
             await webView.EnsureCoreWebView2Async();
@@ -457,7 +541,10 @@ namespace XTimelineViewer
             webView.CoreWebView2.NavigationCompleted += async (s, args) =>
             {
                 if (args.IsSuccess)
+                {
                     await ApplyHideHeaderAsync(webView, cfg.HideHeader);
+                    await ApplyHideComposeAsync(webView, cfg.HideCompose);
+                }
             };
 
             webView.Source = new Uri(cfg.Url);
