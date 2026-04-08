@@ -275,7 +275,13 @@ namespace XTimelineViewer
                 webView.Focus(FocusState.Programmatic);
             }
 
-            headerGrid.Tapped  += (s, e) => SetFocus();
+            headerGrid.Tapped        += (s, e) => SetFocus();
+            headerGrid.DoubleTapped  += async (s, e) =>
+            {
+                SetFocus();
+                if (webView.CoreWebView2 is not null)
+                    await webView.CoreWebView2.ExecuteScriptAsync("window.scrollTo(0, 0);");
+            };
             webView.GotFocus   += (s, e) =>
             {
                 _focusedHeaderGrid = headerGrid;
