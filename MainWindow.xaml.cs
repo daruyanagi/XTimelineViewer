@@ -294,6 +294,14 @@ namespace XTimelineViewer
             };
             Grid.SetColumn(urlLabel, 0);
 
+            // WebView2
+            var webView = new WebView2
+            {
+                VerticalAlignment   = VerticalAlignment.Stretch,
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+            Grid.SetRow(webView, 1);
+
             // Buttons
             var buttonPanel = new StackPanel
             {
@@ -322,14 +330,6 @@ namespace XTimelineViewer
 
             headerGrid.Children.Add(urlLabel);
             headerGrid.Children.Add(buttonPanel);
-
-            // WebView2
-            var webView = new WebView2
-            {
-                VerticalAlignment   = VerticalAlignment.Stretch,
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-            Grid.SetRow(webView, 1);
 
             pane.Children.Add(headerGrid);
             pane.Children.Add(webView);
@@ -520,6 +520,9 @@ namespace XTimelineViewer
         {
             await webView.CoreWebView2.ExecuteScriptAsync(BuildHideHeaderJs(hide));
         }
+
+        private static bool EffectiveHideCompose(TimelineConfig cfg, string currentUrl) =>
+            cfg.HideCompose && !currentUrl.Contains("compose/post", StringComparison.OrdinalIgnoreCase);
 
         private static string BuildHideComposeJs(bool hide) => $$"""
             (function(hide){
@@ -719,8 +722,14 @@ namespace XTimelineViewer
                 if (args.IsSuccess)
                 {
                     await ApplyHideHeaderAsync(webView, cfg.HideHeader);
-                    await ApplyHideComposeAsync(webView, cfg.HideCompose);
+                    await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
                 }
+            };
+
+            webView.CoreWebView2.SourceChanged += async (s, args) =>
+            {
+                if (cfg.HideCompose)
+                    await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
             };
 
             webView.Source = new Uri(cfg.Url);
