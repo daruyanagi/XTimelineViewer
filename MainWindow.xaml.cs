@@ -2,7 +2,10 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
+using System.IO;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage;
@@ -13,16 +16,47 @@ namespace XTimelineViewer
     internal class TimelineConfig
     {
         public string Url        { get; set; } = "";
-        public double Width      { get; set; } = 300;
+        public double Width      { get; set; } = 350;
         public bool   HideHeader { get; set; } = false;
     }
 
     public sealed partial class MainWindow : Window
     {
+        private static readonly string SaveFilePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "XTimelineViewer", "timelines.json");
+        private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+        private readonly List<TimelineConfig> _configs = [];
+
         public MainWindow()
         {
             this.InitializeComponent();
             AppWindow.Resize(new SizeInt32(1400, 900));
+            Title = $"XTimelineViewer — {SaveFilePath}";
+            Closed += async (s, e) => await SaveTimelinesAsync();
+            _ = RestoreTimelinesAsync();
+        }
+
+        // ── Persistence ───────────────────────────────────────────────────────
+
+        private async Task SaveTimelinesAsync()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(SaveFilePath)!);
+            var json = JsonSerializer.Serialize(_configs, JsonOptions);
+            await File.WriteAllTextAsync(SaveFilePath, json);
+        }
+
+        private async Task RestoreTimelinesAsync()
+        {
+            try
+            {
+                var json    = await File.ReadAllTextAsync(SaveFilePath);
+                var configs = JsonSerializer.Deserialize<List<TimelineConfig>>(json);
+                if (configs is not null)
+                    foreach (var cfg in configs)
+                        AddTimeline(cfg);
+            }
+            catch { /* ファイルが存在しない場合などは無視 */ }
         }
 
         // ── Drag & Drop ───────────────────────────────────────────────────────
@@ -83,6 +117,9 @@ namespace XTimelineViewer
 
         private void AddTimeline(TimelineConfig cfg)
         {
+            _configs.Add(cfg);
+            _ = SaveTimelinesAsync();
+
             DropHintBorder.Visibility = Visibility.Collapsed;
             TimelineScroll.Visibility = Visibility.Visible;
 
@@ -224,13 +261,18 @@ namespace XTimelineViewer
                     cfg.HideHeader = hideHeaderToggle.IsOn;
                     if (webView.CoreWebView2 is not null)
                         await ApplyHideHeaderAsync(webView, cfg.HideHeader);
+
+                    await SaveTimelinesAsync();
                 }
             };
 
             // ── Close ─────────────────────────────────────────────────────────
 
-            closeBtn.Click += (s, _) =>
+            closeBtn.Click += (s, e) =>
             {
+                _configs.Remove(cfg);
+                _ = SaveTimelinesAsync();
+
                 TimelinePanel.Children.Remove(pane);
                 if (TimelinePanel.Children.Count == 0)
                 {
@@ -268,6 +310,24 @@ namespace XTimelineViewer
             Microsoft.UI.Xaml.Controls.WebView2 webView, TimelineConfig cfg)
         {
             await webView.EnsureCoreWebView2Async();
+
+            // 外部リンクをシステム既定ブラウザーで開く
+            webView.CoreWebView2.NewWindowRequested += async (s, args) =>
+            {
+                args.Handled = true;
+                await Windows.System.Launcher.LaunchUriAsync(new Uri(args.Uri));
+            };
+
+            webView.CoreWebView2.NavigationStarting += async (s, args) =>
+            {
+                if (Uri.TryCreate(args.Uri, UriKind.Absolute, out var nav) &&
+                    Uri.TryCreate(cfg.Url, UriKind.Absolute, out var origin) &&
+                    !nav.Host.Equals(origin.Host, StringComparison.OrdinalIgnoreCase))
+                {
+                    args.Cancel = true;
+                    await Windows.System.Launcher.LaunchUriAsync(nav);
+                }
+            };
 
             webView.CoreWebView2.NavigationCompleted += async (s, args) =>
             {
