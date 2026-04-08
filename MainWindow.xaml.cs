@@ -28,6 +28,8 @@ namespace XTimelineViewer
         private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
         private readonly List<TimelineConfig> _configs = [];
         private Grid? _draggingPane;
+        private Grid? _focusedHeaderGrid;
+        private readonly List<Action> _headerRefreshers = [];
 
         public MainWindow()
         {
@@ -145,13 +147,15 @@ namespace XTimelineViewer
             // Theme
             void ApplyPaneTheme(ElementTheme theme)
             {
-                bool dark = theme == ElementTheme.Dark;
+                bool dark    = theme == ElementTheme.Dark;
+                bool focused = _focusedHeaderGrid == headerGrid;
                 pane.Background       = new SolidColorBrush(dark
                     ? Color.FromArgb(255, 32, 32, 32) : Color.FromArgb(255, 255, 255, 255));
                 pane.BorderBrush      = new SolidColorBrush(dark
                     ? Color.FromArgb(255, 70, 70, 70) : Color.FromArgb(255, 210, 210, 210));
-                headerGrid.Background = new SolidColorBrush(dark
-                    ? Color.FromArgb(255, 55, 55, 60) : Color.FromArgb(255, 235, 235, 240));
+                headerGrid.Background = new SolidColorBrush(focused
+                    ? (dark ? Color.FromArgb(255, 29,  78, 137) : Color.FromArgb(255,   0, 120, 212))
+                    : (dark ? Color.FromArgb(255, 55,  55,  60) : Color.FromArgb(255, 235, 235, 240)));
             }
             ApplyPaneTheme(((FrameworkElement)Content).ActualTheme);
             pane.ActualThemeChanged += (s, _) => ApplyPaneTheme(pane.ActualTheme);
@@ -211,6 +215,25 @@ namespace XTimelineViewer
             pane.Children.Add(headerGrid);
             pane.Children.Add(webView);
             TimelinePanel.Children.Add(pane);
+
+            // ── Focus ─────────────────────────────────────────────────────────
+
+            Action refreshHeader = () => ApplyPaneTheme(pane.ActualTheme);
+            _headerRefreshers.Add(refreshHeader);
+
+            void SetFocus()
+            {
+                _focusedHeaderGrid = headerGrid;
+                foreach (var r in _headerRefreshers) r();
+                webView.Focus(FocusState.Programmatic);
+            }
+
+            headerGrid.Tapped  += (s, e) => SetFocus();
+            webView.GotFocus   += (s, e) =>
+            {
+                _focusedHeaderGrid = headerGrid;
+                foreach (var r in _headerRefreshers) r();
+            };
 
             // ── Drag & Drop reorder ───────────────────────────────────────────
 
@@ -313,6 +336,12 @@ namespace XTimelineViewer
             closeBtn.Click += (s, e) =>
             {
                 _configs.Remove(cfg);
+                _headerRefreshers.Remove(refreshHeader);
+                if (_focusedHeaderGrid == headerGrid)
+                {
+                    _focusedHeaderGrid = null;
+                    foreach (var r in _headerRefreshers) r();
+                }
                 _ = SaveTimelinesAsync();
 
                 TimelinePanel.Children.Remove(pane);
