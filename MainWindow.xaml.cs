@@ -27,6 +27,7 @@ namespace XTimelineViewer
             "XTimelineViewer", "timelines.json");
         private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
         private readonly List<TimelineConfig> _configs = [];
+        private Grid? _draggingPane;
 
         public MainWindow()
         {
@@ -210,6 +211,47 @@ namespace XTimelineViewer
             pane.Children.Add(headerGrid);
             pane.Children.Add(webView);
             TimelinePanel.Children.Add(pane);
+
+            // ── Drag & Drop reorder ───────────────────────────────────────────
+
+            headerGrid.CanDrag = true;
+            headerGrid.DragStarting += (s, args) =>
+            {
+                _draggingPane = pane;
+                args.Data.SetText("xtv-pane");
+            };
+
+            pane.AllowDrop = true;
+            pane.DragOver  += (s, args) =>
+            {
+                if (_draggingPane is not null && _draggingPane != pane)
+                {
+                    args.AcceptedOperation = DataPackageOperation.Move;
+                    args.Handled = true;
+                }
+            };
+            pane.Drop += (s, args) =>
+            {
+                if (_draggingPane is null || _draggingPane == pane) return;
+                args.Handled = true;
+
+                int from = TimelinePanel.Children.IndexOf(_draggingPane);
+                int to   = TimelinePanel.Children.IndexOf(pane);
+                if (from < 0 || to < 0) return;
+
+                TimelinePanel.Children.RemoveAt(from);
+                TimelinePanel.Children.Insert(to, _draggingPane);
+
+                var cfg2 = _configs[from];
+                _configs.RemoveAt(from);
+                _configs.Insert(to, cfg2);
+
+                _ = SaveTimelinesAsync();
+                _draggingPane = null;
+            };
+            pane.DragLeave += (s, args) => pane.Opacity = 1.0;
+            headerGrid.DragStarting += (s, args) => pane.Opacity = 0.5;
+            pane.Drop              += (s, args) => { if (_draggingPane is not null) _draggingPane.Opacity = 1.0; };
 
             // ── Settings dialog ───────────────────────────────────────────────
 
