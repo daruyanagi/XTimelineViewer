@@ -36,6 +36,68 @@ namespace XTimelineViewer
         private readonly List<WebView2> _webViews = [];
         private bool _extensionsLoaded = false;
         private CoreWebView2Environment? _webViewEnv;
+        private readonly Dictionary<WebView2, Grid> _webViewToPane  = [];
+        private readonly Dictionary<Grid, Action>   _paneToSetFocus = [];
+
+        // キーボードショートカット処理スクリプト（各 WebView2 に注入）
+        private static readonly string KeyboardShortcutScript = """
+            (function() {
+                if (window._xtvKb) return;
+                window._xtvKb = true;
+
+                function addStyle() {
+                    if (document.getElementById('xtv-kb-style')) return;
+                    var s = document.createElement('style');
+                    s.id = 'xtv-kb-style';
+                    s.textContent = '.xtv-focused-post{outline:2px solid #0078D4!important;outline-offset:-2px!important;border-radius:4px!important;}';
+                    (document.head || document.documentElement).appendChild(s);
+                }
+                document.readyState === 'loading'
+                    ? document.addEventListener('DOMContentLoaded', addStyle)
+                    : addStyle();
+
+                var fi = -1;
+                var getPosts = () => [...document.querySelectorAll('article[data-testid="tweet"]')];
+                var isEdit   = () => { var el = document.activeElement; return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable); };
+
+                function navigatePosts(d) {
+                    var ps = getPosts();
+                    if (!ps.length) return;
+                    ps.forEach(a => a.classList.remove('xtv-focused-post'));
+                    fi = fi < 0 ? (d > 0 ? 0 : ps.length - 1)
+                                : Math.max(0, Math.min(ps.length - 1, fi + d));
+                    ps[fi]?.classList.add('xtv-focused-post');
+                    ps[fi]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+
+                function actOnPost(id, alt) {
+                    var ps = getPosts();
+                    if (fi < 0 || fi >= ps.length) return;
+                    var b = ps[fi].querySelector('[data-testid="' + id + '"]' + (alt ? ',[data-testid="' + alt + '"]' : ''));
+                    b?.click();
+                }
+
+                document.addEventListener('keydown', e => {
+                    var c = e.ctrlKey, s = e.shiftKey, a = e.altKey, k = e.key, ni = !isEdit();
+                    if (c && !s && !a) {
+                        if (k === 'ArrowRight') { e.preventDefault(); window.chrome.webview.postMessage('focusNext'); return; }
+                        if (k === 'ArrowLeft')  { e.preventDefault(); window.chrome.webview.postMessage('focusPrev'); return; }
+                        if (k === 'n')          { e.preventDefault(); window.chrome.webview.postMessage('newPost');   return; }
+                        if (k === 'ArrowUp')    { e.preventDefault(); navigatePosts(-1); return; }
+                        if (k === 'ArrowDown')  { e.preventDefault(); navigatePosts(1);  return; }
+                        if (k === 'r' && ni)    { e.preventDefault(); actOnPost('retweet',  'unretweet');      return; }
+                        if (k === 'b' && ni)    { e.preventDefault(); actOnPost('bookmark', 'removeBookmark'); return; }
+                        if (k === 'f' && ni)    { e.preventDefault(); actOnPost('like',     'unlike');         return; }
+                    }
+                    if (!c && !s && !a) {
+                        if (k === 'Home'      && ni) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+                        if (k === 'End'       && ni) { window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' }); return; }
+                        if (k === 'F5')              { e.preventDefault(); location.reload(); return; }
+                        if (k === 'Backspace' && ni) { e.preventDefault(); history.back(); return; }
+                    }
+                }, true);
+            })();
+            """;
 
         private static readonly string EdgeDevAppDir =
             @"C:\Program Files (x86)\Microsoft\Edge Dev\Application";
@@ -85,7 +147,9 @@ namespace XTimelineViewer
             ToolTipService.SetToolTip(ThemeToggleBtn, tip);
         }
 
-        private async void PostBtn_Click(object _, RoutedEventArgs __)
+        private async void PostBtn_Click(object _, RoutedEventArgs __) => await OpenPostDialogAsync();
+
+        private async Task OpenPostDialogAsync()
         {
             var webView = new WebView2 { Width = 500, MinHeight = 520 };
 
@@ -130,6 +194,32 @@ namespace XTimelineViewer
 
             webView.Source = new Uri("https://x.com/compose/post");
             await dlg.ShowAsync();
+        }
+
+        // ── Keyboard shortcuts ────────────────────────────────────────────────
+
+        private void OnWebViewMessageReceived(WebView2 senderWebView, string message)
+        {
+            switch (message)
+            {
+                case "focusNext": FocusAdjacentTimeline(senderWebView, +1); break;
+                case "focusPrev": FocusAdjacentTimeline(senderWebView, -1); break;
+                case "newPost":   _ = OpenPostDialogAsync();                break;
+            }
+        }
+
+        private void FocusAdjacentTimeline(WebView2 senderWebView, int direction)
+        {
+            if (!_webViewToPane.TryGetValue(senderWebView, out var senderPane)) return;
+            int idx  = TimelinePanel.Children.IndexOf(senderPane);
+            int next = idx + direction;
+            if (next < 0 || next >= TimelinePanel.Children.Count) return;
+            var targetPane = (Grid)TimelinePanel.Children[next];
+            if (_paneToSetFocus.TryGetValue(targetPane, out var setFocus))
+            {
+                setFocus();
+                targetPane.StartBringIntoView();
+            }
         }
 
         private void ThemeToggleBtn_Click(object sender, RoutedEventArgs e)
@@ -335,6 +425,7 @@ namespace XTimelineViewer
             pane.Children.Add(webView);
             TimelinePanel.Children.Add(pane);
             _webViews.Add(webView);
+            _webViewToPane[webView] = pane;
 
             // ── Focus ─────────────────────────────────────────────────────────
 
@@ -347,6 +438,7 @@ namespace XTimelineViewer
                 foreach (var r in _headerRefreshers) r();
                 webView.Focus(FocusState.Programmatic);
             }
+            _paneToSetFocus[pane] = SetFocus;
 
             headerGrid.Tapped        += (s, e) => SetFocus();
             headerGrid.DoubleTapped  += async (s, e) =>
@@ -480,6 +572,8 @@ namespace XTimelineViewer
             {
                 _configs.Remove(cfg);
                 _webViews.Remove(webView);
+                _webViewToPane.Remove(webView);
+                _paneToSetFocus.Remove(pane);
                 _headerRefreshers.Remove(refreshHeader);
                 if (_focusedHeaderGrid == headerGrid)
                 {
@@ -723,6 +817,12 @@ namespace XTimelineViewer
             }
 
 
+
+            // キーボードショートカット：ブラウザ既定アクセラレータを無効化し JS で代替処理
+            webView.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(KeyboardShortcutScript);
+            webView.CoreWebView2.WebMessageReceived += (s, e) =>
+                OnWebViewMessageReceived(webView, e.TryGetWebMessageAsString());
 
             // 外部リンクをシステム既定ブラウザーで開く
             webView.CoreWebView2.NewWindowRequested += async (s, args) =>
