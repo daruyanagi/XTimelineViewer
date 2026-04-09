@@ -521,6 +521,31 @@ namespace XTimelineViewer
             await webView.CoreWebView2.ExecuteScriptAsync(BuildHideHeaderJs(hide));
         }
 
+        private static async Task ApplyAutoShowNewPostsAsync(WebView2 webView, string cfgUrl)
+        {
+            if (!Uri.TryCreate(cfgUrl, UriKind.Absolute, out var uri)) return;
+            if (!uri.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase)) return;
+
+            // 「（数字） 件のポストを表示」を含む button 要素を監視して自動でクリックするスクリプト
+            await webView.CoreWebView2.ExecuteScriptAsync("""
+                (function() {
+                    var observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            mutation.addedNodes.forEach(function(node) {
+                                if (node.nodeType === Node.ELEMENT_NODE) {
+                                    var btn = node.matches('button') ? node : node.querySelector('button');
+                                    if (btn && /件のポストを表示/.test(btn.textContent)) {
+                                        btn.click();
+                                    }
+                                }
+                            });
+                        });
+                    });
+                    observer.observe(document.body, { childList: true, subtree: true });
+                })();
+                """);
+        }
+
         private static bool EffectiveHideCompose(TimelineConfig cfg, string currentUrl) =>
             cfg.HideCompose && !currentUrl.Contains("compose/post", StringComparison.OrdinalIgnoreCase);
 
@@ -723,6 +748,13 @@ namespace XTimelineViewer
                 {
                     await ApplyHideHeaderAsync(webView, cfg.HideHeader);
                     await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
+                    
+                    // x.com/home の場合だけ新着ポスト自動表示機能を適用する
+                    if (Uri.TryCreate(webView.CoreWebView2.Source, UriKind.Absolute, out var current) &&
+                        current.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase))
+                    {
+                        await ApplyAutoShowNewPostsAsync(webView, cfg.Url);
+                    }
                 }
             };
 
