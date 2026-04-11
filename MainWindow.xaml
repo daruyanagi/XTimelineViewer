@@ -26,7 +26,7 @@
                     Click="PostBtn_Click">
                 <ToolTipService.ToolTip>新規投稿</ToolTipService.ToolTip>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="✏" VerticalAlignment="Center"/>
+                    <FontIcon Glyph="&#xE70F;" FontFamily="Segoe Fluent Icons" FontSize="14" VerticalAlignment="Center"/>
                     <TextBlock Text="投稿" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
@@ -35,13 +35,19 @@
                         Spacing="4"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center">
-                <Button x:Name="ThemeToggleBtn"
-                        Width="32" Height="32"
-                        Padding="0"
-                        FontSize="16"
-                        Click="ThemeToggleBtn_Click">
+                <DropDownButton x:Name="ThemeToggleBtn"
+                               Height="32"
+                               Padding="8,0"
+                               FontSize="14">
                     <ToolTipService.ToolTip>テーマ切り替え</ToolTipService.ToolTip>
-                </Button>
+                    <DropDownButton.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="ライト" Click="ThemeLight_Click"/>
+                            <MenuFlyoutItem Text="ダーク" Click="ThemeDark_Click"/>
+                            <MenuFlyoutItem Text="システム" Click="ThemeSystem_Click"/>
+                        </MenuFlyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
             </StackPanel>
         </Grid>
 

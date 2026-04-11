@@ -222,15 +222,23 @@ namespace XTimelineViewer
             }
         }
 
-        private void ThemeToggleBtn_Click(object sender, RoutedEventArgs e)
+        private void ThemeLight_Click(object _, RoutedEventArgs __)
         {
-            var root = (FrameworkElement)Content;
-            root.RequestedTheme = root.RequestedTheme switch
-            {
-                ElementTheme.Light => ElementTheme.Dark,
-                ElementTheme.Dark  => ElementTheme.Default,
-                _                  => ElementTheme.Light,
-            };
+            ((FrameworkElement)Content).RequestedTheme = ElementTheme.Light;
+            UpdateThemeToggleBtn();
+            ApplyThemeToWebViews();
+        }
+
+        private void ThemeDark_Click(object _, RoutedEventArgs __)
+        {
+            ((FrameworkElement)Content).RequestedTheme = ElementTheme.Dark;
+            UpdateThemeToggleBtn();
+            ApplyThemeToWebViews();
+        }
+
+        private void ThemeSystem_Click(object _, RoutedEventArgs __)
+        {
+            ((FrameworkElement)Content).RequestedTheme = ElementTheme.Default;
             UpdateThemeToggleBtn();
             ApplyThemeToWebViews();
         }
@@ -403,8 +411,9 @@ namespace XTimelineViewer
 
             var settingsBtn = new Button
             {
-                Content = "⚙", Width = 28, Height = 26,
-                Padding = new Thickness(0), FontSize = 14
+                Content = new FontIcon { Glyph = "\uE713", FontFamily = new FontFamily("Segoe Fluent Icons"), FontSize = 14 },
+                Width = 28, Height = 26,
+                Padding = new Thickness(0)
             };
             ToolTipService.SetToolTip(settingsBtn, "設定");
 
@@ -714,26 +723,50 @@ namespace XTimelineViewer
 
         private void AddExtensionButton(CoreWebView2BrowserExtension ext, string extDir)
         {
-            // マニフェストから名前と options_ui.page を取得
-            string name       = ext.Name;
-            string? optPage   = null;
-            var manifestPath  = Path.Combine(extDir, "manifest.json");
+            // マニフェストから名前、options_ui.page、アイコンを取得
+            string name      = ext.Name;
+            string? optPage  = null;
+            string? iconPath = null;
+            var manifestPath = Path.Combine(extDir, "manifest.json");
             if (File.Exists(manifestPath))
             {
                 using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
-                if (doc.RootElement.TryGetProperty("options_ui", out var optUi) &&
+                var root = doc.RootElement;
+                if (root.TryGetProperty("options_ui", out var optUi) &&
                     optUi.TryGetProperty("page", out var page))
                     optPage = page.GetString();
+                if (root.TryGetProperty("icons", out var icons))
+                {
+                    foreach (var size in new[] { "16", "32", "48", "128" })
+                    {
+                        if (icons.TryGetProperty(size, out var iconProp))
+                        {
+                            var iconFile = iconProp.GetString();
+                            if (iconFile is not null)
+                            {
+                                var full = Path.Combine(extDir, iconFile);
+                                if (File.Exists(full)) { iconPath = full; break; }
+                            }
+                        }
+                    }
+                }
             }
             if (optPage is null) return; // options_ui がない拡張は追加しない
 
+            object btnContent = iconPath is not null
+                ? new Image
+                {
+                    Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(iconPath)),
+                    Width = 20, Height = 20
+                }
+                : (object)"🧩";
+
             var btn = new Button
             {
-                Content = "🧩",
+                Content = btnContent,
                 Width   = 32,
                 Height  = 32,
                 Padding = new Thickness(0),
-                FontSize = 16,
             };
             ToolTipService.SetToolTip(btn, $"{name} の設定");
 
