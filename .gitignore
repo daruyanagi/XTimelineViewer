@@ -1,5 +1,7 @@
 bin/
 obj/
+publish/
+*.zip
 .vs/
 .claude/
 *.user
