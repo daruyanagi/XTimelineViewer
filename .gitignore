@@ -1,6 +1,6 @@
 bin/
 obj/
-publish/
+publish*/
 *.zip
 .vs/
 .claude/
