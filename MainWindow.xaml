@@ -35,19 +35,11 @@
                         Spacing="4"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center">
-                <DropDownButton x:Name="ThemeToggleBtn"
-                               Height="32"
-                               Padding="8,0"
-                               FontSize="14">
-                    <ToolTipService.ToolTip>テーマ切り替え</ToolTipService.ToolTip>
-                    <DropDownButton.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Text="ライト" Click="ThemeLight_Click"/>
-                            <MenuFlyoutItem Text="ダーク" Click="ThemeDark_Click"/>
-                            <MenuFlyoutItem Text="システム" Click="ThemeSystem_Click"/>
-                        </MenuFlyout>
-                    </DropDownButton.Flyout>
-                </DropDownButton>
+                <Button Width="32" Height="32" Padding="0" FontSize="14"
+                        Click="AppSettingsBtn_Click">
+                    <ToolTipService.ToolTip>アプリ設定</ToolTipService.ToolTip>
+                    <FontIcon Glyph="&#xE713;" FontFamily="Segoe Fluent Icons" FontSize="14"/>
+                </Button>
             </StackPanel>
         </Grid>
 

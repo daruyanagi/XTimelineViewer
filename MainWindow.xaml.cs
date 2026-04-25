@@ -23,11 +23,21 @@ namespace XTimelineViewer
         public bool   HideCompose { get; set; } = true;
     }
 
+    internal class AppSettings
+    {
+        public bool   SeparateComposeEnv { get; set; } = false;
+        public string Theme              { get; set; } = "Default"; // "Light" | "Dark" | "Default"
+    }
+
     public sealed partial class MainWindow : Window
     {
         private static readonly string SaveFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "XTimelineViewer", "timelines.json");
+        private static readonly string SettingsFilePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "XTimelineViewer", "settings.json");
+        private AppSettings _appSettings = new();
         private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
         private readonly List<TimelineConfig> _configs = [];
         private Grid? _draggingPane;
@@ -36,6 +46,7 @@ namespace XTimelineViewer
         private readonly List<WebView2> _webViews = [];
         private bool _extensionsLoaded = false;
         private CoreWebView2Environment? _webViewEnv;
+        private CoreWebView2Environment? _composeEnv;
         private readonly Dictionary<WebView2, Grid> _webViewToPane  = [];
         private readonly Dictionary<Grid, Action>   _paneToSetFocus = [];
 
@@ -121,31 +132,149 @@ namespace XTimelineViewer
             return _webViewEnv;
         }
 
+        private static readonly string ComposeUserDataFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "XTimelineViewer", "compose-profile");
+
+        private async Task<CoreWebView2Environment> GetOrCreateComposeEnvAsync()
+        {
+            if (_composeEnv is not null) return _composeEnv;
+            var versionFolder = FindEdgeDevVersionFolder();
+            var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = false };
+            _composeEnv = await CoreWebView2Environment.CreateWithOptionsAsync(
+                versionFolder ?? "", userDataFolder: ComposeUserDataFolder, options);
+            return _composeEnv;
+        }
+
         public MainWindow()
         {
             this.InitializeComponent();
             AppWindow.Resize(new SizeInt32(1400, 900));
             Title = $"XTimelineViewer — {SaveFilePath}";
             Closed += async (s, e) => await SaveTimelinesAsync();
-            ((FrameworkElement)Content).ActualThemeChanged += (s, e) => { UpdateThemeToggleBtn(); ApplyThemeToWebViews(); };
-            UpdateThemeToggleBtn();
+            ((FrameworkElement)Content).ActualThemeChanged += (s, e) => ApplyThemeToWebViews();
+            LoadSettings();
+            ApplySavedTheme();
             _ = RestoreTimelinesAsync();
         }
 
-        // ── Theme ─────────────────────────────────────────────────────────────
+        // ── App settings ──────────────────────────────────────────────────────
 
-        private void UpdateThemeToggleBtn()
+        private void LoadSettings()
         {
-            var root = (FrameworkElement)Content;
-            var (icon, tip) = root.RequestedTheme switch
+            try
             {
-                ElementTheme.Light => ("☀", "ライト"),
-                ElementTheme.Dark  => ("🌙", "ダーク"),
-                _                  => ("⊙", "システム"),
-            };
-            ThemeToggleBtn.Content = icon;
-            ToolTipService.SetToolTip(ThemeToggleBtn, tip);
+                var json = File.ReadAllText(SettingsFilePath);
+                _appSettings = JsonSerializer.Deserialize<AppSettings>(json) ?? new();
+            }
+            catch { /* ファイルが存在しない場合などは無視 */ }
         }
+
+        private void SaveSettings()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(SettingsFilePath)!);
+            File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(_appSettings, JsonOptions));
+        }
+
+        private void ApplySavedTheme()
+        {
+            ((FrameworkElement)Content).RequestedTheme = _appSettings.Theme switch
+            {
+                "Light" => ElementTheme.Light,
+                "Dark"  => ElementTheme.Dark,
+                _       => ElementTheme.Default,
+            };
+            ApplyThemeToWebViews();
+        }
+
+        private async void AppSettingsBtn_Click(object _, RoutedEventArgs __)
+        {
+            var themeCombo = new ComboBox
+            {
+                ItemsSource   = new List<string> { "システム", "ライト", "ダーク" },
+                SelectedIndex = _appSettings.Theme switch { "Light" => 1, "Dark" => 2, _ => 0 },
+                MinWidth      = 140
+            };
+
+            var separateEnvToggle = new ToggleSwitch
+            {
+                IsOn              = _appSettings.SeparateComposeEnv,
+                OnContent         = "有効",
+                OffContent        = "無効",
+                Margin              = new Thickness(12, 0, 0, 0),
+                VerticalAlignment   = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+
+            var openFolderBtn = new Button { Content = "フォルダーを開く" };
+            openFolderBtn.Click += async (_, _) =>
+            {
+                var folder = Path.GetDirectoryName(SettingsFilePath)!;
+                Directory.CreateDirectory(folder);
+                await Windows.System.Launcher.LaunchFolderPathAsync(folder);
+            };
+
+            var version = System.Reflection.Assembly.GetExecutingAssembly()
+                              .GetName().Version?.ToString(3) ?? "不明";
+
+            // ヘルパー：左ラベル＋右コントロールの行を作る
+            static Grid MakeRow(string label, FrameworkElement control, Thickness? margin = null)
+            {
+                var g = new Grid { Margin = margin ?? new Thickness(0, 6, 0, 0) };
+                g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                var lbl = new TextBlock
+                {
+                    Text = label,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextWrapping = TextWrapping.Wrap
+                };
+                Grid.SetColumn(lbl, 0);
+                Grid.SetColumn(control, 1);
+                g.Children.Add(lbl);
+                g.Children.Add(control);
+                return g;
+            }
+
+            var panel = new StackPanel { MinWidth = 400 };
+            panel.Children.Add(MakeRow("テーマ", themeCombo, new Thickness(0)));
+            panel.Children.Add(MakeRow("設定ファイルのエクスポート", openFolderBtn));
+            panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 12, 0, 8) });
+            panel.Children.Add(new TextBlock
+            {
+                Text       = "試験機能",
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+            });
+            panel.Children.Add(MakeRow("投稿画面を別プロファイルで開く（拡張機能の影響を受けない）", separateEnvToggle));
+            panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 12, 0, 8) });
+            panel.Children.Add(new TextBlock
+            {
+                Text                = $"XTimelineViewer v{version}",
+                Opacity             = 0.6,
+                HorizontalAlignment = HorizontalAlignment.Center
+            });
+
+            var dlg = new ContentDialog
+            {
+                Title             = "アプリ設定",
+                Content           = panel,
+                PrimaryButtonText = "保存",
+                CloseButtonText   = "キャンセル",
+                DefaultButton     = ContentDialogButton.Primary,
+                XamlRoot          = Content.XamlRoot,
+                RequestedTheme    = ((FrameworkElement)Content).ActualTheme
+            };
+
+            if (await dlg.ShowAsync() == ContentDialogResult.Primary)
+            {
+                _appSettings.Theme = themeCombo.SelectedIndex switch { 1 => "Light", 2 => "Dark", _ => "Default" };
+                _appSettings.SeparateComposeEnv = separateEnvToggle.IsOn;
+                SaveSettings();
+                ApplySavedTheme();
+            }
+        }
+
+        // ── Theme ─────────────────────────────────────────────────────────────
 
         private async void PostBtn_Click(object _, RoutedEventArgs __) => await OpenPostDialogAsync();
 
@@ -155,13 +284,26 @@ namespace XTimelineViewer
 
             var dlg = new ContentDialog
             {
-                Content         = webView,
-                CloseButtonText = "閉じる",
-                XamlRoot        = Content.XamlRoot
+                Content          = webView,
+                CloseButtonText  = "閉じる",
+                XamlRoot         = Content.XamlRoot,
+                RequestedTheme   = ((FrameworkElement)Content).ActualTheme
             };
 
-            var env = await GetOrCreateEnvAsync();
+            var env = _appSettings.SeparateComposeEnv
+                ? await GetOrCreateComposeEnvAsync()
+                : await GetOrCreateEnvAsync();
             await webView.EnsureCoreWebView2Async(env);
+
+            // テーマを適用
+            var root = (FrameworkElement)Content;
+            var scheme = root.ActualTheme switch
+            {
+                ElementTheme.Light => CoreWebView2PreferredColorScheme.Light,
+                ElementTheme.Dark  => CoreWebView2PreferredColorScheme.Dark,
+                _                  => CoreWebView2PreferredColorScheme.Auto,
+            };
+            webView.CoreWebView2.Profile.PreferredColorScheme = scheme;
 
             bool composerReady = false;
 
@@ -220,27 +362,6 @@ namespace XTimelineViewer
                 setFocus();
                 targetPane.StartBringIntoView();
             }
-        }
-
-        private void ThemeLight_Click(object _, RoutedEventArgs __)
-        {
-            ((FrameworkElement)Content).RequestedTheme = ElementTheme.Light;
-            UpdateThemeToggleBtn();
-            ApplyThemeToWebViews();
-        }
-
-        private void ThemeDark_Click(object _, RoutedEventArgs __)
-        {
-            ((FrameworkElement)Content).RequestedTheme = ElementTheme.Dark;
-            UpdateThemeToggleBtn();
-            ApplyThemeToWebViews();
-        }
-
-        private void ThemeSystem_Click(object _, RoutedEventArgs __)
-        {
-            ((FrameworkElement)Content).RequestedTheme = ElementTheme.Default;
-            UpdateThemeToggleBtn();
-            ApplyThemeToWebViews();
         }
 
         private void ApplyThemeToWebViews()
@@ -484,23 +605,25 @@ namespace XTimelineViewer
                 if (_draggingPane is null || _draggingPane == pane) return;
                 args.Handled = true;
 
-                int from = TimelinePanel.Children.IndexOf(_draggingPane);
+                var dragging = _draggingPane;
+
+                int from = TimelinePanel.Children.IndexOf(dragging);
                 int to   = TimelinePanel.Children.IndexOf(pane);
                 if (from < 0 || to < 0) return;
 
                 TimelinePanel.Children.RemoveAt(from);
-                TimelinePanel.Children.Insert(to, _draggingPane);
+                TimelinePanel.Children.Insert(to, dragging);
 
                 var cfg2 = _configs[from];
                 _configs.RemoveAt(from);
                 _configs.Insert(to, cfg2);
 
                 _ = SaveTimelinesAsync();
+                dragging.Opacity = 1.0;
                 _draggingPane = null;
             };
             pane.DragLeave += (s, args) => pane.Opacity = 1.0;
             headerGrid.DragStarting += (s, args) => pane.Opacity = 0.5;
-            pane.Drop              += (s, args) => { if (_draggingPane is not null) _draggingPane.Opacity = 1.0; };
 
             // ── Settings dialog ───────────────────────────────────────────────
 
@@ -786,9 +909,9 @@ namespace XTimelineViewer
                 await dlg.ShowAsync();
             };
 
-            // ThemeToggleBtn の左隣に挿入
-            int themeIdx = RightToolbar.Children.IndexOf(ThemeToggleBtn);
-            RightToolbar.Children.Insert(themeIdx, btn);
+            // 設定ボタン（末尾）の左隣に挿入
+            int insertIdx = Math.Max(0, RightToolbar.Children.Count - 1);
+            RightToolbar.Children.Insert(insertIdx, btn);
         }
 
         private static readonly string LogFilePath = Path.Combine(
