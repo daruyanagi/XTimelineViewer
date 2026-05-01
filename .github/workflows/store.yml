@@ -73,9 +73,11 @@ jobs:
           }
           Write-Host "Packages to upload:"
           Get-ChildItem .\msix-upload
+          # Create .msixupload (zip of all .msix files for Partner Center)
+          Compress-Archive -Path .\msix-upload\*.msix -DestinationPath .\msix-upload\XTimelineViewer.msixupload
 
-      - name: Install msstore-cli
-        run: dotnet tool install -g Microsoft.Store.Developer.CLI
+      - name: Setup Microsoft Store Developer CLI
+        uses: microsoft/microsoft-store-apppublisher@v1.1
 
       - name: Configure msstore-cli
         run: >
@@ -86,4 +88,4 @@ jobs:
           --sellerId "${{ secrets.PARTNER_CENTER_SELLER_ID }}"
 
       - name: Publish to Microsoft Store
-        run: msstore apps publish -p .\msix-upload --productId "9P308HB5BLJ1"
+        run: msstore publish -i .\msix-upload\XTimelineViewer.msixupload -id "9P308HB5BLJ1"
