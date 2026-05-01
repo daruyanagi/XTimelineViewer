@@ -26,6 +26,7 @@ namespace XTimelineViewer
     internal class AppSettings
     {
         public bool   SeparateComposeEnv    { get; set; } = false;
+        public bool   OpenTweetInBrowser    { get; set; } = false;
         public string Theme                 { get; set; } = "Default"; // "Light" | "Dark" | "Default"
         public int    AutoActivateMinutes   { get; set; } = 0;         // 0 = 無効
     }
@@ -109,6 +110,51 @@ namespace XTimelineViewer
                         if (k === 'Backspace' && ni) { e.preventDefault(); history.back(); return; }
                     }
                 }, true);
+            })();
+            """;
+
+        // ツイート permalink 遷移を外部ブラウザーへ転送するスクリプト。
+        // 2層構成:
+        //   1. capture 相クリック横取り: <a href="/status/"> を React より先にブロック
+        //   2. pushState 横取り: React onClick 経由の SPA 遷移を orig + back() で戻す
+        // window._xtvOpenTweetInBrowser を ExecuteScriptAsync で切り替えて有効/無効を制御する。
+        private static readonly string TweetInterceptScript = """
+            (function() {
+                if (window._xtvTweet) return;
+                window._xtvTweet = true;
+
+                // Layer 1: <a href> クリックを capture 最優先で横取り
+                document.addEventListener('click', function(e) {
+                    if (!window._xtvOpenTweetInBrowser) return;
+                    var a = e.target.closest('a[href]');
+                    if (!a) return;
+                    try {
+                        var url = new URL(a.href);
+                        if (/\/status\/\d+/.test(url.pathname)) {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                            window.chrome.webview.postMessage('openTweet:' + url.href);
+                        }
+                    } catch(ex) {}
+                }, true);
+
+                // Layer 2: React onClick 経由の pushState を横取りして即 back()
+                var orig = history.pushState.bind(history);
+                history.pushState = function(state, title, url) {
+                    if (window._xtvOpenTweetInBrowser && url) {
+                        var s = url.toString();
+                        if (/\/status\/\d+/.test(s)) {
+                            try {
+                                var abs = new URL(s, location.origin).href;
+                                window.chrome.webview.postMessage('openTweet:' + abs);
+                            } catch(ex) {}
+                            orig(state, title, url);
+                            setTimeout(function() { history.back(); }, 0);
+                            return;
+                        }
+                    }
+                    orig(state, title, url);
+                };
             })();
             """;
 
@@ -290,6 +336,17 @@ namespace XTimelineViewer
             });
             panel.Children.Add(MakeRow("投稿画面を別プロファイルで開く（拡張機能の影響を受けない）", separateEnvToggle));
 
+            var openTweetToggle = new ToggleSwitch
+            {
+                IsOn                = _appSettings.OpenTweetInBrowser,
+                OnContent           = "有効",
+                OffContent          = "無効",
+                Margin              = new Thickness(12, 0, 0, 0),
+                VerticalAlignment   = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+            panel.Children.Add(MakeRow("ツイートを外部ブラウザーで開く", openTweetToggle));
+
             var autoActivateBox = new NumberBox
             {
                 Value                   = _appSettings.AutoActivateMinutes,
@@ -392,10 +449,18 @@ namespace XTimelineViewer
             if (await dlg.ShowAsync() == ContentDialogResult.Primary)
             {
                 _appSettings.Theme = themeCombo.SelectedIndex switch { 1 => "Light", 2 => "Dark", _ => "Default" };
-                _appSettings.SeparateComposeEnv = separateEnvToggle.IsOn;
+                _appSettings.SeparateComposeEnv  = separateEnvToggle.IsOn;
+                _appSettings.OpenTweetInBrowser  = openTweetToggle.IsOn;
                 _appSettings.AutoActivateMinutes = (int)Math.Clamp(autoActivateBox.Value, 0, 60);
                 SaveSettings();
                 ApplySavedTheme();
+
+                // 設定変更を即時反映する
+                var flag = _appSettings.OpenTweetInBrowser ? "true" : "false";
+                foreach (var wv in _webViews)
+                    if (wv.CoreWebView2 is not null)
+                        await wv.CoreWebView2.ExecuteScriptAsync(
+                            $"window._xtvOpenTweetInBrowser = {flag};");
                 ApplyAutoActivateTimer();
             }
         }
@@ -481,6 +546,13 @@ namespace XTimelineViewer
 
         private void OnWebViewMessageReceived(WebView2 senderWebView, string message)
         {
+            if (message.StartsWith("openTweet:") &&
+                Uri.TryCreate(message[10..], UriKind.Absolute, out var tweetUri))
+            {
+                _ = Windows.System.Launcher.LaunchUriAsync(tweetUri);
+                return;
+            }
+
             switch (message)
             {
                 case "focusNext": FocusAdjacentTimeline(senderWebView, +1); break;
@@ -1120,6 +1192,7 @@ namespace XTimelineViewer
             // キーボードショートカット：ブラウザ既定アクセラレータを無効化し JS で代替処理
             webView.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(KeyboardShortcutScript);
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(TweetInterceptScript);
             webView.CoreWebView2.WebMessageReceived += (s, e) =>
                 OnWebViewMessageReceived(webView, e.TryGetWebMessageAsString());
 
@@ -1132,9 +1205,18 @@ namespace XTimelineViewer
 
             webView.CoreWebView2.NavigationStarting += async (s, args) =>
             {
-                if (Uri.TryCreate(args.Uri, UriKind.Absolute, out var nav) &&
-                    Uri.TryCreate(cfg.Url, UriKind.Absolute, out var origin) &&
+                if (!Uri.TryCreate(args.Uri, UriKind.Absolute, out var nav)) return;
+
+                if (Uri.TryCreate(cfg.Url, UriKind.Absolute, out var origin) &&
                     !nav.Host.Equals(origin.Host, StringComparison.OrdinalIgnoreCase))
+                {
+                    args.Cancel = true;
+                    await Windows.System.Launcher.LaunchUriAsync(nav);
+                    return;
+                }
+
+                if (_appSettings.OpenTweetInBrowser &&
+                    nav.AbsolutePath.Contains("/status/", StringComparison.OrdinalIgnoreCase))
                 {
                     args.Cancel = true;
                     await Windows.System.Launcher.LaunchUriAsync(nav);
@@ -1147,7 +1229,12 @@ namespace XTimelineViewer
                 {
                     await ApplyHideHeaderAsync(webView, cfg.HideHeader);
                     await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
-                    
+
+                    // TweetInterceptScript のフラグを設定と同期する
+                    var flag = _appSettings.OpenTweetInBrowser ? "true" : "false";
+                    await webView.CoreWebView2.ExecuteScriptAsync(
+                        $"window._xtvOpenTweetInBrowser = {flag};");
+
                     // x.com/home の場合だけ新着ポスト自動表示機能を適用する
                     if (Uri.TryCreate(webView.CoreWebView2.Source, UriKind.Absolute, out var current) &&
                         current.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase))
