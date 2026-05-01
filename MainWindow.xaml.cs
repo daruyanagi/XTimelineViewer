@@ -26,6 +26,7 @@ namespace XTimelineViewer
     internal class AppSettings
     {
         public bool   SeparateComposeEnv    { get; set; } = false;
+        public bool   OpenComposerInBrowser     { get; set; } = false;
         public bool   OpenTweetInBrowser    { get; set; } = false;
         public string Theme                 { get; set; } = "Default"; // "Light" | "Dark" | "Default"
         public int    AutoActivateMinutes   { get; set; } = 0;         // 0 = 無効
@@ -217,6 +218,7 @@ namespace XTimelineViewer
                 _appSettings = JsonSerializer.Deserialize<AppSettings>(json) ?? new();
             }
             catch { /* ファイルが存在しない場合などは無視 */ }
+            _appSettings.SeparateComposeEnv = false; // 廃止予定: 強制無効化 (#17)
         }
 
         private void SaveSettings()
@@ -274,7 +276,8 @@ namespace XTimelineViewer
 
             var separateEnvToggle = new ToggleSwitch
             {
-                IsOn              = _appSettings.SeparateComposeEnv,
+                IsOn              = false,
+                IsEnabled         = false, // 廃止予定 (#17)
                 OnContent         = "有効",
                 OffContent        = "無効",
                 Margin              = new Thickness(12, 0, 0, 0),
@@ -334,7 +337,18 @@ namespace XTimelineViewer
                 Text       = "試験機能",
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
             });
-            panel.Children.Add(MakeRow("投稿画面を別プロファイルで開く（拡張機能の影響を受けない）", separateEnvToggle));
+            panel.Children.Add(MakeRow("投稿画面を別プロファイルで開く（廃止予定）", separateEnvToggle));
+
+            var openPostToggle = new ToggleSwitch
+            {
+                IsOn                = _appSettings.OpenComposerInBrowser,
+                OnContent           = "有効",
+                OffContent          = "無効",
+                Margin              = new Thickness(12, 0, 0, 0),
+                VerticalAlignment   = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+            panel.Children.Add(MakeRow("新規投稿を外部ブラウザーで開く", openPostToggle));
 
             var openTweetToggle = new ToggleSwitch
             {
@@ -449,7 +463,7 @@ namespace XTimelineViewer
             if (await dlg.ShowAsync() == ContentDialogResult.Primary)
             {
                 _appSettings.Theme = themeCombo.SelectedIndex switch { 1 => "Light", 2 => "Dark", _ => "Default" };
-                _appSettings.SeparateComposeEnv  = separateEnvToggle.IsOn;
+                _appSettings.OpenComposerInBrowser   = openPostToggle.IsOn;
                 _appSettings.OpenTweetInBrowser  = openTweetToggle.IsOn;
                 _appSettings.AutoActivateMinutes = (int)Math.Clamp(autoActivateBox.Value, 0, 60);
                 SaveSettings();
@@ -467,9 +481,15 @@ namespace XTimelineViewer
 
         // ── Theme ─────────────────────────────────────────────────────────────
 
-        private async void PostBtn_Click(object _, RoutedEventArgs __) => await OpenPostDialogAsync();
+        private async void PostBtn_Click(object _, RoutedEventArgs __)
+        {
+            if (_appSettings.OpenComposerInBrowser)
+                _ = Windows.System.Launcher.LaunchUriAsync(new Uri("https://x.com/compose/post"));
+            else
+                await OpenPostDialogAsync();
+        }
 
-        private async Task OpenPostDialogAsync()
+        private async Task OpenPostDialogAsync(WebView2? senderWebView = null)
         {
             var webView = new WebView2 { Width = 500, MinHeight = 520 };
 
@@ -539,6 +559,15 @@ namespace XTimelineViewer
             {
                 foreach (var wv in _webViews)
                     wv.Visibility = Visibility.Visible;
+
+                // ダイアログを閉じた後、キーボードフォーカスを WebView2 に戻す
+                var target = senderWebView ?? _webViews.FirstOrDefault();
+                if (target is not null &&
+                    _webViewToPane.TryGetValue(target, out var pane) &&
+                    _paneToSetFocus.TryGetValue(pane, out var setFocus))
+                {
+                    setFocus();
+                }
             }
         }
 
@@ -557,7 +586,12 @@ namespace XTimelineViewer
             {
                 case "focusNext": FocusAdjacentTimeline(senderWebView, +1); break;
                 case "focusPrev": FocusAdjacentTimeline(senderWebView, -1); break;
-                case "newPost":   _ = OpenPostDialogAsync();                break;
+                case "newPost":
+                    if (_appSettings.OpenComposerInBrowser)
+                        _ = Windows.System.Launcher.LaunchUriAsync(new Uri("https://x.com/compose/post"));
+                    else
+                        _ = OpenPostDialogAsync(senderWebView);
+                    break;
             }
         }
 
