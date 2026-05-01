@@ -335,7 +335,20 @@ namespace XTimelineViewer
             };
 
             webView.Source = new Uri("https://x.com/compose/post");
-            await dlg.ShowAsync();
+
+            // WebView2 の Win32 HWND は XAML Popup より常に前面に描画されるため、
+            // ダイアログ表示中はタイムライン WebView2 を非表示にして Z-order 問題を回避する
+            foreach (var wv in _webViews)
+                wv.Visibility = Visibility.Collapsed;
+            try
+            {
+                await dlg.ShowAsync();
+            }
+            finally
+            {
+                foreach (var wv in _webViews)
+                    wv.Visibility = Visibility.Visible;
+            }
         }
 
         // ── Keyboard shortcuts ────────────────────────────────────────────────
@@ -621,6 +634,11 @@ namespace XTimelineViewer
                 _ = SaveTimelinesAsync();
                 dragging.Opacity = 1.0;
                 _draggingPane = null;
+
+                // 視覚ツリーへの再挿入後、WebView2 の Win32 HWND を再アンカーさせる
+                dragging.Visibility = Visibility.Collapsed;
+                dragging.UpdateLayout();
+                dragging.Visibility = Visibility.Visible;
             };
             pane.DragLeave += (s, args) => pane.Opacity = 1.0;
             headerGrid.DragStarting += (s, args) => pane.Opacity = 0.5;
