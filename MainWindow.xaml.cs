@@ -217,6 +217,19 @@ namespace XTimelineViewer
             var version = System.Reflection.Assembly.GetExecutingAssembly()
                               .GetName().Version?.ToString(3) ?? "不明";
 
+            var edgeChannel = FindEdgeDevVersionFolder() is not null ? "Edge Dev" : "WebView2 ランタイム";
+            string edgeVersion;
+            try
+            {
+                edgeVersion = CoreWebView2Environment.GetAvailableBrowserVersionString(
+                    FindEdgeDevVersionFolder() ?? "");
+            }
+            catch
+            {
+                edgeVersion = _webViewEnv?.BrowserVersionString ?? "不明";
+            }
+            var versionInfoText = $"XTimelineViewer v{version}\r\n{edgeChannel} {edgeVersion}";
+
             // ヘルパー：左ラベル＋右コントロールの行を作る
             static Grid MakeRow(string label, FrameworkElement control, Thickness? margin = null)
             {
@@ -249,10 +262,79 @@ namespace XTimelineViewer
             panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 12, 0, 8) });
             panel.Children.Add(new TextBlock
             {
-                Text                = $"XTimelineViewer v{version}",
-                Opacity             = 0.6,
-                HorizontalAlignment = HorizontalAlignment.Center
+                Text       = "バージョン情報",
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
             });
+
+            var monoFont   = new FontFamily("Cascadia Mono, Consolas, Courier New");
+            var versionInfoBox = new StackPanel
+            {
+                Margin  = new Thickness(0, 6, 0, 0),
+                Spacing = 2,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text                   = $"XTimelineViewer v{version}",
+                        FontFamily             = monoFont,
+                        FontSize               = 11,
+                        IsTextSelectionEnabled = true,
+                    },
+                    new TextBlock
+                    {
+                        Text                   = $"{edgeChannel} {edgeVersion}",
+                        FontFamily             = monoFont,
+                        FontSize               = 11,
+                        IsTextSelectionEnabled = true,
+                    },
+                }
+            };
+
+            var copyBtn = new Button
+            {
+                Content = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing     = 6,
+                    Children    =
+                    {
+                        new FontIcon
+                        {
+                            Glyph      = "",
+                            FontFamily = new FontFamily("Segoe Fluent Icons"),
+                            FontSize   = 14
+                        },
+                        new TextBlock { Text = "コピー" }
+                    }
+                },
+                Margin = new Thickness(0, 8, 8, 0)
+            };
+            copyBtn.Click += (_, _) =>
+            {
+                var dp = new DataPackage();
+                dp.SetText(versionInfoText);
+                Clipboard.SetContent(dp);
+            };
+
+            var issueBody = Uri.EscapeDataString(
+                $"- アプリバージョン：v{version}\n" +
+                $"- 内部の Edge バージョン：{edgeChannel} {edgeVersion}\n" +
+                $"- 具体的な症状：\n");
+            var issueUrl = $"https://github.com/daruyanagi/XTimelineViewer/issues/new?labels=bug&title=&body={issueBody}";
+
+            var issueBtn = new HyperlinkButton
+            {
+                Content    = "Issue を報告",
+                Margin     = new Thickness(0, 8, 0, 0),
+                NavigateUri = new Uri(issueUrl),
+            };
+
+            var actionsPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            actionsPanel.Children.Add(copyBtn);
+            actionsPanel.Children.Add(issueBtn);
+
+            panel.Children.Add(versionInfoBox);
+            panel.Children.Add(actionsPanel);
 
             var dlg = new ContentDialog
             {
