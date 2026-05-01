@@ -32,6 +32,22 @@ jobs:
           (Get-Content $manifest) -replace 'Version="[^"]*"', "Version=""$env:MSIX_VERSION""" |
             Set-Content $manifest
 
+      - name: Restore packages
+        run: dotnet restore XTimelineViewer.csproj
+
+      - name: Fix System.Security.Permissions for Windows App SDK build tasks
+        shell: pwsh
+        run: |
+          $pkg = (dotnet nuget locals global-packages --list) -replace "global-packages:\s*", "" |
+                 Where-Object { $_ -ne "" } | Select-Object -First 1
+          $ssp = "$pkg\system.security.permissions\8.0.0\lib\net8.0\System.Security.Permissions.dll"
+          if (-not (Test-Path $ssp)) { Write-Error "Not found: $ssp"; exit 1 }
+          $count = 0
+          Get-ChildItem "$pkg\microsoft.windowsappsdk" -Recurse -Filter "Microsoft.Build.Msix.dll" |
+            ForEach-Object { Copy-Item $ssp $_.DirectoryName -Force; $script:count++ }
+          if ($count -eq 0) { Write-Error "Microsoft.Build.Msix.dll not found"; exit 1 }
+          Write-Host "Copied to $count location(s)"
+
       - name: Build x64
         run: >
           dotnet publish XTimelineViewer.csproj
