@@ -35,6 +35,65 @@ jobs:
       - name: Restore packages
         run: dotnet restore XTimelineViewer.csproj
 
+      - name: Fix System.Security.Permissions for Windows App SDK build tasks
+        shell: pwsh
+        run: |
+          $pkg = (dotnet nuget locals global-packages --list) -replace "global-packages:\s*", "" |
+                 Where-Object { $_ -ne "" } | Select-Object -First 1
+          $ssp = "$pkg\system.security.permissions\8.0.0\lib\net8.0\System.Security.Permissions.dll"
+          if (-not (Test-Path $ssp)) { Write-Error "Not found: $ssp"; exit 1 }
+          $count = 0
+          Get-ChildItem "$pkg\microsoft.windowsappsdk" -Recurse -Filter "Microsoft.Build.Msix.dll" |
+            ForEach-Object { Copy-Item $ssp $_.DirectoryName -Force; $script:count++ }
+          if ($count -eq 0) { Write-Error "Microsoft.Build.Msix.dll not found"; exit 1 }
+          Write-Host "Copied to $count location(s)"
+
+      - name: Create self-signed certificate for packaging
+        shell: pwsh
+        run: |
+          $thumb = (New-SelfSignedCertificate `
+              -Subject "CN=B73FDB0C-06E5-4824-9E7F-3AF969921DF4" `
+              -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3","2.5.29.19={text}") `
+              -KeyUsage "DigitalSignature" `
+              -KeyAlgorithm "RSA" -KeyLength 2048 `
+              -CertStoreLocation "Cert:\CurrentUser\My" `
+              -NotAfter (Get-Date).AddYears(1)
+          ).Thumbprint
+          $pwd = ConvertTo-SecureString "ci" -Force -AsPlainText
+          Export-PfxCertificate -Cert "Cert:\CurrentUser\My\$thumb" -FilePath ".\ci.pfx" -Password $pwd
+          Write-Host "Certificate thumbprint: $thumb"
+
+      - name: Build x64
+        run: >
+          dotnet publish XTimelineViewer.csproj
+          -c Release -r win-x64 -p:Platform=x64
+          -p:AppxPackageDir=.\AppPackages\x64\
+          -p:UapAppxPackageBuildMode=SideloadOnly
+          -p:AppxBundle=Never
+          -p:PackageCertificateKeyFile=.\ci.pfx
+          -p:PackageCertificatePassword=ci
+
+      - name: Build arm64
+        run: >
+          dotnet publish XTimelineViewer.csproj
+          -c Release -r win-arm64 -p:Platform=arm64 -p:PlatformTarget=arm64
+          -p:AppxPackageDir=.\AppPackages\arm64\
+          -p:UapAppxPackageBuildMode=SideloadOnly
+          -p:AppxBundle=Never
+          -p:PackageCertificateKeyFile=.\ci.pfx
+          -p:PackageCertificatePassword=ci
+
+      - name: Collect MSIX files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path .\upload
+          Get-ChildItem -Recurse -Filter "*.msix" .\AppPackages | ForEach-Object {
+            Copy-Item $_.FullName .\upload\
+          }
+          Write-Host "Packages to upload:"
+          Get-ChildItem .\upload
+          Compress-Archive -Path .\upload\*.msix -DestinationPath .\upload\XTimelineViewer.msixupload
+
       - name: Setup Microsoft Store Developer CLI
         uses: microsoft/microsoft-store-apppublisher@v1.1
 
@@ -47,4 +106,4 @@ jobs:
           --sellerId "${{ secrets.PARTNER_CENTER_SELLER_ID }}"
 
       - name: Publish to Microsoft Store
-        run: msstore publish . -id "9P308HB5BLJ1"
+        run: msstore publish -i .\upload -id "9P308HB5BLJ1"
