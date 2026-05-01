@@ -24,6 +24,9 @@
                     FontSize="14"
                     Style="{StaticResource AccentButtonStyle}"
                     Click="PostBtn_Click">
+                <Button.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="N" Modifiers="Control"/>
+                </Button.KeyboardAccelerators>
                 <ToolTipService.ToolTip>新規投稿</ToolTipService.ToolTip>
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <FontIcon Glyph="&#xE70F;" FontFamily="Segoe Fluent Icons" FontSize="14" VerticalAlignment="Center"/>
