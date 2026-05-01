@@ -32,37 +32,6 @@ jobs:
           (Get-Content $manifest) -replace 'Version="[^"]*"', "Version=""$env:MSIX_VERSION""" |
             Set-Content $manifest
 
-      - name: Restore packages
-        run: dotnet restore XTimelineViewer.csproj
-
-      - name: Fix System.Security.Permissions for Windows App SDK build tasks
-        shell: pwsh
-        run: |
-          # NuGet グローバルパッケージのディレクトリを動的に取得
-          $nugetGlobal = (dotnet nuget locals global-packages --list) -replace "global-packages:\s*", "" | Where-Object { $_ -ne "" } | Select-Object -First 1
-          Write-Host "NuGet global packages: $nugetGlobal"
-          $sdkDir = Join-Path $nugetGlobal "microsoft.windowsappsdk"
-          if (-not (Test-Path $sdkDir)) { Write-Error "Windows App SDK not found at: $sdkDir"; exit 1 }
-
-          # System.Security.Permissions.dll を NuGet から直接ダウンロード
-          $nupkg = "$env:TEMP\ssp.zip"
-          Invoke-WebRequest "https://www.nuget.org/api/v2/package/System.Security.Permissions/8.0.0" -OutFile $nupkg
-          Expand-Archive $nupkg -DestinationPath "$env:TEMP\ssp" -Force
-          $dll = Get-ChildItem "$env:TEMP\ssp\lib" -Recurse -Filter "System.Security.Permissions.dll" |
-                 Select-Object -First 1
-          if (-not $dll) { Write-Error "DLL not found in downloaded package"; exit 1 }
-
-          # Microsoft.Build.Msix.dll のディレクトリにコピー
-          $copied = 0
-          Get-ChildItem $sdkDir -Recurse -Filter "Microsoft.Build.Msix.dll" |
-            ForEach-Object {
-              Copy-Item $dll.FullName $_.DirectoryName -Force
-              Write-Host "Copied to $($_.DirectoryName)"
-              $script:copied++
-            }
-          if ($copied -eq 0) { Write-Error "Microsoft.Build.Msix.dll not found in $sdkDir"; exit 1 }
-          Write-Host "Done: $copied location(s) updated"
-
       - name: Build x64
         run: >
           dotnet publish XTimelineViewer.csproj
