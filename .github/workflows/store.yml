@@ -47,4 +47,4 @@ jobs:
           --sellerId "${{ secrets.PARTNER_CENTER_SELLER_ID }}"
 
       - name: Publish to Microsoft Store
-        run: msstore publish . -id "9P308HB5BLJ1" -a x64,arm64
+        run: msstore publish . -id "9P308HB5BLJ1"
