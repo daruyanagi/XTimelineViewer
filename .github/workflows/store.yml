@@ -89,4 +89,4 @@ jobs:
           --verbose
 
       - name: Publish to Microsoft Store
-        run: msstore publish -i .\msix-upload\XTimelineViewer.msixupload -id "9P308HB5BLJ1"
+        run: msstore publish -i .\msix-upload -id "9P308HB5BLJ1"
