@@ -266,16 +266,28 @@ namespace XTimelineViewer
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
             });
 
-            var versionInfoBox = new TextBox
+            var monoFont   = new FontFamily("Cascadia Mono, Consolas, Courier New");
+            var versionInfoBox = new StackPanel
             {
-                Text            = versionInfoText,
-                IsReadOnly      = true,
-                AcceptsReturn   = true,
-                FontFamily      = new FontFamily("Cascadia Mono, Consolas, Courier New"),
-                FontSize        = 11,
-                Margin          = new Thickness(0, 6, 0, 0),
-                BorderThickness = new Thickness(1),
-                CornerRadius    = new CornerRadius(4),
+                Margin  = new Thickness(0, 6, 0, 0),
+                Spacing = 2,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text                   = $"XTimelineViewer v{version}",
+                        FontFamily             = monoFont,
+                        FontSize               = 11,
+                        IsTextSelectionEnabled = true,
+                    },
+                    new TextBlock
+                    {
+                        Text                   = $"{edgeChannel} {edgeVersion}",
+                        FontFamily             = monoFont,
+                        FontSize               = 11,
+                        IsTextSelectionEnabled = true,
+                    },
+                }
             };
 
             var copyBtn = new Button
