@@ -1,0 +1,73 @@
+name: Publish to Microsoft Store
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Extract version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"          # v1.2.0 → 1.2.0.0
+          $ver = $tag.TrimStart('v') + '.0'
+          echo "MSIX_VERSION=$ver" >> $env:GITHUB_ENV
+
+      - name: Update manifest version
+        shell: pwsh
+        run: |
+          $manifest = "Package.appxmanifest"
+          (Get-Content $manifest) -replace 'Version="[^"]*"', "Version=""$env:MSIX_VERSION""" |
+            Set-Content $manifest
+
+      - name: Build x64
+        run: >
+          dotnet publish XTimelineViewer.csproj
+          -c Release -r win-x64 -p:Platform=x64
+          -p:AppxPackageDir=.\packages\x64\
+          -p:UapAppxPackageBuildMode=SideloadOnly
+          -p:AppxBundle=Never
+
+      - name: Build arm64
+        run: >
+          dotnet publish XTimelineViewer.csproj
+          -c Release -r win-arm64 -p:Platform=arm64 -p:PlatformTarget=arm64
+          -p:AppxPackageDir=.\packages\arm64\
+          -p:UapAppxPackageBuildMode=SideloadOnly
+          -p:AppxBundle=Never
+
+      - name: Collect MSIX files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path .\msix-upload
+          Get-ChildItem -Recurse -Filter "*.msix" .\packages | ForEach-Object {
+            Copy-Item $_.FullName .\msix-upload\
+          }
+          Write-Host "Packages to upload:"
+          Get-ChildItem .\msix-upload
+
+      - name: Install msstore-cli
+        run: dotnet tool install -g Microsoft.Store.Developer.CLI
+
+      - name: Configure msstore-cli
+        run: >
+          msstore reconfigure
+          --tenantId "${{ secrets.AZURE_TENANT_ID }}"
+          --clientId "${{ secrets.AZURE_CLIENT_ID }}"
+          --clientSecret "${{ secrets.AZURE_CLIENT_SECRET }}"
+          --sellerId "${{ secrets.PARTNER_CENTER_SELLER_ID }}"
+
+      - name: Publish to Microsoft Store
+        run: msstore apps publish -p .\msix-upload --productId "9P308HB5BLJ1"

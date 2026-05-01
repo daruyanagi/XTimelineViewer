@@ -5,3 +5,7 @@ publish*/
 .vs/
 .claude/
 *.user
+packages/
+test-cert.pfx
+test-cert.cer
+x_timeline_viewer.png

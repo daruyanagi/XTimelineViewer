@@ -34,12 +34,73 @@ namespace XTimelineViewer
 
     public sealed partial class MainWindow : Window
     {
-        private static readonly string SaveFilePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "XTimelineViewer", "timelines.json");
-        private static readonly string SettingsFilePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "XTimelineViewer", "settings.json");
+        private static readonly string SaveFilePath     = GetDataFilePath("timelines.json");
+        private static readonly string SettingsFilePath = GetDataFilePath("settings.json");
+
+        // MSIX パッケージ環境では ApplicationData.Current.LocalFolder を使用する。
+        // 旧バージョン（アンパッケージド）からの移行のため、旧パスにファイルが存在すれば自動コピーする。
+        private static string GetDataFilePath(string filename)
+        {
+            string newPath;
+            try
+            {
+                newPath = Path.Combine(
+                    Windows.Storage.ApplicationData.Current.LocalFolder.Path, filename);
+            }
+            catch
+            {
+                // アンパッケージド環境（開発時など）は従来のパスにフォールバック
+                newPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "XTimelineViewer", filename);
+                Directory.CreateDirectory(Path.GetDirectoryName(newPath)!);
+                return newPath;
+            }
+
+            if (!File.Exists(newPath))
+            {
+                var oldPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "XTimelineViewer", filename);
+                if (File.Exists(oldPath))
+                    File.Copy(oldPath, newPath);
+            }
+            return newPath;
+        }
+
+        private static string GetExtensionsDir()
+        {
+            var sourceDir = Path.Combine(AppContext.BaseDirectory, "extensions");
+            try
+            {
+                var localDir = Path.Combine(
+                    Windows.Storage.ApplicationData.Current.LocalFolder.Path, "extensions");
+                if (Directory.Exists(sourceDir))
+                {
+                    // 新しい拡張機能があれば上書きコピー
+                    foreach (var src in Directory.GetDirectories(sourceDir))
+                    {
+                        var dst = Path.Combine(localDir, Path.GetFileName(src));
+                        CopyDirectory(src, dst);
+                    }
+                }
+                return localDir;
+            }
+            catch
+            {
+                return sourceDir;
+            }
+        }
+
+        private static void CopyDirectory(string src, string dst)
+        {
+            Directory.CreateDirectory(dst);
+            foreach (var file in Directory.GetFiles(src))
+                File.Copy(file, Path.Combine(dst, Path.GetFileName(file)), overwrite: true);
+            foreach (var dir in Directory.GetDirectories(src))
+                CopyDirectory(dir, Path.Combine(dst, Path.GetFileName(dir)));
+        }
+
         private AppSettings _appSettings = new();
         private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
         private readonly List<TimelineConfig> _configs = [];
@@ -199,6 +260,8 @@ namespace XTimelineViewer
         {
             this.InitializeComponent();
             AppWindow.Resize(new SizeInt32(1400, 900));
+            var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
+            if (File.Exists(iconPath)) AppWindow.SetIcon(iconPath);
             Title = $"XTimelineViewer — {SaveFilePath}";
             Closed += async (s, e) => await SaveTimelinesAsync();
             ((FrameworkElement)Content).ActualThemeChanged += (s, e) => ApplyThemeToWebViews();
@@ -1049,7 +1112,9 @@ namespace XTimelineViewer
             if (_extensionsLoaded) return;
             _extensionsLoaded = true;
 
-            var extensionsDir = Path.Combine(AppContext.BaseDirectory, "extensions");
+            // MSIX パッケージ内の extensions は WindowsApps 配下に置かれ WebView2 から直接アクセスできない。
+            // LocalState へコピーしてから読み込む。アンパッケージド環境は BaseDirectory を使う。
+            var extensionsDir = GetExtensionsDir();
             if (!Directory.Exists(extensionsDir)) return;
 
             var errors = new System.Text.StringBuilder();
