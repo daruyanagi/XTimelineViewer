@@ -35,47 +35,6 @@ jobs:
       - name: Restore packages
         run: dotnet restore XTimelineViewer.csproj
 
-      - name: Fix System.Security.Permissions for Windows App SDK build tasks
-        shell: pwsh
-        run: |
-          $pkg = (dotnet nuget locals global-packages --list) -replace "global-packages:\s*", "" |
-                 Where-Object { $_ -ne "" } | Select-Object -First 1
-          $ssp = "$pkg\system.security.permissions\8.0.0\lib\net8.0\System.Security.Permissions.dll"
-          if (-not (Test-Path $ssp)) { Write-Error "Not found: $ssp"; exit 1 }
-          $count = 0
-          Get-ChildItem "$pkg\microsoft.windowsappsdk" -Recurse -Filter "Microsoft.Build.Msix.dll" |
-            ForEach-Object { Copy-Item $ssp $_.DirectoryName -Force; $script:count++ }
-          if ($count -eq 0) { Write-Error "Microsoft.Build.Msix.dll not found"; exit 1 }
-          Write-Host "Copied to $count location(s)"
-
-      - name: Build x64
-        run: >
-          dotnet publish XTimelineViewer.csproj
-          -c Release -r win-x64 -p:Platform=x64
-          -p:AppxPackageDir=.\packages\x64\
-          -p:UapAppxPackageBuildMode=SideloadOnly
-          -p:AppxBundle=Never
-
-      - name: Build arm64
-        run: >
-          dotnet publish XTimelineViewer.csproj
-          -c Release -r win-arm64 -p:Platform=arm64 -p:PlatformTarget=arm64
-          -p:AppxPackageDir=.\packages\arm64\
-          -p:UapAppxPackageBuildMode=SideloadOnly
-          -p:AppxBundle=Never
-
-      - name: Collect MSIX files
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path .\msix-upload
-          Get-ChildItem -Recurse -Filter "*.msix" .\packages | ForEach-Object {
-            Copy-Item $_.FullName .\msix-upload\
-          }
-          Write-Host "Packages to upload:"
-          Get-ChildItem .\msix-upload
-          # Create .msixupload (zip of all .msix files for Partner Center)
-          Compress-Archive -Path .\msix-upload\*.msix -DestinationPath .\msix-upload\XTimelineViewer.msixupload
-
       - name: Setup Microsoft Store Developer CLI
         uses: microsoft/microsoft-store-apppublisher@v1.1
 
@@ -86,10 +45,6 @@ jobs:
           --clientId "${{ secrets.AZURE_CLIENT_ID }}"
           --clientSecret "${{ secrets.AZURE_CLIENT_SECRET }}"
           --sellerId "${{ secrets.PARTNER_CENTER_SELLER_ID }}"
-          --verbose
-
-      - name: List apps (debug)
-        run: msstore apps list
 
       - name: Publish to Microsoft Store
-        run: msstore publish -i .\msix-upload -id "9P308HB5BLJ1" --verbose
+        run: msstore publish . -id "9P308HB5BLJ1" -a x64,arm64
