@@ -88,5 +88,8 @@ jobs:
           --sellerId "${{ secrets.PARTNER_CENTER_SELLER_ID }}"
           --verbose
 
+      - name: List apps (debug)
+        run: msstore apps list
+
       - name: Publish to Microsoft Store
-        run: msstore publish -i .\msix-upload -id "9P308HB5BLJ1"
+        run: msstore publish -i .\msix-upload -id "9P308HB5BLJ1" --verbose
