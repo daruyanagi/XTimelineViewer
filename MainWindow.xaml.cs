@@ -25,8 +25,9 @@ namespace XTimelineViewer
 
     internal class AppSettings
     {
-        public bool   SeparateComposeEnv { get; set; } = false;
-        public string Theme              { get; set; } = "Default"; // "Light" | "Dark" | "Default"
+        public bool   SeparateComposeEnv    { get; set; } = false;
+        public string Theme                 { get; set; } = "Default"; // "Light" | "Dark" | "Default"
+        public int    AutoActivateMinutes   { get; set; } = 0;         // 0 = 無効
     }
 
     public sealed partial class MainWindow : Window
@@ -49,6 +50,7 @@ namespace XTimelineViewer
         private CoreWebView2Environment? _composeEnv;
         private readonly Dictionary<WebView2, Grid> _webViewToPane  = [];
         private readonly Dictionary<Grid, Action>   _paneToSetFocus = [];
+        private DispatcherTimer? _autoActivateTimer;
 
         // キーボードショートカット処理スクリプト（各 WebView2 に注入）
         private static readonly string KeyboardShortcutScript = """
@@ -155,6 +157,7 @@ namespace XTimelineViewer
             ((FrameworkElement)Content).ActualThemeChanged += (s, e) => ApplyThemeToWebViews();
             LoadSettings();
             ApplySavedTheme();
+            ApplyAutoActivateTimer();
             _ = RestoreTimelinesAsync();
         }
 
@@ -174,6 +177,33 @@ namespace XTimelineViewer
         {
             Directory.CreateDirectory(Path.GetDirectoryName(SettingsFilePath)!);
             File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(_appSettings, JsonOptions));
+        }
+
+        private void ApplyAutoActivateTimer()
+        {
+            _autoActivateTimer?.Stop();
+            if (_appSettings.AutoActivateMinutes <= 0) return;
+
+            _autoActivateTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMinutes(_appSettings.AutoActivateMinutes)
+            };
+            _autoActivateTimer.Tick += (_, _) =>
+            {
+                foreach (var wv in _webViews)
+                {
+                    if (wv.CoreWebView2 is null) continue;
+                    if (!Uri.TryCreate(wv.CoreWebView2.Source, UriKind.Absolute, out var uri)) continue;
+                    if (!uri.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (_webViewToPane.TryGetValue(wv, out var pane) &&
+                        _paneToSetFocus.TryGetValue(pane, out var setFocus))
+                    {
+                        setFocus();
+                        break;
+                    }
+                }
+            };
+            _autoActivateTimer.Start();
         }
 
         private void ApplySavedTheme()
@@ -259,6 +289,18 @@ namespace XTimelineViewer
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
             });
             panel.Children.Add(MakeRow("投稿画面を別プロファイルで開く（拡張機能の影響を受けない）", separateEnvToggle));
+
+            var autoActivateBox = new NumberBox
+            {
+                Value                   = _appSettings.AutoActivateMinutes,
+                Minimum                 = 0,
+                Maximum                 = 60,
+                SmallChange             = 1,
+                LargeChange             = 5,
+                SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline,
+                Width                   = 160,
+            };
+            panel.Children.Add(MakeRow("ホームタイムラインを定期的にアクティブ化（分、0 で無効）", autoActivateBox));
             panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 12, 0, 8) });
             panel.Children.Add(new TextBlock
             {
@@ -351,8 +393,10 @@ namespace XTimelineViewer
             {
                 _appSettings.Theme = themeCombo.SelectedIndex switch { 1 => "Light", 2 => "Dark", _ => "Default" };
                 _appSettings.SeparateComposeEnv = separateEnvToggle.IsOn;
+                _appSettings.AutoActivateMinutes = (int)Math.Clamp(autoActivateBox.Value, 0, 60);
                 SaveSettings();
                 ApplySavedTheme();
+                ApplyAutoActivateTimer();
             }
         }
 
