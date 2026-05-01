@@ -228,7 +228,7 @@ namespace XTimelineViewer
             {
                 edgeVersion = _webViewEnv?.BrowserVersionString ?? "不明";
             }
-            var versionInfoText = $"XTimelineViewer v{version}\n{edgeChannel} {edgeVersion}";
+            var versionInfoText = $"XTimelineViewer v{version}\r\n{edgeChannel} {edgeVersion}";
 
             // ヘルパー：左ラベル＋右コントロールの行を作る
             static Grid MakeRow(string label, FrameworkElement control, Thickness? margin = null)
