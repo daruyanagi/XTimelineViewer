@@ -32,6 +32,9 @@ jobs:
           (Get-Content $manifest) -replace 'Version="[^"]*"', "Version=""$env:MSIX_VERSION""" |
             Set-Content $manifest
 
+      - name: Restore packages
+        run: dotnet restore XTimelineViewer.csproj
+
       - name: Fix System.Security.Permissions for Windows App SDK build tasks
         shell: pwsh
         run: |
