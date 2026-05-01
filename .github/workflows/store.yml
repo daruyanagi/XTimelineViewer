@@ -32,21 +32,19 @@ jobs:
           (Get-Content $manifest) -replace 'Version="[^"]*"', "Version=""$env:MSIX_VERSION""" |
             Set-Content $manifest
 
-      - name: Restore packages
-        run: dotnet restore XTimelineViewer.csproj
-
       - name: Fix System.Security.Permissions for Windows App SDK build tasks
         shell: pwsh
         run: |
-          $src = Get-ChildItem "$env:USERPROFILE\.nuget\packages\system.security.permissions" `
-                   -Recurse -Filter "System.Security.Permissions.dll" |
-                 Where-Object { $_.FullName -match "net8\.0[^-]" } |
+          $nupkg = "$env:TEMP\ssp.zip"
+          Invoke-WebRequest "https://www.nuget.org/api/v2/package/System.Security.Permissions/8.0.0" -OutFile $nupkg
+          Expand-Archive $nupkg -DestinationPath "$env:TEMP\ssp" -Force
+          $dll = Get-ChildItem "$env:TEMP\ssp\lib" -Recurse -Filter "System.Security.Permissions.dll" |
                  Select-Object -First 1
-          if (-not $src) { Write-Error "System.Security.Permissions.dll not found"; exit 1 }
+          if (-not $dll) { Write-Error "DLL not found in package"; exit 1 }
           Get-ChildItem "$env:USERPROFILE\.nuget\packages\microsoft.windowsappsdk" `
             -Recurse -Filter "Microsoft.Build.Msix.dll" |
             ForEach-Object {
-              Copy-Item $src.FullName $_.DirectoryName -Force
+              Copy-Item $dll.FullName $_.DirectoryName -Force
               Write-Host "Copied to $($_.DirectoryName)"
             }
 
