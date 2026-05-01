@@ -23,9 +23,6 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
   </ItemGroup>
 
-  <!-- Windows App SDK 1.6.x のバグ回避: CI 環境でマニフェスト検証タスクがクラッシュするためスキップ -->
-  <Target Name="WinAppSdkValidateAppxManifestItems" Condition="'$(CI)' != ''" />
-
   <ItemGroup>
     <Content Include="extensions\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
