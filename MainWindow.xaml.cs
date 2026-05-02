@@ -264,6 +264,9 @@ namespace XTimelineViewer
             var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
             if (File.Exists(iconPath)) AppWindow.SetIcon(iconPath);
             Title = $"XTimelineViewer — {SaveFilePath}";
+            PostLabel.Text       = R.Get("PostLabel.Text");
+            DropHintTitle.Text   = R.Get("DropHintTitle.Text");
+            DropHintSubtitle.Text = R.Get("DropHintSubtitle.Text");
             ToolTipService.SetToolTip(PostBtn, R.Get("PostBtn_Tooltip"));
             ToolTipService.SetToolTip(AppSettingsBtn, R.Get("AppSettingsBtn_Tooltip"));
             Closed += async (s, e) => await SaveTimelinesAsync();
@@ -349,17 +352,6 @@ namespace XTimelineViewer
                 MinWidth      = 140
             };
 
-            var separateEnvToggle = new ToggleSwitch
-            {
-                IsOn              = false,
-                IsEnabled         = false, // 廃止予定 (#17)
-                OnContent         = R.Get("Toggle_On"),
-                OffContent        = R.Get("Toggle_Off"),
-                Margin              = new Thickness(12, 0, 0, 0),
-                VerticalAlignment   = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Right
-            };
-
             var openFolderBtn = new Button { Content = R.Get("Button_OpenFolder") };
             openFolderBtn.Click += async (_, _) =>
             {
@@ -414,6 +406,16 @@ namespace XTimelineViewer
                 Text       = R.Get("Section_Experimental"),
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
             });
+            var separateEnvToggle = new ToggleSwitch
+            {
+                IsOn              = false,
+                IsEnabled         = false, // 廃止予定 (#17)
+                OnContent         = R.Get("Toggle_On"),
+                OffContent        = R.Get("Toggle_Off"),
+                Margin              = new Thickness(12, 0, 0, 0),
+                VerticalAlignment   = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
             panel.Children.Add(MakeRow(R.Get("Settings_SeparateCompose"), separateEnvToggle));
 
             var openPostToggle = new ToggleSwitch

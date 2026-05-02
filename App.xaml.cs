@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 
@@ -16,13 +17,21 @@ namespace XTimelineViewer
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            ApplyLanguageOverride();
-            R.Initialize();
+            var lang = ReadLanguageSetting();
+
+            // Packaged (MSIX) mode: PrimaryLanguageOverride affects XAML x:Uid bindings
+            if (lang != null)
+            {
+                try { Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = lang; }
+                catch { /* unpackaged mode — R.Initialize() handles the override via resw */ }
+            }
+
+            R.Initialize(lang);
             _window = new MainWindow();
             _window.Activate();
         }
 
-        private static void ApplyLanguageOverride()
+        private static string? ReadLanguageSetting()
         {
             try
             {
@@ -39,16 +48,22 @@ namespace XTimelineViewer
                         "XTimelineViewer", "settings.json");
                 }
 
-                if (!File.Exists(settingsPath)) return;
+                if (!File.Exists(settingsPath)) return null;
 
                 using var doc = JsonDocument.Parse(File.ReadAllText(settingsPath));
                 if (doc.RootElement.TryGetProperty("Language", out var lang) &&
                     lang.GetString() is { } langStr && langStr != "system")
                 {
-                    Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = langStr;
+                    Debug.WriteLine($"[App] Language setting: {langStr}");
+                    return langStr;
                 }
+                return null;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[App] ReadLanguageSetting FAILED: {ex.Message}");
+                return null;
+            }
         }
     }
 }

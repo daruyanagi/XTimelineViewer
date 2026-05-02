@@ -29,7 +29,7 @@
                 </Button.KeyboardAccelerators>
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <FontIcon Glyph="&#xE70F;" FontFamily="Segoe Fluent Icons" FontSize="14" VerticalAlignment="Center"/>
-                    <TextBlock x:Uid="PostLabel" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="PostLabel" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
             <StackPanel x:Name="RightToolbar"
@@ -62,11 +62,11 @@
                     <TextBlock Text="🐦"
                                FontSize="52"
                                HorizontalAlignment="Center"/>
-                    <TextBlock x:Uid="DropHintTitle"
+                    <TextBlock x:Name="DropHintTitle"
                                FontSize="18"
                                FontWeight="SemiBold"
                                HorizontalAlignment="Center"/>
-                    <TextBlock x:Uid="DropHintSubtitle"
+                    <TextBlock x:Name="DropHintSubtitle"
                                FontSize="13"
                                Opacity="0.6"
                                HorizontalAlignment="Center"/>
