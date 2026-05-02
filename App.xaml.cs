@@ -17,6 +17,7 @@ namespace XTimelineViewer
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
             ApplyLanguageOverride();
+            R.Initialize();
             _window = new MainWindow();
             _window.Activate();
         }
