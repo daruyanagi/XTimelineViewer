@@ -27,10 +27,9 @@
                 <Button.KeyboardAccelerators>
                     <KeyboardAccelerator Key="N" Modifiers="Control"/>
                 </Button.KeyboardAccelerators>
-                <ToolTipService.ToolTip>新規投稿</ToolTipService.ToolTip>
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <FontIcon Glyph="&#xE70F;" FontFamily="Segoe Fluent Icons" FontSize="14" VerticalAlignment="Center"/>
-                    <TextBlock Text="投稿" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="PostLabel" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
             <StackPanel x:Name="RightToolbar"
@@ -38,9 +37,8 @@
                         Spacing="4"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center">
-                <Button Width="32" Height="32" Padding="0" FontSize="14"
+                <Button x:Name="AppSettingsBtn" Width="32" Height="32" Padding="0" FontSize="14"
                         Click="AppSettingsBtn_Click">
-                    <ToolTipService.ToolTip>アプリ設定</ToolTipService.ToolTip>
                     <FontIcon Glyph="&#xE713;" FontFamily="Segoe Fluent Icons" FontSize="14"/>
                 </Button>
             </StackPanel>
@@ -64,11 +62,11 @@
                     <TextBlock Text="🐦"
                                FontSize="52"
                                HorizontalAlignment="Center"/>
-                    <TextBlock Text="X の URL ショートカットをドロップ"
+                    <TextBlock x:Name="DropHintTitle"
                                FontSize="18"
                                FontWeight="SemiBold"
                                HorizontalAlignment="Center"/>
-                    <TextBlock Text="タイムラインが横並びで追加されます"
+                    <TextBlock x:Name="DropHintSubtitle"
                                FontSize="13"
                                Opacity="0.6"
                                HorizontalAlignment="Center"/>

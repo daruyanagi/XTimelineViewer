@@ -26,10 +26,11 @@ namespace XTimelineViewer
     internal class AppSettings
     {
         public bool   SeparateComposeEnv    { get; set; } = false;
-        public bool   OpenComposerInBrowser     { get; set; } = false;
+        public bool   OpenComposerInBrowser { get; set; } = false;
         public bool   OpenTweetInBrowser    { get; set; } = false;
         public string Theme                 { get; set; } = "Default"; // "Light" | "Dark" | "Default"
-        public int    AutoActivateMinutes   { get; set; } = 0;         // 0 = 無効
+        public int    AutoActivateMinutes   { get; set; } = 0;
+        public string Language              { get; set; } = "system";  // "system" | "ja-JP" | "en-US"
     }
 
     public sealed partial class MainWindow : Window
@@ -263,6 +264,11 @@ namespace XTimelineViewer
             var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
             if (File.Exists(iconPath)) AppWindow.SetIcon(iconPath);
             Title = $"XTimelineViewer — {SaveFilePath}";
+            PostLabel.Text       = R.Get("PostLabel.Text");
+            DropHintTitle.Text   = R.Get("DropHintTitle.Text");
+            DropHintSubtitle.Text = R.Get("DropHintSubtitle.Text");
+            ToolTipService.SetToolTip(PostBtn, R.Get("PostBtn_Tooltip"));
+            ToolTipService.SetToolTip(AppSettingsBtn, R.Get("AppSettingsBtn_Tooltip"));
             Closed += async (s, e) => await SaveTimelinesAsync();
             ((FrameworkElement)Content).ActualThemeChanged += (s, e) => ApplyThemeToWebViews();
             LoadSettings();
@@ -332,23 +338,21 @@ namespace XTimelineViewer
         {
             var themeCombo = new ComboBox
             {
-                ItemsSource   = new List<string> { "システム", "ライト", "ダーク" },
+                ItemsSource   = new List<string> { R.Get("Theme_System"), R.Get("Theme_Light"), R.Get("Theme_Dark") },
                 SelectedIndex = _appSettings.Theme switch { "Light" => 1, "Dark" => 2, _ => 0 },
                 MinWidth      = 140
             };
 
-            var separateEnvToggle = new ToggleSwitch
+            var langValues = new[] { "system", "ja-JP", "en-US" };
+            var langIdx    = Array.IndexOf(langValues, _appSettings.Language);
+            var langCombo  = new ComboBox
             {
-                IsOn              = false,
-                IsEnabled         = false, // 廃止予定 (#17)
-                OnContent         = "有効",
-                OffContent        = "無効",
-                Margin              = new Thickness(12, 0, 0, 0),
-                VerticalAlignment   = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Right
+                ItemsSource   = new List<string> { R.Get("Language_System"), R.Get("Language_JA"), R.Get("Language_EN") },
+                SelectedIndex = langIdx < 0 ? 0 : langIdx,
+                MinWidth      = 140
             };
 
-            var openFolderBtn = new Button { Content = "フォルダーを開く" };
+            var openFolderBtn = new Button { Content = R.Get("Button_OpenFolder") };
             openFolderBtn.Click += async (_, _) =>
             {
                 var folder = Path.GetDirectoryName(SettingsFilePath)!;
@@ -357,9 +361,11 @@ namespace XTimelineViewer
             };
 
             var version = System.Reflection.Assembly.GetExecutingAssembly()
-                              .GetName().Version?.ToString(3) ?? "不明";
+                              .GetName().Version?.ToString(3) ?? R.Get("Version_Unknown");
 
-            var edgeChannel = FindEdgeDevVersionFolder() is not null ? "Edge Dev" : "WebView2 ランタイム";
+            var edgeChannel = FindEdgeDevVersionFolder() is not null
+                ? R.Get("EdgeChannel_Dev")
+                : R.Get("EdgeChannel_Runtime");
             string edgeVersion;
             try
             {
@@ -368,11 +374,10 @@ namespace XTimelineViewer
             }
             catch
             {
-                edgeVersion = _webViewEnv?.BrowserVersionString ?? "不明";
+                edgeVersion = _webViewEnv?.BrowserVersionString ?? R.Get("Version_Unknown");
             }
             var versionInfoText = $"XTimelineViewer v{version}\r\n{edgeChannel} {edgeVersion}";
 
-            // ヘルパー：左ラベル＋右コントロールの行を作る
             static Grid MakeRow(string label, FrameworkElement control, Thickness? margin = null)
             {
                 var g = new Grid { Margin = margin ?? new Thickness(0, 6, 0, 0) };
@@ -392,37 +397,48 @@ namespace XTimelineViewer
             }
 
             var panel = new StackPanel { MinWidth = 400 };
-            panel.Children.Add(MakeRow("テーマ", themeCombo, new Thickness(0)));
-            panel.Children.Add(MakeRow("設定ファイルのエクスポート", openFolderBtn));
+            panel.Children.Add(MakeRow(R.Get("Settings_Theme"), themeCombo, new Thickness(0)));
+            panel.Children.Add(MakeRow(R.Get("Settings_Language"), langCombo));
+            panel.Children.Add(MakeRow(R.Get("Settings_ExportFolder"), openFolderBtn));
             panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 12, 0, 8) });
             panel.Children.Add(new TextBlock
             {
-                Text       = "試験機能",
+                Text       = R.Get("Section_Experimental"),
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
             });
-            panel.Children.Add(MakeRow("投稿画面を別プロファイルで開く（廃止予定）", separateEnvToggle));
+            var separateEnvToggle = new ToggleSwitch
+            {
+                IsOn              = false,
+                IsEnabled         = false, // 廃止予定 (#17)
+                OnContent         = R.Get("Toggle_On"),
+                OffContent        = R.Get("Toggle_Off"),
+                Margin              = new Thickness(12, 0, 0, 0),
+                VerticalAlignment   = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+            panel.Children.Add(MakeRow(R.Get("Settings_SeparateCompose"), separateEnvToggle));
 
             var openPostToggle = new ToggleSwitch
             {
                 IsOn                = _appSettings.OpenComposerInBrowser,
-                OnContent           = "有効",
-                OffContent          = "無効",
+                OnContent           = R.Get("Toggle_On"),
+                OffContent          = R.Get("Toggle_Off"),
                 Margin              = new Thickness(12, 0, 0, 0),
                 VerticalAlignment   = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Right
             };
-            panel.Children.Add(MakeRow("新規投稿を外部ブラウザーで開く", openPostToggle));
+            panel.Children.Add(MakeRow(R.Get("Settings_OpenComposerInBrowser"), openPostToggle));
 
             var openTweetToggle = new ToggleSwitch
             {
                 IsOn                = _appSettings.OpenTweetInBrowser,
-                OnContent           = "有効",
-                OffContent          = "無効",
+                OnContent           = R.Get("Toggle_On"),
+                OffContent          = R.Get("Toggle_Off"),
                 Margin              = new Thickness(12, 0, 0, 0),
                 VerticalAlignment   = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Right
             };
-            panel.Children.Add(MakeRow("ツイートを外部ブラウザーで開く", openTweetToggle));
+            panel.Children.Add(MakeRow(R.Get("Settings_OpenTweetInBrowser"), openTweetToggle));
 
             var autoActivateBox = new NumberBox
             {
@@ -434,11 +450,11 @@ namespace XTimelineViewer
                 SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline,
                 Width                   = 160,
             };
-            panel.Children.Add(MakeRow("ホームタイムラインを定期的にアクティブ化（分、0 で無効）", autoActivateBox));
+            panel.Children.Add(MakeRow(R.Get("Settings_AutoActivate"), autoActivateBox));
             panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 12, 0, 8) });
             panel.Children.Add(new TextBlock
             {
-                Text       = "バージョン情報",
+                Text       = R.Get("Section_About"),
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
             });
 
@@ -480,7 +496,7 @@ namespace XTimelineViewer
                             FontFamily = new FontFamily("Segoe Fluent Icons"),
                             FontSize   = 14
                         },
-                        new TextBlock { Text = "コピー" }
+                        new TextBlock { Text = R.Get("Button_Copy") }
                     }
                 },
                 Margin = new Thickness(0, 8, 8, 0)
@@ -493,15 +509,15 @@ namespace XTimelineViewer
             };
 
             var issueBody = Uri.EscapeDataString(
-                $"- アプリバージョン：v{version}\n" +
-                $"- 内部の Edge バージョン：{edgeChannel} {edgeVersion}\n" +
-                $"- 具体的な症状：\n");
+                $"- {R.Get("IssueLabel_AppVersion")}: v{version}\n" +
+                $"- {R.Get("IssueLabel_EdgeVersion")}: {edgeChannel} {edgeVersion}\n" +
+                $"- {R.Get("IssueLabel_Symptoms")}:\n");
             var issueUrl = $"https://github.com/daruyanagi/XTimelineViewer/issues/new?labels=bug&title=&body={issueBody}";
 
             var issueBtn = new HyperlinkButton
             {
-                Content    = "Issue を報告",
-                Margin     = new Thickness(0, 8, 0, 0),
+                Content     = R.Get("Button_ReportIssue"),
+                Margin      = new Thickness(0, 8, 0, 0),
                 NavigateUri = new Uri(issueUrl),
             };
 
@@ -514,10 +530,10 @@ namespace XTimelineViewer
 
             var dlg = new ContentDialog
             {
-                Title             = "アプリ設定",
+                Title             = R.Get("AppSettings_Title"),
                 Content           = panel,
-                PrimaryButtonText = "保存",
-                CloseButtonText   = "キャンセル",
+                PrimaryButtonText = R.Get("Button_Save"),
+                CloseButtonText   = R.Get("Button_Cancel"),
                 DefaultButton     = ContentDialogButton.Primary,
                 XamlRoot          = Content.XamlRoot,
                 RequestedTheme    = ((FrameworkElement)Content).ActualTheme
@@ -526,19 +542,35 @@ namespace XTimelineViewer
             if (await dlg.ShowAsync() == ContentDialogResult.Primary)
             {
                 _appSettings.Theme = themeCombo.SelectedIndex switch { 1 => "Light", 2 => "Dark", _ => "Default" };
-                _appSettings.OpenComposerInBrowser   = openPostToggle.IsOn;
-                _appSettings.OpenTweetInBrowser  = openTweetToggle.IsOn;
-                _appSettings.AutoActivateMinutes = (int)Math.Clamp(autoActivateBox.Value, 0, 60);
+                _appSettings.OpenComposerInBrowser = openPostToggle.IsOn;
+                _appSettings.OpenTweetInBrowser    = openTweetToggle.IsOn;
+                _appSettings.AutoActivateMinutes   = (int)Math.Clamp(autoActivateBox.Value, 0, 60);
+
+                var newLang    = langValues[Math.Max(0, Math.Min(langCombo.SelectedIndex, langValues.Length - 1))];
+                var langChanged = newLang != _appSettings.Language;
+                _appSettings.Language = newLang;
+
                 SaveSettings();
                 ApplySavedTheme();
 
-                // 設定変更を即時反映する
                 var flag = _appSettings.OpenTweetInBrowser ? "true" : "false";
                 foreach (var wv in _webViews)
                     if (wv.CoreWebView2 is not null)
                         await wv.CoreWebView2.ExecuteScriptAsync(
                             $"window._xtvOpenTweetInBrowser = {flag};");
                 ApplyAutoActivateTimer();
+
+                if (langChanged)
+                {
+                    var notifDlg = new ContentDialog
+                    {
+                        Content         = R.Get("RestartRequired"),
+                        CloseButtonText = R.Get("Button_Close"),
+                        XamlRoot        = Content.XamlRoot,
+                        RequestedTheme  = ((FrameworkElement)Content).ActualTheme
+                    };
+                    await notifDlg.ShowAsync();
+                }
             }
         }
 
@@ -558,10 +590,10 @@ namespace XTimelineViewer
 
             var dlg = new ContentDialog
             {
-                Content          = webView,
-                CloseButtonText  = "閉じる",
-                XamlRoot         = Content.XamlRoot,
-                RequestedTheme   = ((FrameworkElement)Content).ActualTheme
+                Content         = webView,
+                CloseButtonText = R.Get("Button_Close"),
+                XamlRoot        = Content.XamlRoot,
+                RequestedTheme  = ((FrameworkElement)Content).ActualTheme
             };
 
             var env = _appSettings.SeparateComposeEnv
@@ -715,7 +747,7 @@ namespace XTimelineViewer
             if (e.DataView.Contains(StandardDataFormats.StorageItems))
             {
                 e.AcceptedOperation          = DataPackageOperation.Link;
-                e.DragUIOverride.Caption     = "タイムラインを追加";
+                e.DragUIOverride.Caption     = R.Get("DragCaption");
                 e.DragUIOverride.IsGlyphVisible = true;
             }
             else
@@ -844,14 +876,14 @@ namespace XTimelineViewer
                 Width = 28, Height = 26,
                 Padding = new Thickness(0)
             };
-            ToolTipService.SetToolTip(settingsBtn, "設定");
+            ToolTipService.SetToolTip(settingsBtn, R.Get("Pane_Settings_Tooltip"));
 
             var closeBtn = new Button
             {
                 Content = "✕", Width = 28, Height = 26,
                 Padding = new Thickness(0), FontSize = 11
             };
-            ToolTipService.SetToolTip(closeBtn, "閉じる");
+            ToolTipService.SetToolTip(closeBtn, R.Get("Pane_Close_Tooltip"));
 
             buttonPanel.Children.Add(settingsBtn);
             buttonPanel.Children.Add(closeBtn);
@@ -956,39 +988,39 @@ namespace XTimelineViewer
                 var hideHeaderToggle = new ToggleSwitch
                 {
                     IsOn       = cfg.HideHeader,
-                    OnContent  = "非表示",
-                    OffContent = "表示"
+                    OnContent  = R.Get("Toggle_Hide"),
+                    OffContent = R.Get("Toggle_Show")
                 };
 
                 var hideComposeToggle = new ToggleSwitch
                 {
                     IsOn       = cfg.HideCompose,
-                    OnContent  = "非表示",
-                    OffContent = "表示"
+                    OnContent  = R.Get("Toggle_Hide"),
+                    OffContent = R.Get("Toggle_Show")
                 };
 
                 var panel = new StackPanel { Spacing = 8 };
-                panel.Children.Add(new TextBlock { Text = "タイムラインの幅（px）" });
+                panel.Children.Add(new TextBlock { Text = R.Get("Timeline_Width") });
                 panel.Children.Add(widthBox);
                 panel.Children.Add(new TextBlock
                 {
-                    Text   = "X の header 要素",
+                    Text   = R.Get("Timeline_Header"),
                     Margin = new Thickness(0, 8, 0, 0)
                 });
                 panel.Children.Add(hideHeaderToggle);
                 panel.Children.Add(new TextBlock
                 {
-                    Text   = "投稿画面",
+                    Text   = R.Get("Timeline_Compose"),
                     Margin = new Thickness(0, 8, 0, 0)
                 });
                 panel.Children.Add(hideComposeToggle);
 
                 var dlg = new ContentDialog
                 {
-                    Title             = "設定",
+                    Title             = R.Get("Timeline_Settings_Title"),
                     Content           = panel,
-                    PrimaryButtonText = "適用",
-                    CloseButtonText   = "キャンセル",
+                    PrimaryButtonText = R.Get("Button_Apply"),
+                    CloseButtonText   = R.Get("Button_Cancel"),
                     DefaultButton     = ContentDialogButton.Primary,
                     XamlRoot          = Content.XamlRoot
                 };
@@ -1137,7 +1169,7 @@ namespace XTimelineViewer
             {
                 var dlg = new ContentDialog
                 {
-                    Title           = "拡張機能の読み込みに失敗しました",
+                    Title           = R.Get("ExtLoadError_Title"),
                     Content         = new ScrollViewer
                     {
                         MaxHeight = 300,
@@ -1151,7 +1183,7 @@ namespace XTimelineViewer
                             TextWrapping = TextWrapping.Wrap
                         }
                     },
-                    CloseButtonText = "閉じる",
+                    CloseButtonText = R.Get("Button_Close"),
                     XamlRoot        = Content.XamlRoot
                 };
                 await dlg.ShowAsync();
@@ -1205,7 +1237,7 @@ namespace XTimelineViewer
                 Height  = 32,
                 Padding = new Thickness(0),
             };
-            ToolTipService.SetToolTip(btn, $"{name} の設定");
+            ToolTipService.SetToolTip(btn, string.Format(R.Get("ExtSettings_Format"), name));
 
             var optPageUrl = $"chrome-extension://{ext.Id}/{optPage}";
             btn.Click += async (_, _) =>
@@ -1213,9 +1245,9 @@ namespace XTimelineViewer
                 var optWebView = new WebView2 { Width = 480, MinHeight = 200 };
                 var dlg = new ContentDialog
                 {
-                    Title           = $"{name} の設定",
+                    Title           = string.Format(R.Get("ExtSettings_Format"), name),
                     Content         = optWebView,
-                    CloseButtonText = "閉じる",
+                    CloseButtonText = R.Get("Button_Close"),
                     XamlRoot        = Content.XamlRoot
                 };
                 var env = await GetOrCreateEnvAsync();
@@ -1265,7 +1297,7 @@ namespace XTimelineViewer
                 {
                     var dlg = new ContentDialog
                     {
-                        Title           = "WebView2 の初期化に失敗しました",
+                        Title           = R.Get("WebViewInitError_Title"),
                         Content         = new ScrollViewer
                         {
                             MaxHeight = 300,
@@ -1278,7 +1310,7 @@ namespace XTimelineViewer
                                 TextWrapping = TextWrapping.Wrap
                             }
                         },
-                        CloseButtonText = "閉じる",
+                        CloseButtonText = R.Get("Button_Close"),
                         XamlRoot        = Content.XamlRoot
                     };
                     await dlg.ShowAsync();

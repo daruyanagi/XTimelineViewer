@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+
+  <!-- XAML x:Uid bindings -->
+  <data name="PostLabel.Text" xml:space="preserve"><value>投稿</value></data>
+  <data name="DropHintTitle.Text" xml:space="preserve"><value>X の URL ショートカットをドロップ</value></data>
+  <data name="DropHintSubtitle.Text" xml:space="preserve"><value>タイムラインが横並びで追加されます</value></data>
+
+  <!-- Toolbar tooltips -->
+  <data name="PostBtn_Tooltip" xml:space="preserve"><value>新規投稿</value></data>
+  <data name="AppSettingsBtn_Tooltip" xml:space="preserve"><value>アプリ設定</value></data>
+
+  <!-- Theme selector items -->
+  <data name="Theme_System" xml:space="preserve"><value>システム</value></data>
+  <data name="Theme_Light" xml:space="preserve"><value>ライト</value></data>
+  <data name="Theme_Dark" xml:space="preserve"><value>ダーク</value></data>
+
+  <!-- ToggleSwitch on/off labels -->
+  <data name="Toggle_On" xml:space="preserve"><value>有効</value></data>
+  <data name="Toggle_Off" xml:space="preserve"><value>無効</value></data>
+  <data name="Toggle_Hide" xml:space="preserve"><value>非表示</value></data>
+  <data name="Toggle_Show" xml:space="preserve"><value>表示</value></data>
+
+  <!-- App settings dialog -->
+  <data name="AppSettings_Title" xml:space="preserve"><value>アプリ設定</value></data>
+  <data name="Settings_Theme" xml:space="preserve"><value>テーマ</value></data>
+  <data name="Settings_Language" xml:space="preserve"><value>言語</value></data>
+  <data name="Settings_ExportFolder" xml:space="preserve"><value>設定ファイルのエクスポート</value></data>
+  <data name="Section_Experimental" xml:space="preserve"><value>試験機能</value></data>
+  <data name="Section_About" xml:space="preserve"><value>バージョン情報</value></data>
+  <data name="Settings_SeparateCompose" xml:space="preserve"><value>投稿画面を別プロファイルで開く（廃止予定）</value></data>
+  <data name="Settings_OpenComposerInBrowser" xml:space="preserve"><value>新規投稿を外部ブラウザーで開く</value></data>
+  <data name="Settings_OpenTweetInBrowser" xml:space="preserve"><value>ツイートを外部ブラウザーで開く</value></data>
+  <data name="Settings_AutoActivate" xml:space="preserve"><value>ホームタイムラインを定期的にアクティブ化（分、0 で無効）</value></data>
+
+  <!-- Language selector items -->
+  <data name="Language_System" xml:space="preserve"><value>システム言語</value></data>
+  <data name="Language_JA" xml:space="preserve"><value>日本語</value></data>
+  <data name="Language_EN" xml:space="preserve"><value>English</value></data>
+  <data name="RestartRequired" xml:space="preserve"><value>言語を変更しました。次回起動時に反映されます。</value></data>
+
+  <!-- Common buttons -->
+  <data name="Button_Save" xml:space="preserve"><value>保存</value></data>
+  <data name="Button_Cancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="Button_Close" xml:space="preserve"><value>閉じる</value></data>
+  <data name="Button_Apply" xml:space="preserve"><value>適用</value></data>
+  <data name="Button_Copy" xml:space="preserve"><value>コピー</value></data>
+  <data name="Button_ReportIssue" xml:space="preserve"><value>Issue を報告</value></data>
+  <data name="Button_OpenFolder" xml:space="preserve"><value>フォルダーを開く</value></data>
+
+  <!-- Timeline pane settings dialog -->
+  <data name="Timeline_Settings_Title" xml:space="preserve"><value>設定</value></data>
+  <data name="Timeline_Width" xml:space="preserve"><value>タイムラインの幅（px）</value></data>
+  <data name="Timeline_Header" xml:space="preserve"><value>X の header 要素</value></data>
+  <data name="Timeline_Compose" xml:space="preserve"><value>投稿画面</value></data>
+  <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>設定</value></data>
+  <data name="Pane_Close_Tooltip" xml:space="preserve"><value>閉じる</value></data>
+  <data name="DragCaption" xml:space="preserve"><value>タイムラインを追加</value></data>
+
+  <!-- Error dialogs -->
+  <data name="ExtLoadError_Title" xml:space="preserve"><value>拡張機能の読み込みに失敗しました</value></data>
+  <data name="WebViewInitError_Title" xml:space="preserve"><value>WebView2 の初期化に失敗しました</value></data>
+
+  <!-- Version info -->
+  <data name="Version_Unknown" xml:space="preserve"><value>不明</value></data>
+  <data name="EdgeChannel_Runtime" xml:space="preserve"><value>WebView2 ランタイム</value></data>
+  <data name="EdgeChannel_Dev" xml:space="preserve"><value>Edge Dev</value></data>
+
+  <!-- Issue report body labels -->
+  <data name="IssueLabel_AppVersion" xml:space="preserve"><value>アプリバージョン</value></data>
+  <data name="IssueLabel_EdgeVersion" xml:space="preserve"><value>内部の Edge バージョン</value></data>
+  <data name="IssueLabel_Symptoms" xml:space="preserve"><value>具体的な症状</value></data>
+
+  <!-- Extension settings -->
+  <data name="ExtSettings_Format" xml:space="preserve"><value>{0} の設定</value></data>
+</root>
