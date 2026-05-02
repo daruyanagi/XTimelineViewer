@@ -17,10 +17,11 @@ namespace XTimelineViewer
 {
     internal class TimelineConfig
     {
-        public string Url        { get; set; } = "";
-        public double Width      { get; set; } = 350;
-        public bool   HideHeader  { get; set; } = false;
-        public bool   HideCompose { get; set; } = true;
+        public string Url { get; set; } = "";
+        public double Width { get; set; } = 350;
+        public bool HideHeader { get; set; } = false;
+        public bool HideCompose { get; set; } = true;
+        public bool HideListHeader { get; set; } = false; // リストのヘッダーを非表示にするか
     }
 
     internal class AppSettings
@@ -967,6 +968,13 @@ namespace XTimelineViewer
                     OffContent = "表示"
                 };
 
+                var hideListHeaderToggle = new ToggleSwitch
+                {
+                    IsOn = cfg.HideListHeader,
+                    OnContent = "非表示",
+                    OffContent = "表示"
+                };
+
                 var panel = new StackPanel { Spacing = 8 };
                 panel.Children.Add(new TextBlock { Text = "タイムラインの幅（px）" });
                 panel.Children.Add(widthBox);
@@ -982,6 +990,13 @@ namespace XTimelineViewer
                     Margin = new Thickness(0, 8, 0, 0)
                 });
                 panel.Children.Add(hideComposeToggle);
+
+                panel.Children.Add(new TextBlock
+                {
+                    Text = "リストのヘッダー",
+                    Margin = new Thickness(0, 8, 0, 0)
+                });
+                panel.Children.Add(hideListHeaderToggle);
 
                 var dlg = new ContentDialog
                 {
@@ -1005,6 +1020,10 @@ namespace XTimelineViewer
                     cfg.HideCompose = hideComposeToggle.IsOn;
                     if (webView.CoreWebView2 is not null)
                         await ApplyHideComposeAsync(webView, cfg.HideCompose);
+
+                    cfg.HideListHeader = hideListHeaderToggle.IsOn;
+                    if (webView.CoreWebView2 is not null)
+                        await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
 
                     await SaveTimelinesAsync();
                 }
@@ -1039,6 +1058,26 @@ namespace XTimelineViewer
 
         // ── WebView2 init ─────────────────────────────────────────────────────
 
+        // リストページのヘッダー（バナー・作成者・メンバー数）を非表示にするスクリプト
+        private static string BuildHideListHeaderJs(bool hide) => $$"""
+            (function(hide){
+                var id='xtv-hide-list-header';
+                var s=document.getElementById(id);
+                if(hide){
+                    if(!s){s=document.createElement('style');s.id=id;
+                           s.textContent='body:has(a[href^="/i/lists/"][href$="/members"]) #react-root main section > div > div > div:nth-child(1){display:none!important}';
+                           document.head.appendChild(s);}
+                }else{
+                    if(s)s.remove();
+                }
+            })({{(hide ? "true" : "false")}});
+            """;
+
+        private static async Task ApplyHideListHeaderAsync(
+            Microsoft.UI.Xaml.Controls.WebView2 webView, bool hide)
+        {
+            await webView.CoreWebView2.ExecuteScriptAsync(BuildHideListHeaderJs(hide));
+        }
         private static string BuildHideHeaderJs(bool hide) => $$"""
             (function(hide){
                 var id='xtv-hide-header';
@@ -1328,6 +1367,7 @@ namespace XTimelineViewer
                 {
                     await ApplyHideHeaderAsync(webView, cfg.HideHeader);
                     await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
+                    await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
 
                     // TweetInterceptScript のフラグを設定と同期する
                     var flag = _appSettings.OpenTweetInBrowser ? "true" : "false";
