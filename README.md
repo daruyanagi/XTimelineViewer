@@ -2,6 +2,8 @@
 
 [「X Pro」（TweetDeck）が突如「プレミアムプラス」プラン必須に](https://forest.watch.impress.co.jp/docs/news/2096749.html) なって困ったので、Claude の助けを借りて開発しました。
 
+![アプリアイコン](x_timeline_viewer-1.png)
+
 複数の X（旧 Twitter）タイムラインを横並びで表示する Windows デスクトップ アプリです。構造としては ** 「細長い Edge を横に並べているだけ」 ** なので、アカウント停止になることは考えづらいと思います（API は利用していません）。
 
 ## 特徴
@@ -84,6 +86,16 @@ Edge で追加したい `x.com` ページを開き、アドレスバーのアイ
 ```
 %LOCALAPPDATA%\XTimelineViewer\timelines.json
 ```
+
+## ダウンロード
+
+[Releases · daruyanagi/XTimelineViewer](https://github.com/daruyanagi/XTimelineViewer/releases)
+
+<a href="https://get.microsoft.com/installer/download/9P308HB5BLJ1?referrer=appbadge" target="_self" >
+	<img src="https://get.microsoft.com/images/ja%20dark.svg" width="200"/>
+</a>
+
+手元では Windows 11 Pro （Retail）で動作を確認しています。
 
 ## ライセンス
 
