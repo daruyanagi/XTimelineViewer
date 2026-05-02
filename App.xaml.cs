@@ -11,12 +11,12 @@ namespace XTimelineViewer
 
         public App()
         {
-            ApplyLanguageOverride();
             this.InitializeComponent();
         }
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
+            ApplyLanguageOverride();
             _window = new MainWindow();
             _window.Activate();
         }
