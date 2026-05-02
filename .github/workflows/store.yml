@@ -103,5 +103,9 @@ jobs:
           --clientSecret "${{ secrets.AZURE_CLIENT_SECRET }}"
           --sellerId "${{ secrets.PARTNER_CENTER_SELLER_ID }}"
 
+      - name: Delete any pending submission
+        run: msstore submission delete "9P308HB5BLJ1" --no-confirm
+        continue-on-error: true
+
       - name: Publish to Microsoft Store
         run: msstore publish -i .\upload -id "9P308HB5BLJ1"
