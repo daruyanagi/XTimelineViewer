@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace XTimelineViewer
@@ -10,8 +11,13 @@ namespace XTimelineViewer
     {
         private Window? _window;
 
+        [DllImport("user32.dll")]
+        private static extern bool SetProcessDpiAwarenessContext(IntPtr dpiContext);
+        private static readonly IntPtr DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = new IntPtr(-4);
+
         public App()
         {
+            SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
             this.InitializeComponent();
         }
 
