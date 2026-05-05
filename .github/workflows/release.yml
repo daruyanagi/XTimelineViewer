@@ -1,0 +1,56 @@
+name: GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore packages
+        run: dotnet restore XTimelineViewer.csproj
+
+      - name: Build x64
+        run: >
+          dotnet publish XTimelineViewer.csproj
+          -c Release -r win-x64 -p:Platform=x64
+          -p:WindowsPackageType=None -p:SelfContained=true
+          -o publish/x64
+
+      - name: Build arm64
+        run: >
+          dotnet publish XTimelineViewer.csproj
+          -c Release -r win-arm64 -p:Platform=arm64 -p:PlatformTarget=arm64
+          -p:WindowsPackageType=None -p:SelfContained=true
+          -o publish/arm64
+
+      - name: Create ZIP archives
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          Compress-Archive -Path publish/x64/*   -DestinationPath "XTimelineViewer-$tag-win-x64.zip"
+          Compress-Archive -Path publish/arm64/* -DestinationPath "XTimelineViewer-$tag-win-arm64.zip"
+
+      - name: Create GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create ${{ github.ref_name }} \
+            XTimelineViewer-${{ github.ref_name }}-win-x64.zip \
+            XTimelineViewer-${{ github.ref_name }}-win-arm64.zip \
+            --title "${{ github.ref_name }}" \
+            --generate-notes
