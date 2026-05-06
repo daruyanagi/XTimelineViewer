@@ -29,8 +29,10 @@ jobs:
         shell: pwsh
         run: |
           $manifest = "Package.appxmanifest"
-          (Get-Content $manifest) -replace 'Version="\d+\.\d+\.\d+\.\d+"', "Version=""$env:MSIX_VERSION""" |
-            Set-Content $manifest
+          [xml]$xml = Get-Content $manifest
+          $xml.Package.Identity.Version = $env:MSIX_VERSION
+          $xml.Save((Resolve-Path $manifest).Path)
+          Write-Host "Identity.Version updated to: $($xml.Package.Identity.Version)"
 
       - name: Restore packages
         run: dotnet restore XTimelineViewer.csproj
