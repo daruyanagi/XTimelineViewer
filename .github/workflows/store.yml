@@ -71,6 +71,7 @@ jobs:
             -p:AppxPackageDir=.\AppPackages\x64\ `
             -p:UapAppxPackageBuildMode=SideloadOnly `
             -p:AppxBundle=Never `
+            -p:AppxPackageVersion=$env:MSIX_VERSION `
             "-p:PackageCertificateThumbprint=$env:CERT_THUMBPRINT"
 
       - name: Build arm64
@@ -81,6 +82,7 @@ jobs:
             -p:AppxPackageDir=.\AppPackages\arm64\ `
             -p:UapAppxPackageBuildMode=SideloadOnly `
             -p:AppxBundle=Never `
+            -p:AppxPackageVersion=$env:MSIX_VERSION `
             "-p:PackageCertificateThumbprint=$env:CERT_THUMBPRINT"
 
       - name: Collect MSIX files
