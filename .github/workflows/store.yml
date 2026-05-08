@@ -152,4 +152,4 @@ jobs:
         continue-on-error: true
 
       - name: Publish to Microsoft Store
-        run: msstore publish . -i .\upload\XTimelineViewer.msixupload -id "9P308HB5BLJ1"
+        run: msstore publish . -i .\upload -id "9P308HB5BLJ1"
