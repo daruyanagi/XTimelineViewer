@@ -29,10 +29,19 @@ jobs:
         shell: pwsh
         run: |
           $manifest = "Package.appxmanifest"
-          [xml]$xml = Get-Content $manifest
-          $xml.Package.Identity.Version = $env:MSIX_VERSION
-          $xml.Save((Resolve-Path $manifest).Path)
-          Write-Host "Identity.Version updated to: $($xml.Package.Identity.Version)"
+          # Use raw text replacement to avoid XML encoding issues
+          $content = Get-Content -Path $manifest -Raw
+          $content = $content -replace '(<Identity[^>]*Version=")[^"]*(")', "`${1}$env:MSIX_VERSION`$2"
+          [System.IO.File]::WriteAllText((Resolve-Path $manifest).Path, $content, [System.Text.Encoding]::UTF8)
+          # Verify on disk
+          $saved = Get-Content -Path $manifest -Raw
+          if ($saved -match 'Version="([\d.]+)"') {
+            Write-Host "Verified on disk: Identity.Version = $($Matches[1])"
+            if ($Matches[1] -ne $env:MSIX_VERSION) {
+              Write-Error "Manifest update failed! Got $($Matches[1]), expected $env:MSIX_VERSION"
+              exit 1
+            }
+          }
 
       - name: Restore packages
         run: dotnet restore XTimelineViewer.csproj
@@ -106,6 +115,27 @@ jobs:
           Compress-Archive -Path .\upload\*.msix -DestinationPath .\upload\XTimelineViewer.msixupload
           Write-Host "msixupload created with $($files.Count) package(s)"
 
+      - name: Verify MSIX internal version
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $msix = Get-ChildItem .\AppPackages -Recurse -Filter "*.msix" | Select-Object -First 1
+          Write-Host "Inspecting: $($msix.Name)"
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($msix.FullName)
+          $entry = $zip.Entries | Where-Object { $_.Name -eq "AppxManifest.xml" } | Select-Object -First 1
+          $reader = New-Object System.IO.StreamReader($entry.Open())
+          $content = $reader.ReadToEnd()
+          $reader.Close(); $zip.Dispose()
+          if ($content -match 'Identity[^>]*Version="([\d.]+)"') {
+            $found = $Matches[1]
+            Write-Host "MSIX internal Identity.Version: $found (expected: $env:MSIX_VERSION)"
+            if ($found -ne $env:MSIX_VERSION) {
+              Write-Error "VERSION MISMATCH! Build identity is wrong."
+              exit 1
+            }
+            Write-Host "✅ Internal version correct"
+          }
+
       - name: Setup Microsoft Store Developer CLI
         uses: microsoft/microsoft-store-apppublisher@v1.1
 
@@ -122,4 +152,4 @@ jobs:
         continue-on-error: true
 
       - name: Publish to Microsoft Store
-        run: msstore publish -i .\upload -id "9P308HB5BLJ1"
+        run: msstore publish . -i .\upload\XTimelineViewer.msixupload -id "9P308HB5BLJ1"
