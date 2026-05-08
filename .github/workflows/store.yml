@@ -67,12 +67,11 @@ jobs:
         shell: pwsh
         run: |
           dotnet publish XTimelineViewer.csproj `
-            -c Release `
-            -p:Platform=x64 `
-            -p:RuntimeIdentifier=win-x64 `
+            -c Release -r win-x64 -p:Platform=x64 `
             -p:AppxPackageDir=.\AppPackages\x64\ `
             -p:UapAppxPackageBuildMode=SideloadOnly `
             -p:AppxBundle=Never `
+            -p:GenerateAppxPackageOnBuild=true `
             -p:AppxPackageVersion=$env:MSIX_VERSION `
             -p:AppxPackageSigningEnabled=true `
             "-p:PackageCertificateThumbprint=$env:CERT_THUMBPRINT"
@@ -81,12 +80,11 @@ jobs:
         shell: pwsh
         run: |
           dotnet publish XTimelineViewer.csproj `
-            -c Release `
-            -p:Platform=arm64 `
-            -p:RuntimeIdentifier=win-arm64 `
+            -c Release -r win-arm64 -p:Platform=arm64 -p:PlatformTarget=arm64 `
             -p:AppxPackageDir=.\AppPackages\arm64\ `
             -p:UapAppxPackageBuildMode=SideloadOnly `
             -p:AppxBundle=Never `
+            -p:GenerateAppxPackageOnBuild=true `
             -p:AppxPackageVersion=$env:MSIX_VERSION `
             -p:AppxPackageSigningEnabled=true `
             "-p:PackageCertificateThumbprint=$env:CERT_THUMBPRINT"
