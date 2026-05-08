@@ -35,7 +35,7 @@ jobs:
           [System.IO.File]::WriteAllText((Resolve-Path $manifest).Path, $content, [System.Text.Encoding]::UTF8)
           # Verify on disk
           $saved = Get-Content -Path $manifest -Raw
-          if ($saved -match 'Version="([\d.]+)"') {
+          if ($saved -match 'Identity[^>]*Version="([\d.]+)"') {
             Write-Host "Verified on disk: Identity.Version = $($Matches[1])"
             if ($Matches[1] -ne $env:MSIX_VERSION) {
               Write-Error "Manifest update failed! Got $($Matches[1]), expected $env:MSIX_VERSION"
