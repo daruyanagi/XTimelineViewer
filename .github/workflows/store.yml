@@ -67,34 +67,46 @@ jobs:
         shell: pwsh
         run: |
           dotnet publish XTimelineViewer.csproj `
-            -c Release -r win-x64 -p:Platform=x64 `
+            -c Release `
+            -p:Platform=x64 `
+            -p:RuntimeIdentifier=win-x64 `
             -p:AppxPackageDir=.\AppPackages\x64\ `
             -p:UapAppxPackageBuildMode=SideloadOnly `
             -p:AppxBundle=Never `
             -p:AppxPackageVersion=$env:MSIX_VERSION `
+            -p:AppxPackageSigningEnabled=true `
             "-p:PackageCertificateThumbprint=$env:CERT_THUMBPRINT"
 
       - name: Build arm64
         shell: pwsh
         run: |
           dotnet publish XTimelineViewer.csproj `
-            -c Release -r win-arm64 -p:Platform=arm64 -p:PlatformTarget=arm64 `
+            -c Release `
+            -p:Platform=arm64 `
+            -p:RuntimeIdentifier=win-arm64 `
             -p:AppxPackageDir=.\AppPackages\arm64\ `
             -p:UapAppxPackageBuildMode=SideloadOnly `
             -p:AppxBundle=Never `
             -p:AppxPackageVersion=$env:MSIX_VERSION `
+            -p:AppxPackageSigningEnabled=true `
             "-p:PackageCertificateThumbprint=$env:CERT_THUMBPRINT"
 
       - name: Collect MSIX files
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path .\upload
-          Get-ChildItem -Recurse -Filter "*.msix" .\AppPackages | ForEach-Object {
+          $files = Get-ChildItem -Recurse -Filter "*.msix" .\AppPackages
+          if ($files.Count -eq 0) {
+            Write-Error "No MSIX files found in AppPackages! Build may have skipped MSIX generation."
+            exit 1
+          }
+          $files | ForEach-Object {
             $newName = $_.Name -replace '\d+\.\d+\.\d+\.\d+', $env:MSIX_VERSION
             Write-Host "$($_.Name) -> $newName"
             Copy-Item $_.FullName ".\upload\$newName"
           }
           Compress-Archive -Path .\upload\*.msix -DestinationPath .\upload\XTimelineViewer.msixupload
+          Write-Host "msixupload created with $($files.Count) package(s)"
 
       - name: Setup Microsoft Store Developer CLI
         uses: microsoft/microsoft-store-apppublisher@v1.1
