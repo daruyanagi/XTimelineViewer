@@ -90,10 +90,10 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path .\upload
           Get-ChildItem -Recurse -Filter "*.msix" .\AppPackages | ForEach-Object {
-            Copy-Item $_.FullName .\upload\
+            $newName = $_.Name -replace '\d+\.\d+\.\d+\.\d+', $env:MSIX_VERSION
+            Write-Host "$($_.Name) -> $newName"
+            Copy-Item $_.FullName ".\upload\$newName"
           }
-          Write-Host "Packages to upload:"
-          Get-ChildItem .\upload
           Compress-Archive -Path .\upload\*.msix -DestinationPath .\upload\XTimelineViewer.msixupload
 
       - name: Setup Microsoft Store Developer CLI
