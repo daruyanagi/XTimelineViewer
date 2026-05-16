@@ -1166,10 +1166,12 @@ namespace XTimelineViewer
                         css.push('#react-root main section>div>div>div:nth-child(1){display:none!important}');
                         css.push('[data-testid="emptyState"]{display:none!important}');
                     }
-                    // プロフィール: ユーザー名＋ポスト数を含むヘッダーブロックを非表示
+                    // プロフィール: ナビバー＋プロフィール情報カード（バナー・アバター・自己紹介・フォロー数）を非表示
                     if(/^\/[A-Za-z0-9_]+$/.test(path) &&
-                       !/^\/(home|notifications|search|explore|bookmarks|messages|i)/.test(path))
+                       !/^\/(home|notifications|search|explore|bookmarks|messages|i)/.test(path)){
                         css.push('div:has(>div>div>div>div>div>button[data-testid="app-bar-back"]){display:none!important}');
+                        css.push('[data-testid="cellInnerDiv"]:has([data-testid="UserName"]){display:none!important}');
+                    }
                     if(css.length){
                         if(!s){s=document.createElement('style');s.id=id;document.head.appendChild(s);}
                         s.textContent=css.join('');
