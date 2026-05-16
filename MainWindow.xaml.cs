@@ -882,15 +882,7 @@ namespace XTimelineViewer
             };
             ToolTipService.SetToolTip(settingsBtn, R.Get("Pane_Settings_Tooltip"));
 
-            var closeBtn = new Button
-            {
-                Content = "✕", Width = 28, Height = 26,
-                Padding = new Thickness(0), FontSize = 11
-            };
-            ToolTipService.SetToolTip(closeBtn, R.Get("Pane_Close_Tooltip"));
-
             buttonPanel.Children.Add(settingsBtn);
-            buttonPanel.Children.Add(closeBtn);
 
             headerGrid.Children.Add(typeIcon);
             headerGrid.Children.Add(urlLabel);
@@ -1019,6 +1011,14 @@ namespace XTimelineViewer
                     Opacity = listHeaderApplicable ? 1.0 : 0.4
                 };
 
+                var deleteBtn = new Button
+                {
+                    Content             = R.Get("Pane_Delete"),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Margin              = new Thickness(0, 16, 0, 0),
+                    Foreground          = new SolidColorBrush(Color.FromArgb(255, 196, 43, 28)),
+                };
+
                 var panel = new StackPanel { Spacing = 8 };
                 panel.Children.Add(new TextBlock { Text = R.Get("Timeline_Width") });
                 panel.Children.Add(widthBox);
@@ -1036,6 +1036,8 @@ namespace XTimelineViewer
                 panel.Children.Add(hideComposeToggle);
                 panel.Children.Add(hideListHeaderLabel);
                 panel.Children.Add(hideListHeaderToggle);
+                panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 8, 0, 0) });
+                panel.Children.Add(deleteBtn);
 
                 var dlg = new ContentDialog
                 {
@@ -1047,7 +1049,33 @@ namespace XTimelineViewer
                     XamlRoot          = Content.XamlRoot
                 };
 
-                if (await dlg.ShowAsync() == ContentDialogResult.Primary)
+                bool shouldDelete = false;
+                deleteBtn.Click += (_, _) => { shouldDelete = true; dlg.Hide(); };
+
+                var result = await dlg.ShowAsync();
+
+                if (shouldDelete)
+                {
+                    _configs.Remove(cfg);
+                    _webViews.Remove(webView);
+                    _webViewToPane.Remove(webView);
+                    _paneToSetFocus.Remove(pane);
+                    _headerRefreshers.Remove(refreshHeader);
+                    if (_focusedHeaderGrid == headerGrid)
+                    {
+                        _focusedHeaderGrid = null;
+                        foreach (var r in _headerRefreshers) r();
+                    }
+                    await SaveTimelinesAsync();
+
+                    TimelinePanel.Children.Remove(pane);
+                    if (TimelinePanel.Children.Count == 0)
+                    {
+                        TimelineScroll.Visibility = Visibility.Collapsed;
+                        DropHintBorder.Visibility = Visibility.Visible;
+                    }
+                }
+                else if (result == ContentDialogResult.Primary)
                 {
                     cfg.Width  = Math.Clamp(widthBox.Value, 100, 2000);
                     pane.Width = cfg.Width;
@@ -1065,30 +1093,6 @@ namespace XTimelineViewer
                         await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
 
                     await SaveTimelinesAsync();
-                }
-            };
-
-            // ── Close ─────────────────────────────────────────────────────────
-
-            closeBtn.Click += (s, e) =>
-            {
-                _configs.Remove(cfg);
-                _webViews.Remove(webView);
-                _webViewToPane.Remove(webView);
-                _paneToSetFocus.Remove(pane);
-                _headerRefreshers.Remove(refreshHeader);
-                if (_focusedHeaderGrid == headerGrid)
-                {
-                    _focusedHeaderGrid = null;
-                    foreach (var r in _headerRefreshers) r();
-                }
-                _ = SaveTimelinesAsync();
-
-                TimelinePanel.Children.Remove(pane);
-                if (TimelinePanel.Children.Count == 0)
-                {
-                    TimelineScroll.Visibility  = Visibility.Collapsed;
-                    DropHintBorder.Visibility  = Visibility.Visible;
                 }
             };
 

@@ -58,6 +58,7 @@
   <data name="Timeline_ListHeader" xml:space="preserve"><value>通知・検索・ブックマーク・リストのヘッダー</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>設定</value></data>
   <data name="Pane_Close_Tooltip" xml:space="preserve"><value>閉じる</value></data>
+  <data name="Pane_Delete" xml:space="preserve"><value>このタイムラインを削除</value></data>
   <data name="DragCaption" xml:space="preserve"><value>タイムラインを追加</value></data>
 
   <!-- Error dialogs -->
