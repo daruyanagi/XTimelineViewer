@@ -819,6 +819,7 @@ namespace XTimelineViewer
 
             // Header
             var headerGrid = new Grid { Padding = new Thickness(8, 4, 4, 4) };
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             Grid.SetRow(headerGrid, 0);
@@ -844,6 +845,17 @@ namespace XTimelineViewer
             if (Uri.TryCreate(cfg.Url, UriKind.Absolute, out var uri))
                 displayText = uri.Host + uri.PathAndQuery;
 
+            var typeIcon = new FontIcon
+            {
+                Glyph             = GetTimelineGlyph(cfg.Url),
+                FontFamily        = new FontFamily("Segoe Fluent Icons"),
+                FontSize          = 14,
+                Opacity           = 0.8,
+                Margin            = new Thickness(0, 0, 6, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(typeIcon, 0);
+
             var urlLabel = new TextBlock
             {
                 Text              = displayText,
@@ -852,7 +864,7 @@ namespace XTimelineViewer
                 VerticalAlignment = VerticalAlignment.Center,
                 Opacity           = 0.8
             };
-            Grid.SetColumn(urlLabel, 0);
+            Grid.SetColumn(urlLabel, 1);
 
             // WebView2
             var webView = new WebView2
@@ -869,7 +881,7 @@ namespace XTimelineViewer
                 Spacing           = 4,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            Grid.SetColumn(buttonPanel, 1);
+            Grid.SetColumn(buttonPanel, 2);
 
             var settingsBtn = new Button
             {
@@ -889,6 +901,7 @@ namespace XTimelineViewer
             buttonPanel.Children.Add(settingsBtn);
             buttonPanel.Children.Add(closeBtn);
 
+            headerGrid.Children.Add(typeIcon);
             headerGrid.Children.Add(urlLabel);
             headerGrid.Children.Add(buttonPanel);
 
@@ -1092,6 +1105,21 @@ namespace XTimelineViewer
         }
 
         // ── WebView2 init ─────────────────────────────────────────────────────
+
+        private static string GetTimelineGlyph(string url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return "";
+            var p = uri.AbsolutePath;
+            if (p.StartsWith("/home"))                                return ""; // Home
+            if (p.StartsWith("/notifications"))                       return ""; // Bell
+            if (p.StartsWith("/search") || p.StartsWith("/explore")) return ""; // Search
+            if (p == "/bookmarks" || p.StartsWith("/bookmarks/") ||
+                p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/")) return ""; // Bookmark
+            if (p.StartsWith("/i/lists/"))                            return ""; // BulletedList
+            if (p.StartsWith("/messages"))                            return ""; // Chat
+            if (System.Text.RegularExpressions.Regex.IsMatch(p, @"^/[^/]+$")) return ""; // Contact
+            return ""; // Globe
+        }
 
         private static bool IsListHeaderApplicable(string url)
         {
