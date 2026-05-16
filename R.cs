@@ -1,4 +1,3 @@
-using Microsoft.Windows.ApplicationModel.Resources;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,45 +8,41 @@ namespace XTimelineViewer
 {
     internal static class R
     {
-        private static ResourceMap? _map;
-        private static Dictionary<string, string>? _overrideDict;
+        private static Dictionary<string, string> _dict = [];
         private static bool _initialized;
 
         internal static void Initialize(string? languageOverride = null)
         {
             if (_initialized) return;
             _initialized = true;
-            Debug.WriteLine("[R] Initialize() start");
 
+            // ResourceMap.GetValue() はドットを含むキー（x:Uid バインディング用）を
+            // 特定の言語コンテキストで正しく解決できず COMException をスローする (#40)。
+            // すべての言語で resw 直接パースに統一して回避する。
+            var locale = languageOverride ?? ResolveSystemLocale();
+            _dict = LoadResw(locale) ?? LoadResw("en-US") ?? [];
+        }
+
+        // システム言語から使用する resw ロケールフォルダー名を決定する。
+        // ja 系は "ja-JP"、それ以外は "en-US" にフォールバックする。
+        private static string ResolveSystemLocale()
+        {
             try
             {
-                _map = new ResourceManager().MainResourceMap.GetSubtree("Resources");
-                Debug.WriteLine("[R] ResourceMap acquired");
+                var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+                return lang == "ja" ? "ja-JP" : "en-US";
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.WriteLine($"[R] ResourceMap FAILED: {ex.GetType().Name}: {ex.Message}");
-            }
-
-            if (languageOverride != null)
-            {
-                var reswPath = Path.Combine(
-                    AppContext.BaseDirectory, "Strings", languageOverride, "Resources.resw");
-                Debug.WriteLine($"[R] Looking for resw: {reswPath}");
-                if (File.Exists(reswPath))
-                {
-                    _overrideDict = ParseResw(reswPath);
-                    Debug.WriteLine($"[R] Loaded {_overrideDict.Count} strings from {languageOverride}");
-                }
-                else
-                {
-                    Debug.WriteLine($"[R] resw not found: {reswPath}");
-                }
+                return "en-US";
             }
         }
 
-        private static Dictionary<string, string> ParseResw(string path)
+        private static Dictionary<string, string>? LoadResw(string locale)
         {
+            var path = Path.Combine(AppContext.BaseDirectory, "Strings", locale, "Resources.resw");
+            if (!File.Exists(path)) return null;
+
             var dict = new Dictionary<string, string>();
             try
             {
@@ -61,7 +56,8 @@ namespace XTimelineViewer
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[R] ParseResw FAILED: {ex.Message}");
+                Debug.WriteLine($"[R] LoadResw({locale}) FAILED: {ex.Message}");
+                return null;
             }
             return dict;
         }
@@ -69,17 +65,7 @@ namespace XTimelineViewer
         public static string Get(string key)
         {
             if (!_initialized) Initialize();
-
-            if (_overrideDict != null && _overrideDict.TryGetValue(key, out var overrideVal))
-                return overrideVal;
-
-            if (_map is null) return string.Empty;
-            try { return _map.GetValue(key)?.ValueAsString ?? string.Empty; }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[R] Get({key}) FAILED: {ex.GetType().Name}: {ex.Message}");
-                return string.Empty;
-            }
+            return _dict.TryGetValue(key, out var val) ? val : string.Empty;
         }
     }
 }
