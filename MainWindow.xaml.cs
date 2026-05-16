@@ -1121,6 +1121,13 @@ namespace XTimelineViewer
             return ""; // Globe
         }
 
+        private static bool IsProfilePath(string p) =>
+            System.Text.RegularExpressions.Regex.IsMatch(p, @"^/[A-Za-z0-9_]+$") &&
+            !p.StartsWith("/home") && !p.StartsWith("/notifications") &&
+            !p.StartsWith("/search") && !p.StartsWith("/explore") &&
+            !p.StartsWith("/bookmarks") && !p.StartsWith("/messages") &&
+            !p.StartsWith("/i/");
+
         private static bool IsListHeaderApplicable(string url)
         {
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return false;
@@ -1130,7 +1137,8 @@ namespace XTimelineViewer
                    p.StartsWith("/explore")       ||
                    p == "/bookmarks" || p.StartsWith("/bookmarks/") ||
                    p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/") ||
-                   p.StartsWith("/i/lists/");
+                   p.StartsWith("/i/lists/")      ||
+                   IsProfilePath(p);
         }
 
         private static string BuildHideListHeaderJs(bool hide) => $$"""
@@ -1157,6 +1165,12 @@ namespace XTimelineViewer
                         css.push('div:has(>div>div>div>div>div>button[data-testid="app-bar-back"]){display:none!important}');
                         css.push('#react-root main section>div>div>div:nth-child(1){display:none!important}');
                         css.push('[data-testid="emptyState"]{display:none!important}');
+                    }
+                    // プロフィール: ナビバー＋プロフィール情報カード（バナー・アバター・自己紹介・フォロー数）を非表示
+                    if(/^\/[A-Za-z0-9_]+$/.test(path) &&
+                       !/^\/(home|notifications|search|explore|bookmarks|messages|i)/.test(path)){
+                        css.push('div:has(>div>div>div>div>div>button[data-testid="app-bar-back"]){display:none!important}');
+                        css.push('div:has(>a[href$="/header_photo"]){display:none!important}');
                     }
                     if(css.length){
                         if(!s){s=document.createElement('style');s.id=id;document.head.appendChild(s);}
