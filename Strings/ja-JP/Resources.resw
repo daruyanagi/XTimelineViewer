@@ -55,6 +55,7 @@
   <data name="Timeline_Width" xml:space="preserve"><value>タイムラインの幅（px）</value></data>
   <data name="Timeline_Header" xml:space="preserve"><value>X の header 要素</value></data>
   <data name="Timeline_Compose" xml:space="preserve"><value>投稿画面</value></data>
+  <data name="Timeline_ListHeader" xml:space="preserve"><value>通知・検索・ブックマーク・リストのヘッダー</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>設定</value></data>
   <data name="Pane_Close_Tooltip" xml:space="preserve"><value>閉じる</value></data>
   <data name="DragCaption" xml:space="preserve"><value>タイムラインを追加</value></data>
