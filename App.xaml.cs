@@ -12,23 +12,33 @@ namespace XTimelineViewer
 
         public App()
         {
+            // PrimaryLanguageOverride must be set before InitializeComponent() so that
+            // XAML x:Uid bindings resolve without InvalidOperationException (#42).
+            // For system language (lang == null) we still pin a concrete locale so WinRT
+            // resource resolution always has an explicit language context.
+            var lang = ReadLanguageSetting();
+            var locale = lang ?? ResolveSystemLocale();
+            try { Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = locale; }
+            catch { /* unpackaged mode — R.Initialize() handles locale via resw */ }
+
+            R.Initialize(lang);
             this.InitializeComponent();
         }
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            var lang = ReadLanguageSetting();
-
-            // Packaged (MSIX) mode: PrimaryLanguageOverride affects XAML x:Uid bindings
-            if (lang != null)
-            {
-                try { Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = lang; }
-                catch { /* unpackaged mode — R.Initialize() handles the override via resw */ }
-            }
-
-            R.Initialize(lang);
             _window = new MainWindow();
             _window.Activate();
+        }
+
+        private static string ResolveSystemLocale()
+        {
+            try
+            {
+                var twoLetter = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+                return twoLetter == "ja" ? "ja-JP" : "en-US";
+            }
+            catch { return "en-US"; }
         }
 
         private static string? ReadLanguageSetting()
