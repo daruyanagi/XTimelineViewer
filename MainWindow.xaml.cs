@@ -1338,7 +1338,8 @@ namespace XTimelineViewer
                     root.TryGetProperty("update_url", out var updateUrl) &&
                     updateUrl.GetString()?.Contains("clients2.google.com") == true)
                 {
-                    homepageUrl = $"https://chromewebstore.google.com/detail/{ext.Id}";
+                    // ext.Id は WebView2 内部 ID のため、フォルダー名（元の CWS ID）を使う
+                    homepageUrl = $"https://chromewebstore.google.com/detail/{Path.GetFileName(extDir)}";
                 }
             }
             if (optPage is null) return; // options_ui がない拡張は追加しない
@@ -1365,29 +1366,28 @@ namespace XTimelineViewer
             {
                 var optWebView = new WebView2 { Width = 480, MinHeight = 200 };
 
-                // WebView2 の HWND は常に最前面になるため HyperlinkButton は WebView2 の下に配置する
-                var contentPanel = new StackPanel { Spacing = 8 };
-                contentPanel.Children.Add(optWebView);
-                if (homepageUrl is not null && Uri.TryCreate(homepageUrl, UriKind.Absolute, out var homepageUri))
-                {
-                    var linkText = homepageUri.Host.Contains("chromewebstore.google.com")
-                        ? R.Get("ExtSettings_StoreLink")
-                        : R.Get("ExtSettings_Homepage");
-                    contentPanel.Children.Add(new HyperlinkButton
-                    {
-                        Content     = linkText,
-                        NavigateUri = homepageUri,
-                        Padding     = new Thickness(0),
-                    });
-                }
+                Uri.TryCreate(homepageUrl, UriKind.Absolute, out var homepageUri);
+                var linkText = homepageUri?.Host.Contains("chromewebstore.google.com") == true
+                    ? R.Get("ExtSettings_StoreLink")
+                    : R.Get("ExtSettings_Homepage");
 
                 var dlg = new ContentDialog
                 {
-                    Title           = string.Format(R.Get("ExtSettings_Format"), name),
-                    Content         = contentPanel,
-                    CloseButtonText = R.Get("Button_Close"),
-                    XamlRoot        = Content.XamlRoot
+                    Title                = string.Format(R.Get("ExtSettings_Format"), name),
+                    Content              = optWebView,
+                    SecondaryButtonText  = homepageUri is not null ? linkText : null,
+                    CloseButtonText      = R.Get("Button_Close"),
+                    XamlRoot             = Content.XamlRoot
                 };
+
+                // SecondaryButton クリックでブラウザーを開き、ダイアログは閉じない
+                if (homepageUri is not null)
+                    dlg.SecondaryButtonClick += (s, e) =>
+                    {
+                        e.Cancel = true;
+                        _ = Windows.System.Launcher.LaunchUriAsync(homepageUri);
+                    };
+
                 var env = await GetOrCreateEnvAsync();
                 await optWebView.EnsureCoreWebView2Async(env);
                 optWebView.Source = new Uri(optPageUrl);
