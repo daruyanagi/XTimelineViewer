@@ -43,21 +43,17 @@ namespace XTimelineViewer
         // 旧バージョン（アンパッケージド）からの移行のため、旧パスにファイルが存在すれば自動コピーする。
         private static string GetDataFilePath(string filename)
         {
-            string newPath;
-            try
+            if (!PackageContext.IsPackaged)
             {
-                newPath = Path.Combine(
-                    Windows.Storage.ApplicationData.Current.LocalFolder.Path, filename);
-            }
-            catch
-            {
-                // アンパッケージド環境（開発時など）は従来のパスにフォールバック
-                newPath = Path.Combine(
+                var path = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "XTimelineViewer", filename);
-                Directory.CreateDirectory(Path.GetDirectoryName(newPath)!);
-                return newPath;
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                return path;
             }
+
+            var newPath = Path.Combine(
+                Windows.Storage.ApplicationData.Current.LocalFolder.Path, filename);
 
             if (!File.Exists(newPath))
             {
@@ -73,25 +69,20 @@ namespace XTimelineViewer
         private static string GetExtensionsDir()
         {
             var sourceDir = Path.Combine(AppContext.BaseDirectory, "extensions");
-            try
+            if (!PackageContext.IsPackaged) return sourceDir;
+
+            var localDir = Path.Combine(
+                Windows.Storage.ApplicationData.Current.LocalFolder.Path, "extensions");
+            if (Directory.Exists(sourceDir))
             {
-                var localDir = Path.Combine(
-                    Windows.Storage.ApplicationData.Current.LocalFolder.Path, "extensions");
-                if (Directory.Exists(sourceDir))
+                // 新しい拡張機能があれば上書きコピー
+                foreach (var src in Directory.GetDirectories(sourceDir))
                 {
-                    // 新しい拡張機能があれば上書きコピー
-                    foreach (var src in Directory.GetDirectories(sourceDir))
-                    {
-                        var dst = Path.Combine(localDir, Path.GetFileName(src));
-                        CopyDirectory(src, dst);
-                    }
+                    var dst = Path.Combine(localDir, Path.GetFileName(src));
+                    CopyDirectory(src, dst);
                 }
-                return localDir;
             }
-            catch
-            {
-                return sourceDir;
-            }
+            return localDir;
         }
 
         private static void CopyDirectory(string src, string dst)

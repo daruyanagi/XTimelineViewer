@@ -19,12 +19,8 @@ namespace XTimelineViewer
         {
             var lang = ReadLanguageSetting();
 
-            // Packaged (MSIX) mode: PrimaryLanguageOverride affects XAML x:Uid bindings
-            if (lang != null)
-            {
-                try { Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = lang; }
-                catch { /* unpackaged mode — R.Initialize() handles the override via resw */ }
-            }
+            if (lang != null && PackageContext.IsPackaged)
+                Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = lang;
 
             R.Initialize(lang);
             _window = new MainWindow();
@@ -35,18 +31,11 @@ namespace XTimelineViewer
         {
             try
             {
-                string settingsPath;
-                try
-                {
-                    settingsPath = Path.Combine(
-                        Windows.Storage.ApplicationData.Current.LocalFolder.Path, "settings.json");
-                }
-                catch
-                {
-                    settingsPath = Path.Combine(
+                var settingsPath = PackageContext.IsPackaged
+                    ? Path.Combine(Windows.Storage.ApplicationData.Current.LocalFolder.Path, "settings.json")
+                    : Path.Combine(
                         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                         "XTimelineViewer", "settings.json");
-                }
 
                 if (!File.Exists(settingsPath)) return null;
 
