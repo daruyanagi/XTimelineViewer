@@ -53,7 +53,7 @@
   <!-- Timeline pane settings dialog -->
   <data name="Timeline_Settings_Title" xml:space="preserve"><value>Settings</value></data>
   <data name="Timeline_Width" xml:space="preserve"><value>Timeline Width (px)</value></data>
-  <data name="Timeline_Header" xml:space="preserve"><value>X Header Element</value></data>
+  <data name="Timeline_Sidebar" xml:space="preserve"><value>X Sidebar</value></data>
   <data name="Timeline_Compose" xml:space="preserve"><value>Compose Area</value></data>
   <data name="Timeline_ListHeader" xml:space="preserve"><value>Notifications / Search / Bookmarks / List Header</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>Settings</value></data>
