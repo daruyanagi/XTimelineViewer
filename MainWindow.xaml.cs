@@ -1114,7 +1114,7 @@ namespace XTimelineViewer
             if (p.StartsWith("/notifications"))                       return ""; // Bell
             if (p.StartsWith("/search") || p.StartsWith("/explore")) return ""; // Search
             if (p == "/bookmarks" || p.StartsWith("/bookmarks/") ||
-                p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/")) return ""; // Bookmark
+                p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/")) return ""; // Bookmark
             if (p.StartsWith("/i/lists/"))                            return ""; // BulletedList
             if (p.StartsWith("/messages"))                            return ""; // Chat
             if (System.Text.RegularExpressions.Regex.IsMatch(p, @"^/[^/]+$")) return ""; // Contact
