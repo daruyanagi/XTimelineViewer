@@ -76,4 +76,6 @@
 
   <!-- Extension settings -->
   <data name="ExtSettings_Format" xml:space="preserve"><value>{0} Settings</value></data>
+  <data name="ExtSettings_Homepage" xml:space="preserve"><value>Open Homepage</value></data>
+  <data name="ExtSettings_StoreLink" xml:space="preserve"><value>Open in Chrome Web Store</value></data>
 </root>
