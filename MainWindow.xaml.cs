@@ -17,10 +17,11 @@ namespace XTimelineViewer
 {
     internal class TimelineConfig
     {
-        public string Url        { get; set; } = "";
-        public double Width      { get; set; } = 350;
-        public bool   HideHeader  { get; set; } = false;
-        public bool   HideCompose { get; set; } = true;
+        public string Url            { get; set; } = "";
+        public double Width          { get; set; } = 350;
+        public bool   HideHeader     { get; set; } = false;
+        public bool   HideCompose    { get; set; } = true;
+        public bool   HideListHeader { get; set; } = false;
     }
 
     internal class AppSettings
@@ -999,6 +1000,21 @@ namespace XTimelineViewer
                     OffContent = R.Get("Toggle_Show")
                 };
 
+                var listHeaderApplicable = IsListHeaderApplicable(cfg.Url);
+                var hideListHeaderToggle = new ToggleSwitch
+                {
+                    IsOn       = cfg.HideListHeader,
+                    IsEnabled  = listHeaderApplicable,
+                    OnContent  = R.Get("Toggle_Hide"),
+                    OffContent = R.Get("Toggle_Show")
+                };
+                var hideListHeaderLabel = new TextBlock
+                {
+                    Text    = R.Get("Timeline_ListHeader"),
+                    Margin  = new Thickness(0, 8, 0, 0),
+                    Opacity = listHeaderApplicable ? 1.0 : 0.4
+                };
+
                 var panel = new StackPanel { Spacing = 8 };
                 panel.Children.Add(new TextBlock { Text = R.Get("Timeline_Width") });
                 panel.Children.Add(widthBox);
@@ -1014,6 +1030,8 @@ namespace XTimelineViewer
                     Margin = new Thickness(0, 8, 0, 0)
                 });
                 panel.Children.Add(hideComposeToggle);
+                panel.Children.Add(hideListHeaderLabel);
+                panel.Children.Add(hideListHeaderToggle);
 
                 var dlg = new ContentDialog
                 {
@@ -1037,6 +1055,10 @@ namespace XTimelineViewer
                     cfg.HideCompose = hideComposeToggle.IsOn;
                     if (webView.CoreWebView2 is not null)
                         await ApplyHideComposeAsync(webView, cfg.HideCompose);
+
+                    cfg.HideListHeader = hideListHeaderToggle.IsOn;
+                    if (webView.CoreWebView2 is not null)
+                        await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
 
                     await SaveTimelinesAsync();
                 }
@@ -1070,6 +1092,61 @@ namespace XTimelineViewer
         }
 
         // ── WebView2 init ─────────────────────────────────────────────────────
+
+        private static bool IsListHeaderApplicable(string url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return false;
+            var p = uri.AbsolutePath;
+            return p.StartsWith("/notifications") ||
+                   p.StartsWith("/search")        ||
+                   p.StartsWith("/explore")       ||
+                   p == "/bookmarks" || p.StartsWith("/bookmarks/") ||
+                   p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/") ||
+                   p.StartsWith("/i/lists/");
+        }
+
+        private static string BuildHideListHeaderJs(bool hide) => $$"""
+            (function(hide){
+                var id='xtv-hide-list-header';
+                var s=document.getElementById(id);
+                if(hide){
+                    var path=window.location.pathname;
+                    var css=[];
+                    // 通知: 「通知」タイトル＋設定ギアを含むヘッダーブロックを非表示
+                    // 直接子セレクタで深さを固定し、全祖先にマッチしないよう限定する
+                    if(/^\/notifications/.test(path))
+                        css.push('div:has(>div>div>div>div>div>a[data-testid="settingsAppBar"]){display:none!important}');
+                    // 検索: 検索ボックス＋戻るボタンを含むヘッダーブロックを非表示
+                    if(/^\/(search|explore)/.test(path))
+                        css.push('div:has(>div>div>div>div>div>button[data-testid="app-bar-back"]){display:none!important}');
+                    // リスト: 上部ナビバー＋リスト情報カード（バナー・作成者・メンバー数）を非表示
+                    if(/^\/i\/lists\//.test(path)){
+                        css.push('div:has(>div>div>div>div>div>button[data-testid="app-bar-back"]){display:none!important}');
+                        css.push('[data-testid="cellInnerDiv"]:has(a[href*="/i/lists/"][href$="/members"]){display:none!important}');
+                    }
+                    // ブックマーク: 上部ナビバー＋nth-child(1)ブロック＋空フォルダの説明文を非表示
+                    if(/^\/(i\/bookmarks|bookmarks)/.test(path)){
+                        css.push('div:has(>div>div>div>div>div>button[data-testid="app-bar-back"]){display:none!important}');
+                        css.push('#react-root main section>div>div>div:nth-child(1){display:none!important}');
+                        css.push('[data-testid="emptyState"]{display:none!important}');
+                    }
+                    if(css.length){
+                        if(!s){s=document.createElement('style');s.id=id;document.head.appendChild(s);}
+                        s.textContent=css.join('');
+                    }else{
+                        if(s)s.remove();
+                    }
+                }else{
+                    if(s)s.remove();
+                }
+            })({{(hide ? "true" : "false")}});
+            """;
+
+        private static async Task ApplyHideListHeaderAsync(
+            Microsoft.UI.Xaml.Controls.WebView2 webView, bool hide)
+        {
+            await webView.CoreWebView2.ExecuteScriptAsync(BuildHideListHeaderJs(hide));
+        }
 
         private static string BuildHideHeaderJs(bool hide) => $$"""
             (function(hide){
@@ -1360,6 +1437,7 @@ namespace XTimelineViewer
                 {
                     await ApplyHideHeaderAsync(webView, cfg.HideHeader);
                     await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
+                    await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
 
                     // TweetInterceptScript のフラグを設定と同期する
                     var flag = _appSettings.OpenTweetInBrowser ? "true" : "false";
@@ -1379,6 +1457,8 @@ namespace XTimelineViewer
             {
                 if (cfg.HideCompose)
                     await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
+                if (cfg.HideListHeader)
+                    await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
             };
 
             webView.Source = new Uri(cfg.Url);
