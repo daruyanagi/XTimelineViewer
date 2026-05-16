@@ -19,7 +19,7 @@ namespace XTimelineViewer
     {
         public string Url            { get; set; } = "";
         public double Width          { get; set; } = 350;
-        public bool   HideHeader     { get; set; } = false;
+        public bool   HideSidebar    { get; set; } = false;
         public bool   HideCompose    { get; set; } = true;
         public bool   HideListHeader { get; set; } = false;
     }
@@ -986,9 +986,9 @@ namespace XTimelineViewer
                     Width                   = 160
                 };
 
-                var hideHeaderToggle = new ToggleSwitch
+                var hideSidebarToggle = new ToggleSwitch
                 {
-                    IsOn       = cfg.HideHeader,
+                    IsOn       = cfg.HideSidebar,
                     OnContent  = R.Get("Toggle_Hide"),
                     OffContent = R.Get("Toggle_Show")
                 };
@@ -1020,10 +1020,10 @@ namespace XTimelineViewer
                 panel.Children.Add(widthBox);
                 panel.Children.Add(new TextBlock
                 {
-                    Text   = R.Get("Timeline_Header"),
+                    Text   = R.Get("Timeline_Sidebar"),
                     Margin = new Thickness(0, 8, 0, 0)
                 });
-                panel.Children.Add(hideHeaderToggle);
+                panel.Children.Add(hideSidebarToggle);
                 panel.Children.Add(new TextBlock
                 {
                     Text   = R.Get("Timeline_Compose"),
@@ -1048,9 +1048,9 @@ namespace XTimelineViewer
                     cfg.Width  = Math.Clamp(widthBox.Value, 100, 2000);
                     pane.Width = cfg.Width;
 
-                    cfg.HideHeader = hideHeaderToggle.IsOn;
+                    cfg.HideSidebar = hideSidebarToggle.IsOn;
                     if (webView.CoreWebView2 is not null)
-                        await ApplyHideHeaderAsync(webView, cfg.HideHeader);
+                        await ApplyHideSidebarAsync(webView, cfg.HideSidebar);
 
                     cfg.HideCompose = hideComposeToggle.IsOn;
                     if (webView.CoreWebView2 is not null)
@@ -1148,9 +1148,9 @@ namespace XTimelineViewer
             await webView.CoreWebView2.ExecuteScriptAsync(BuildHideListHeaderJs(hide));
         }
 
-        private static string BuildHideHeaderJs(bool hide) => $$"""
+        private static string BuildHideSidebarJs(bool hide) => $$"""
             (function(hide){
-                var id='xtv-hide-header';
+                var id='xtv-hide-sidebar';
                 var s=document.getElementById(id);
                 if(hide){
                     if(!s){s=document.createElement('style');s.id=id;
@@ -1162,10 +1162,10 @@ namespace XTimelineViewer
             })({{(hide ? "true" : "false")}});
             """;
 
-        private static async Task ApplyHideHeaderAsync(
+        private static async Task ApplyHideSidebarAsync(
             Microsoft.UI.Xaml.Controls.WebView2 webView, bool hide)
         {
-            await webView.CoreWebView2.ExecuteScriptAsync(BuildHideHeaderJs(hide));
+            await webView.CoreWebView2.ExecuteScriptAsync(BuildHideSidebarJs(hide));
         }
 
         private static async Task ApplyAutoShowNewPostsAsync(WebView2 webView, string cfgUrl)
@@ -1435,7 +1435,7 @@ namespace XTimelineViewer
             {
                 if (args.IsSuccess)
                 {
-                    await ApplyHideHeaderAsync(webView, cfg.HideHeader);
+                    await ApplyHideSidebarAsync(webView, cfg.HideSidebar);
                     await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
                     await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
 
