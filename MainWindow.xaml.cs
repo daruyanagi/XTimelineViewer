@@ -1332,6 +1332,14 @@ namespace XTimelineViewer
                 }
                 if (root.TryGetProperty("homepage_url", out var hp))
                     homepageUrl = hp.GetString();
+
+                // homepage_url がない場合、Chrome Web Store 拡張なら store URL を構成する
+                if (homepageUrl is null &&
+                    root.TryGetProperty("update_url", out var updateUrl) &&
+                    updateUrl.GetString()?.Contains("clients2.google.com") == true)
+                {
+                    homepageUrl = $"https://chromewebstore.google.com/detail/{ext.Id}";
+                }
             }
             if (optPage is null) return; // options_ui がない拡張は追加しない
 
@@ -1362,9 +1370,12 @@ namespace XTimelineViewer
                 contentPanel.Children.Add(optWebView);
                 if (homepageUrl is not null && Uri.TryCreate(homepageUrl, UriKind.Absolute, out var homepageUri))
                 {
+                    var linkText = homepageUri.Host.Contains("chromewebstore.google.com")
+                        ? R.Get("ExtSettings_StoreLink")
+                        : R.Get("ExtSettings_Homepage");
                     contentPanel.Children.Add(new HyperlinkButton
                     {
-                        Content     = R.Get("ExtSettings_Homepage"),
+                        Content     = linkText,
                         NavigateUri = homepageUri,
                         Padding     = new Thickness(0),
                     });
