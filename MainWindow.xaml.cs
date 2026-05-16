@@ -1170,7 +1170,7 @@ namespace XTimelineViewer
                     if(/^\/[A-Za-z0-9_]+$/.test(path) &&
                        !/^\/(home|notifications|search|explore|bookmarks|messages|i)/.test(path)){
                         css.push('div:has(>div>div>div>div>div>button[data-testid="app-bar-back"]){display:none!important}');
-                        css.push('[data-testid="cellInnerDiv"]:has([data-testid="UserName"]){display:none!important}');
+                        css.push('div:has(>a[href$="/header_photo"]){display:none!important}');
                     }
                     if(css.length){
                         if(!s){s=document.createElement('style');s.id=id;document.head.appendChild(s);}
