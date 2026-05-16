@@ -851,7 +851,7 @@ namespace XTimelineViewer
                 FontFamily        = new FontFamily("Segoe Fluent Icons"),
                 FontSize          = 14,
                 Opacity           = 0.8,
-                Margin            = new Thickness(0, 0, 6, 0),
+                Margin            = new Thickness(0, 0, 8, 0),
                 VerticalAlignment = VerticalAlignment.Center
             };
             Grid.SetColumn(typeIcon, 0);
