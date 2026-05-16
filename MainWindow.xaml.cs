@@ -1302,10 +1302,11 @@ namespace XTimelineViewer
 
         private void AddExtensionButton(CoreWebView2BrowserExtension ext, string extDir)
         {
-            // マニフェストから名前、options_ui.page、アイコンを取得
-            string name      = ext.Name;
-            string? optPage  = null;
-            string? iconPath = null;
+            // マニフェストから名前、options_ui.page、アイコン、homepage_url を取得
+            string name          = ext.Name;
+            string? optPage      = null;
+            string? iconPath     = null;
+            string? homepageUrl  = null;
             var manifestPath = Path.Combine(extDir, "manifest.json");
             if (File.Exists(manifestPath))
             {
@@ -1329,6 +1330,8 @@ namespace XTimelineViewer
                         }
                     }
                 }
+                if (root.TryGetProperty("homepage_url", out var hp))
+                    homepageUrl = hp.GetString();
             }
             if (optPage is null) return; // options_ui がない拡張は追加しない
 
@@ -1353,10 +1356,24 @@ namespace XTimelineViewer
             btn.Click += async (_, _) =>
             {
                 var optWebView = new WebView2 { Width = 480, MinHeight = 200 };
+
+                // WebView2 の HWND は常に最前面になるため HyperlinkButton は WebView2 の下に配置する
+                var contentPanel = new StackPanel { Spacing = 8 };
+                contentPanel.Children.Add(optWebView);
+                if (homepageUrl is not null && Uri.TryCreate(homepageUrl, UriKind.Absolute, out var homepageUri))
+                {
+                    contentPanel.Children.Add(new HyperlinkButton
+                    {
+                        Content     = R.Get("ExtSettings_Homepage"),
+                        NavigateUri = homepageUri,
+                        Padding     = new Thickness(0),
+                    });
+                }
+
                 var dlg = new ContentDialog
                 {
                     Title           = string.Format(R.Get("ExtSettings_Format"), name),
-                    Content         = optWebView,
+                    Content         = contentPanel,
                     CloseButtonText = R.Get("Button_Close"),
                     XamlRoot        = Content.XamlRoot
                 };
