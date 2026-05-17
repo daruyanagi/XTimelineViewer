@@ -2,16 +2,25 @@ using Microsoft.UI.Xaml;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace XTimelineViewer
 {
     public partial class App : Application
     {
+        // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4
+        // Must be called before InitializeComponent so WebView2 (Win32 HWND) and WinUI 3 (DIP)
+        // coordinate systems are aligned, preventing scroll events hitting the wrong column on
+        // non-100% DPI displays (125%, 150%, 200%).
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetProcessDpiAwarenessContext(nint value);
+
         private Window? _window;
 
         public App()
         {
+            SetProcessDpiAwarenessContext(-4);
             this.InitializeComponent();
         }
 
