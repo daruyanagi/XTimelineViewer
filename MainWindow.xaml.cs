@@ -17,11 +17,13 @@ namespace XTimelineViewer
 {
     internal class TimelineConfig
     {
-        public string Url            { get; set; } = "";
-        public double Width          { get; set; } = 350;
-        public bool   HideSidebar    { get; set; } = false;
-        public bool   HideCompose    { get; set; } = true;
-        public bool   HideListHeader { get; set; } = false;
+        public string Url                  { get; set; } = "";
+        public double Width                { get; set; } = 350;
+        public bool   HideSidebar         { get; set; } = false;
+        public bool   HideCompose         { get; set; } = true;
+        public bool   HideListHeader       { get; set; } = false;
+        public bool   HardReloadEnabled    { get; set; } = false;
+        public int    HardReloadInterval   { get; set; } = 3;
     }
 
     internal class AppSettings
@@ -104,8 +106,9 @@ namespace XTimelineViewer
         private bool _extensionsLoaded = false;
         private CoreWebView2Environment? _webViewEnv;
         private CoreWebView2Environment? _composeEnv;
-        private readonly Dictionary<WebView2, Grid> _webViewToPane  = [];
-        private readonly Dictionary<Grid, Action>   _paneToSetFocus = [];
+        private readonly Dictionary<WebView2, Grid>            _webViewToPane  = [];
+        private readonly Dictionary<Grid, Action>              _paneToSetFocus = [];
+        private readonly Dictionary<WebView2, DispatcherTimer> _hardReloadTimers = [];
         private DispatcherTimer? _autoActivateTimer;
 
         // キーボードショートカット処理スクリプト（各 WebView2 に注入）
@@ -1011,6 +1014,32 @@ namespace XTimelineViewer
                     Opacity = listHeaderApplicable ? 1.0 : 0.4
                 };
 
+                var isHome = IsHomePath(cfg.Url);
+                var hardReloadToggle = new ToggleSwitch
+                {
+                    IsOn       = cfg.HardReloadEnabled,
+                    IsEnabled  = !isHome,
+                    OnContent  = R.Get("Toggle_On"),
+                    OffContent = R.Get("Toggle_Off"),
+                };
+                var hardReloadIntervalBox = new NumberBox
+                {
+                    Value                   = cfg.HardReloadInterval,
+                    Minimum                 = 1,
+                    Maximum                 = 60,
+                    SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline,
+                    Width                   = 160,
+                    IsEnabled               = !isHome && cfg.HardReloadEnabled,
+                };
+                hardReloadToggle.Toggled += (_, _) =>
+                    hardReloadIntervalBox.IsEnabled = !isHome && hardReloadToggle.IsOn;
+                var reloadLabel = new TextBlock
+                {
+                    Text    = R.Get("Timeline_ReloadInterval"),
+                    Margin  = new Thickness(0, 8, 0, 0),
+                    Opacity = isHome ? 0.4 : 1.0,
+                };
+
                 var deleteBtn = new Button
                 {
                     Content             = R.Get("Pane_Delete"),
@@ -1036,6 +1065,9 @@ namespace XTimelineViewer
                 panel.Children.Add(hideComposeToggle);
                 panel.Children.Add(hideListHeaderLabel);
                 panel.Children.Add(hideListHeaderToggle);
+                panel.Children.Add(reloadLabel);
+                panel.Children.Add(hardReloadToggle);
+                panel.Children.Add(hardReloadIntervalBox);
                 panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 8, 0, 0) });
                 panel.Children.Add(deleteBtn);
 
@@ -1056,6 +1088,7 @@ namespace XTimelineViewer
 
                 if (shouldDelete)
                 {
+                    StopHardReloadTimer(webView);
                     _configs.Remove(cfg);
                     _webViews.Remove(webView);
                     _webViewToPane.Remove(webView);
@@ -1092,11 +1125,31 @@ namespace XTimelineViewer
                     if (webView.CoreWebView2 is not null)
                         await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
 
+                    cfg.HardReloadEnabled  = hardReloadToggle.IsOn;
+                    cfg.HardReloadInterval = (int)Math.Clamp(hardReloadIntervalBox.Value, 1, 60);
+                    StartHardReloadTimer(webView, cfg);
+
                     await SaveTimelinesAsync();
                 }
             };
 
             _ = InitWebViewAsync(webView, cfg);
+        }
+
+        private void StartHardReloadTimer(WebView2 wv, TimelineConfig cfg)
+        {
+            StopHardReloadTimer(wv);
+            if (!cfg.HardReloadEnabled || IsHomePath(cfg.Url)) return;
+
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(cfg.HardReloadInterval) };
+            timer.Tick += (_, _) => wv.CoreWebView2?.Reload();
+            timer.Start();
+            _hardReloadTimers[wv] = timer;
+        }
+
+        private void StopHardReloadTimer(WebView2 wv)
+        {
+            if (_hardReloadTimers.Remove(wv, out var t)) t.Stop();
         }
 
         // ── WebView2 init ─────────────────────────────────────────────────────
@@ -1122,6 +1175,10 @@ namespace XTimelineViewer
             !p.StartsWith("/search") && !p.StartsWith("/explore") &&
             !p.StartsWith("/bookmarks") && !p.StartsWith("/messages") &&
             !p.StartsWith("/i/");
+
+        private static bool IsHomePath(string url) =>
+            Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
+            uri.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase);
 
         private static bool IsListHeaderApplicable(string url)
         {
@@ -1527,6 +1584,7 @@ namespace XTimelineViewer
             };
 
             webView.Source = new Uri(cfg.Url);
+            StartHardReloadTimer(webView, cfg);
         }
     }
 }
