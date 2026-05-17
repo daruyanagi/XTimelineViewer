@@ -56,6 +56,7 @@
   <data name="Timeline_Sidebar" xml:space="preserve"><value>X のサイドバー</value></data>
   <data name="Timeline_Compose" xml:space="preserve"><value>投稿画面</value></data>
   <data name="Timeline_ListHeader" xml:space="preserve"><value>通知・検索・ブックマーク・リストのヘッダー</value></data>
+  <data name="Timeline_ReloadInterval" xml:space="preserve"><value>定期リロード間隔（分、0 で無効）</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>設定</value></data>
   <data name="Pane_Close_Tooltip" xml:space="preserve"><value>閉じる</value></data>
   <data name="Pane_Delete" xml:space="preserve"><value>このタイムラインを削除</value></data>
