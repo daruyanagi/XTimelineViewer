@@ -4,7 +4,9 @@ publish*/
 AppPackages/
 *.zip
 .vs/
-.claude/
+.claude/*
+!.claude/memory/
+!.claude/memory/**
 *.user
 packages/
 test-cert.pfx
