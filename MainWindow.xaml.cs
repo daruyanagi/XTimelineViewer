@@ -1014,11 +1014,9 @@ namespace XTimelineViewer
                     Opacity = listHeaderApplicable ? 1.0 : 0.4
                 };
 
-                var isHome = IsHomePath(cfg.Url);
                 var hardReloadToggle = new ToggleSwitch
                 {
                     IsOn       = cfg.HardReloadEnabled,
-                    IsEnabled  = !isHome,
                     OnContent  = R.Get("Toggle_On"),
                     OffContent = R.Get("Toggle_Off"),
                 };
@@ -1029,15 +1027,14 @@ namespace XTimelineViewer
                     Maximum                 = 60,
                     SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline,
                     Width                   = 160,
-                    IsEnabled               = !isHome && cfg.HardReloadEnabled,
+                    IsEnabled               = cfg.HardReloadEnabled,
                 };
                 hardReloadToggle.Toggled += (_, _) =>
-                    hardReloadIntervalBox.IsEnabled = !isHome && hardReloadToggle.IsOn;
+                    hardReloadIntervalBox.IsEnabled = hardReloadToggle.IsOn;
                 var reloadLabel = new TextBlock
                 {
-                    Text    = R.Get("Timeline_ReloadInterval"),
-                    Margin  = new Thickness(0, 8, 0, 0),
-                    Opacity = isHome ? 0.4 : 1.0,
+                    Text   = R.Get("Timeline_ReloadInterval"),
+                    Margin = new Thickness(0, 8, 0, 0),
                 };
 
                 var deleteBtn = new Button
@@ -1139,7 +1136,7 @@ namespace XTimelineViewer
         private void StartHardReloadTimer(WebView2 wv, TimelineConfig cfg)
         {
             StopHardReloadTimer(wv);
-            if (!cfg.HardReloadEnabled || IsHomePath(cfg.Url)) return;
+            if (!cfg.HardReloadEnabled) return;
 
             var timer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(cfg.HardReloadInterval) };
             timer.Tick += (_, _) => wv.CoreWebView2?.Reload();
@@ -1175,10 +1172,6 @@ namespace XTimelineViewer
             !p.StartsWith("/search") && !p.StartsWith("/explore") &&
             !p.StartsWith("/bookmarks") && !p.StartsWith("/messages") &&
             !p.StartsWith("/i/");
-
-        private static bool IsHomePath(string url) =>
-            Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
-            uri.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase);
 
         private static bool IsListHeaderApplicable(string url)
         {
