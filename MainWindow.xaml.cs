@@ -258,7 +258,7 @@ namespace XTimelineViewer
             AppWindow.Resize(new SizeInt32(1400, 900));
             var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
             if (File.Exists(iconPath)) AppWindow.SetIcon(iconPath);
-            Title = $"XTimelineViewer — {SaveFilePath}";
+            Title = "XTimelineViewer";
             PostLabel.Text       = R.Get("PostLabel.Text");
             DropHintTitle.Text   = R.Get("DropHintTitle.Text");
             DropHintSubtitle.Text = R.Get("DropHintSubtitle.Text");
@@ -395,6 +395,15 @@ namespace XTimelineViewer
             panel.Children.Add(MakeRow(R.Get("Settings_Theme"), themeCombo, new Thickness(0)));
             panel.Children.Add(MakeRow(R.Get("Settings_Language"), langCombo));
             panel.Children.Add(MakeRow(R.Get("Settings_ExportFolder"), openFolderBtn));
+            panel.Children.Add(new TextBlock
+            {
+                Text                   = Path.GetDirectoryName(SettingsFilePath),
+                TextWrapping           = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true,
+                Opacity                = 0.6,
+                FontSize               = 12,
+                Margin                 = new Thickness(0, 2, 0, 0),
+            });
             panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 12, 0, 8) });
             panel.Children.Add(new TextBlock
             {
