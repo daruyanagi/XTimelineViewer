@@ -11,6 +11,15 @@
   <!-- Toolbar tooltips -->
   <data name="PostBtn_Tooltip" xml:space="preserve"><value>新規投稿</value></data>
   <data name="AppSettingsBtn_Tooltip" xml:space="preserve"><value>アプリ設定</value></data>
+  <data name="AppMenu_Tooltip" xml:space="preserve"><value>メニュー</value></data>
+
+  <!-- App menu items -->
+  <data name="Menu_NewProfile" xml:space="preserve"><value>新規プロファイルの作成</value></data>
+  <data name="Menu_Settings" xml:space="preserve"><value>設定</value></data>
+  <data name="Menu_About" xml:space="preserve"><value>XTimelineViewer について</value></data>
+
+  <!-- About dialog -->
+  <data name="About_Title" xml:space="preserve"><value>XTimelineViewer について</value></data>
 
   <!-- Theme selector items -->
   <data name="Theme_System" xml:space="preserve"><value>システム</value></data>
