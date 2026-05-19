@@ -92,4 +92,12 @@
   <data name="ExtSettings_Format" xml:space="preserve"><value>{0} Settings</value></data>
   <data name="ExtSettings_Homepage" xml:space="preserve"><value>Open Homepage</value></data>
   <data name="ExtSettings_StoreLink" xml:space="preserve"><value>Open in Chrome Web Store</value></data>
+
+  <!-- About dialog sections -->
+  <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>
+  <data name="About_Links" xml:space="preserve"><value>Links</value></data>
+  <data name="About_Repository" xml:space="preserve"><value>GitHub Repository</value></data>
+  <data name="About_Acknowledgements" xml:space="preserve"><value>Acknowledgements</value></data>
+  <data name="About_License" xml:space="preserve"><value>License</value></data>
+  <data name="About_Components" xml:space="preserve"><value>Components</value></data>
 </root>

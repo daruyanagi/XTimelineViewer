@@ -510,28 +510,44 @@ namespace XTimelineViewer
             }
             var versionInfoText = $"XTimelineViewer v{version}\r\n{edgeChannel} {edgeVersion}";
 
-            var monoFont = new FontFamily("Cascadia Mono, Consolas, Courier New");
-            var versionInfoBox = new StackPanel
-            {
-                Spacing = 2,
-                Children =
+            var issueBody = Uri.EscapeDataString(
+                $"- {R.Get("IssueLabel_AppVersion")}: v{version}\n" +
+                $"- {R.Get("IssueLabel_EdgeVersion")}: {edgeChannel} {edgeVersion}\n" +
+                $"- {R.Get("IssueLabel_Symptoms")}:\n");
+            var issueUrl = $"https://github.com/daruyanagi/XTimelineViewer/issues/new?labels=bug&title=&body={issueBody}";
+
+            // ── Header (icon + name + version + copyright) ────────────────────
+            var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "StoreLogo.png");
+            var header = new StackPanel { Spacing = 4, Margin = new Thickness(0, 0, 0, 8) };
+
+            if (File.Exists(iconPath))
+                header.Children.Add(new Microsoft.UI.Xaml.Controls.Image
                 {
-                    new TextBlock
-                    {
-                        Text                   = $"XTimelineViewer v{version}",
-                        FontFamily             = monoFont,
-                        FontSize               = 11,
-                        IsTextSelectionEnabled = true,
-                    },
-                    new TextBlock
-                    {
-                        Text                   = $"{edgeChannel} {edgeVersion}",
-                        FontFamily             = monoFont,
-                        FontSize               = 11,
-                        IsTextSelectionEnabled = true,
-                    },
-                }
-            };
+                    Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(iconPath)),
+                    Width  = 48,
+                    Height = 48,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(0, 0, 0, 4),
+                });
+
+            header.Children.Add(new TextBlock
+            {
+                Text       = "XTimelineViewer",
+                FontSize   = 20,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            });
+            header.Children.Add(new TextBlock
+            {
+                Text     = $"v{version}",
+                FontSize = 13,
+                Opacity  = 0.7,
+            });
+            header.Children.Add(new TextBlock
+            {
+                Text     = R.Get("About_Copyright"),
+                FontSize = 12,
+                Opacity  = 0.6,
+            });
 
             var copyBtn = new Button
             {
@@ -545,12 +561,12 @@ namespace XTimelineViewer
                         {
                             Glyph      = "",
                             FontFamily = new FontFamily("Segoe Fluent Icons"),
-                            FontSize   = 14
+                            FontSize   = 14,
                         },
-                        new TextBlock { Text = R.Get("Button_Copy") }
+                        new TextBlock { Text = R.Get("Button_Copy") },
                     }
                 },
-                Margin = new Thickness(0, 8, 8, 0)
+                Margin = new Thickness(0, 8, 0, 0),
             };
             copyBtn.Click += (_, _) =>
             {
@@ -558,27 +574,73 @@ namespace XTimelineViewer
                 dp.SetText(versionInfoText);
                 Clipboard.SetContent(dp);
             };
+            header.Children.Add(copyBtn);
 
-            var issueBody = Uri.EscapeDataString(
-                $"- {R.Get("IssueLabel_AppVersion")}: v{version}\n" +
-                $"- {R.Get("IssueLabel_EdgeVersion")}: {edgeChannel} {edgeVersion}\n" +
-                $"- {R.Get("IssueLabel_Symptoms")}:\n");
-            var issueUrl = $"https://github.com/daruyanagi/XTimelineViewer/issues/new?labels=bug&title=&body={issueBody}";
+            // ── Section helper ────────────────────────────────────────────────
+            static StackPanel MakeSection(string title)
+            {
+                var s = new StackPanel { Spacing = 4, Margin = new Thickness(0, 12, 0, 0) };
+                s.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 0, 0, 8) });
+                s.Children.Add(new TextBlock
+                {
+                    Text       = title,
+                    FontSize   = 12,
+                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                    Opacity    = 0.8,
+                    Margin     = new Thickness(0, 0, 0, 4),
+                });
+                return s;
+            }
 
-            var issueBtn = new HyperlinkButton
+            // ── Links ─────────────────────────────────────────────────────────
+            var linksSection = MakeSection(R.Get("About_Links"));
+            linksSection.Children.Add(new HyperlinkButton
+            {
+                Content     = R.Get("About_Repository"),
+                NavigateUri = new Uri("https://github.com/daruyanagi/XTimelineViewer"),
+                Padding     = new Thickness(0),
+            });
+            linksSection.Children.Add(new HyperlinkButton
             {
                 Content     = R.Get("Button_ReportIssue"),
-                Margin      = new Thickness(0, 8, 0, 0),
                 NavigateUri = new Uri(issueUrl),
-            };
+                Padding     = new Thickness(0),
+            });
 
-            var actionsPanel = new StackPanel { Orientation = Orientation.Horizontal };
-            actionsPanel.Children.Add(copyBtn);
-            actionsPanel.Children.Add(issueBtn);
+            // ── Acknowledgements ──────────────────────────────────────────────
+            var acksSection = MakeSection(R.Get("About_Acknowledgements"));
+            acksSection.Children.Add(new HyperlinkButton
+            {
+                Content     = "TwitterTimelineLoader",
+                NavigateUri = new Uri("https://chromewebstore.google.com/detail/twittertimelineloader/ipmgjpmedafkmmadinmeoannpofakpbh"),
+                Padding     = new Thickness(0),
+            });
 
-            var panel = new StackPanel { Spacing = 8, MinWidth = 300 };
-            panel.Children.Add(versionInfoBox);
-            panel.Children.Add(actionsPanel);
+            // ── License ───────────────────────────────────────────────────────
+            var licenseSection = MakeSection(R.Get("About_License"));
+            licenseSection.Children.Add(new TextBlock
+            {
+                Text                   = "MIT License",
+                IsTextSelectionEnabled = true,
+                FontSize               = 13,
+            });
+
+            // ── Components ────────────────────────────────────────────────────
+            var componentsSection = MakeSection(R.Get("About_Components"));
+            componentsSection.Children.Add(new TextBlock
+            {
+                Text                   = $"{edgeChannel}  {edgeVersion}",
+                IsTextSelectionEnabled = true,
+                FontSize               = 13,
+                Opacity                = 0.8,
+            });
+
+            var panel = new StackPanel { MinWidth = 320 };
+            panel.Children.Add(header);
+            panel.Children.Add(linksSection);
+            panel.Children.Add(acksSection);
+            panel.Children.Add(licenseSection);
+            panel.Children.Add(componentsSection);
 
             var dlg = new ContentDialog
             {
@@ -586,12 +648,12 @@ namespace XTimelineViewer
                 Content         = panel,
                 CloseButtonText = R.Get("Button_Close"),
                 XamlRoot        = Content.XamlRoot,
-                RequestedTheme  = ((FrameworkElement)Content).ActualTheme
+                RequestedTheme  = ((FrameworkElement)Content).ActualTheme,
             };
             await dlg.ShowAsync();
         }
 
-        // ── Theme ─────────────────────────────────────────────────────────────
+                // ── Theme ─────────────────────────────────────────────────────────────
 
         private async void PostBtn_Click(object _, RoutedEventArgs __)
         {
