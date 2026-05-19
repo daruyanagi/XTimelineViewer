@@ -108,7 +108,10 @@ namespace XTimelineViewer
         private CoreWebView2Environment? _composeEnv;
         private readonly Dictionary<WebView2, Grid>            _webViewToPane  = [];
         private readonly Dictionary<Grid, Action>              _paneToSetFocus = [];
-        private readonly Dictionary<WebView2, DispatcherTimer> _hardReloadTimers = [];
+        private readonly Dictionary<WebView2, DispatcherTimer>  _hardReloadTimers    = [];
+        private readonly Dictionary<WebView2, DateTimeOffset>   _hardReloadStartTimes = [];
+        private readonly Dictionary<WebView2, Action>           _hardReloadUiUpdaters = [];
+        private DispatcherTimer? _hardReloadUiTimer;
         private DispatcherTimer? _autoActivateTimer;
 
         // キーボードショートカット処理スクリプト（各 WebView2 に注入）
@@ -858,6 +861,8 @@ namespace XTimelineViewer
                 VerticalAlignment = VerticalAlignment.Center
             };
             Grid.SetColumn(typeIcon, 0);
+            var hardReloadTooltip = new ToolTip();
+            ToolTipService.SetToolTip(typeIcon, hardReloadTooltip);
 
             var urlLabel = new TextBlock
             {
@@ -930,6 +935,11 @@ namespace XTimelineViewer
                 _focusedHeaderGrid = headerGrid;
                 foreach (var r in _headerRefreshers) r();
             };
+            webView.PointerEntered += (s, e) => PauseHardReloadTimer(webView);
+            webView.PointerExited  += (s, e) => ResumeHardReloadTimer(webView);
+
+            _hardReloadUiUpdaters[webView] = () => UpdateHardReloadTooltip(webView, hardReloadTooltip);
+            EnsureHardReloadUiTimer();
 
             // ── Drag & Drop reorder ───────────────────────────────────────────
 
@@ -1095,6 +1105,13 @@ namespace XTimelineViewer
                 if (shouldDelete)
                 {
                     StopHardReloadTimer(webView);
+                    _hardReloadUiUpdaters.Remove(webView);
+                    _hardReloadStartTimes.Remove(webView);
+                    if (_hardReloadUiUpdaters.Count == 0)
+                    {
+                        _hardReloadUiTimer?.Stop();
+                        _hardReloadUiTimer = null;
+                    }
                     _configs.Remove(cfg);
                     _webViews.Remove(webView);
                     _webViewToPane.Remove(webView);
@@ -1148,7 +1165,12 @@ namespace XTimelineViewer
             if (!cfg.HardReloadEnabled) return;
 
             var timer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(cfg.HardReloadInterval) };
-            timer.Tick += (_, _) => wv.CoreWebView2?.Reload();
+            timer.Tick += (_, _) =>
+            {
+                wv.CoreWebView2?.Reload();
+                _hardReloadStartTimes[wv] = DateTimeOffset.Now;
+            };
+            _hardReloadStartTimes[wv] = DateTimeOffset.Now;
             timer.Start();
             _hardReloadTimers[wv] = timer;
         }
@@ -1156,6 +1178,53 @@ namespace XTimelineViewer
         private void StopHardReloadTimer(WebView2 wv)
         {
             if (_hardReloadTimers.Remove(wv, out var t)) t.Stop();
+            _hardReloadStartTimes.Remove(wv);
+        }
+
+        private void PauseHardReloadTimer(WebView2 wv)
+        {
+            if (_hardReloadTimers.TryGetValue(wv, out var t)) t.Stop();
+        }
+
+        private void ResumeHardReloadTimer(WebView2 wv)
+        {
+            if (_hardReloadTimers.TryGetValue(wv, out var t))
+            {
+                _hardReloadStartTimes[wv] = DateTimeOffset.Now;
+                t.Start();
+            }
+        }
+
+        private void UpdateHardReloadTooltip(WebView2 wv, ToolTip tooltip)
+        {
+            if (!_hardReloadTimers.TryGetValue(wv, out var t))
+            {
+                tooltip.Content = null;
+                return;
+            }
+            if (!t.IsEnabled)
+            {
+                tooltip.Content = "⏸ リロード一時停止中";
+                return;
+            }
+            if (_hardReloadStartTimes.TryGetValue(wv, out var start))
+            {
+                var remaining = t.Interval - (DateTimeOffset.Now - start);
+                tooltip.Content = remaining > TimeSpan.Zero
+                    ? $"⏱ 残り {(int)remaining.TotalMinutes}:{remaining.Seconds:D2} でリロード"
+                    : null;
+            }
+        }
+
+        private void EnsureHardReloadUiTimer()
+        {
+            if (_hardReloadUiTimer is not null) return;
+            _hardReloadUiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _hardReloadUiTimer.Tick += (_, _) =>
+            {
+                foreach (var (wv, update) in _hardReloadUiUpdaters) update();
+            };
+            _hardReloadUiTimer.Start();
         }
 
         // ── WebView2 init ─────────────────────────────────────────────────────
