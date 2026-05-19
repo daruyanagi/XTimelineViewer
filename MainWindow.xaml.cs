@@ -1199,19 +1199,19 @@ namespace XTimelineViewer
         {
             if (!_hardReloadTimers.TryGetValue(wv, out var t))
             {
-                tooltip.Content = null;
+                tooltip.Content = "⏹ 定期ハードリロード無効";
                 return;
             }
             if (!t.IsEnabled)
             {
-                tooltip.Content = "⏸ リロード一時停止中";
+                tooltip.Content = "⏸ 定期ハードリロード一時停止中";
                 return;
             }
             if (_hardReloadStartTimes.TryGetValue(wv, out var start))
             {
                 var remaining = t.Interval - (DateTimeOffset.Now - start);
                 tooltip.Content = remaining > TimeSpan.Zero
-                    ? $"⏱ 残り {(int)remaining.TotalMinutes}:{remaining.Seconds:D2} でリロード"
+                    ? $"🔄 定期ハードリロード有効: ⏱ 残り {(int)remaining.TotalMinutes}:{remaining.Seconds:D2}"
                     : null;
             }
         }
