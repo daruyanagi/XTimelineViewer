@@ -37,9 +37,17 @@
                         Spacing="4"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center">
-                <Button x:Name="AppSettingsBtn" Width="32" Height="32" Padding="0" FontSize="14"
-                        Click="AppSettingsBtn_Click">
-                    <FontIcon Glyph="&#xE713;" FontFamily="Segoe Fluent Icons" FontSize="14"/>
+                <Button x:Name="AppMenuBtn" Width="32" Height="32" Padding="0" FontSize="14">
+                    <FontIcon Glyph="&#xE700;" FontFamily="Segoe Fluent Icons" FontSize="14"/>
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem x:Name="NewProfileMenuItem" IsEnabled="False"/>
+                            <MenuFlyoutSeparator/>
+                            <MenuFlyoutItem x:Name="AppSettingsMenuItem" Click="AppSettingsMenuItem_Click"/>
+                            <MenuFlyoutSeparator/>
+                            <MenuFlyoutItem x:Name="AboutMenuItem" Click="AboutMenuItem_Click"/>
+                        </MenuFlyout>
+                    </Button.Flyout>
                 </Button>
             </StackPanel>
         </Grid>

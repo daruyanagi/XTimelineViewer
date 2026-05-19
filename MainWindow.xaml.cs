@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
@@ -266,7 +266,10 @@ namespace XTimelineViewer
             DropHintTitle.Text   = R.Get("DropHintTitle.Text");
             DropHintSubtitle.Text = R.Get("DropHintSubtitle.Text");
             ToolTipService.SetToolTip(PostBtn, R.Get("PostBtn_Tooltip"));
-            ToolTipService.SetToolTip(AppSettingsBtn, R.Get("AppSettingsBtn_Tooltip"));
+            ToolTipService.SetToolTip(AppMenuBtn, R.Get("AppMenu_Tooltip"));
+            NewProfileMenuItem.Text  = R.Get("Menu_NewProfile");
+            AppSettingsMenuItem.Text = R.Get("Menu_Settings");
+            AboutMenuItem.Text       = R.Get("Menu_About");
             Closed += async (s, e) => await SaveTimelinesAsync();
             ((FrameworkElement)Content).ActualThemeChanged += (s, e) => ApplyThemeToWebViews();
             LoadSettings();
@@ -332,7 +335,7 @@ namespace XTimelineViewer
             ApplyThemeToWebViews();
         }
 
-        private async void AppSettingsBtn_Click(object _, RoutedEventArgs __)
+        private async void AppSettingsMenuItem_Click(object _, RoutedEventArgs __)
         {
             var themeCombo = new ComboBox
             {
@@ -357,24 +360,6 @@ namespace XTimelineViewer
                 Directory.CreateDirectory(folder);
                 await Windows.System.Launcher.LaunchFolderPathAsync(folder);
             };
-
-            var version = System.Reflection.Assembly.GetExecutingAssembly()
-                              .GetName().Version?.ToString(3) ?? R.Get("Version_Unknown");
-
-            var edgeChannel = FindEdgeDevVersionFolder() is not null
-                ? R.Get("EdgeChannel_Dev")
-                : R.Get("EdgeChannel_Runtime");
-            string edgeVersion;
-            try
-            {
-                edgeVersion = CoreWebView2Environment.GetAvailableBrowserVersionString(
-                    FindEdgeDevVersionFolder() ?? "");
-            }
-            catch
-            {
-                edgeVersion = _webViewEnv?.BrowserVersionString ?? R.Get("Version_Unknown");
-            }
-            var versionInfoText = $"XTimelineViewer v{version}\r\n{edgeChannel} {edgeVersion}";
 
             static Grid MakeRow(string label, FrameworkElement control, Thickness? margin = null)
             {
@@ -458,17 +443,76 @@ namespace XTimelineViewer
                 Width                   = 160,
             };
             panel.Children.Add(MakeRow(R.Get("Settings_AutoActivate"), autoActivateBox));
-            panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 12, 0, 8) });
-            panel.Children.Add(new TextBlock
-            {
-                Text       = R.Get("Section_About"),
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
-            });
 
-            var monoFont   = new FontFamily("Cascadia Mono, Consolas, Courier New");
+            var dlg = new ContentDialog
+            {
+                Title             = R.Get("AppSettings_Title"),
+                Content           = panel,
+                PrimaryButtonText = R.Get("Button_Save"),
+                CloseButtonText   = R.Get("Button_Cancel"),
+                DefaultButton     = ContentDialogButton.Primary,
+                XamlRoot          = Content.XamlRoot,
+                RequestedTheme    = ((FrameworkElement)Content).ActualTheme
+            };
+
+                        if (await dlg.ShowAsync() == ContentDialogResult.Primary)
+            {
+                _appSettings.Theme = themeCombo.SelectedIndex switch { 1 => "Light", 2 => "Dark", _ => "Default" };
+                _appSettings.OpenComposerInBrowser = openPostToggle.IsOn;
+                _appSettings.OpenTweetInBrowser    = openTweetToggle.IsOn;
+                _appSettings.AutoActivateMinutes   = (int)Math.Clamp(autoActivateBox.Value, 0, 60);
+
+                var newLang    = langValues[Math.Max(0, Math.Min(langCombo.SelectedIndex, langValues.Length - 1))];
+                var langChanged = newLang != _appSettings.Language;
+                _appSettings.Language = newLang;
+
+                SaveSettings();
+                ApplySavedTheme();
+
+                var flag = _appSettings.OpenTweetInBrowser ? "true" : "false";
+                foreach (var wv in _webViews)
+                    if (wv.CoreWebView2 is not null)
+                        await wv.CoreWebView2.ExecuteScriptAsync(
+                            $"window._xtvOpenTweetInBrowser = {flag};");
+                ApplyAutoActivateTimer();
+
+                if (langChanged)
+                {
+                    var notifDlg = new ContentDialog
+                    {
+                        Content         = R.Get("RestartRequired"),
+                        CloseButtonText = R.Get("Button_Close"),
+                        XamlRoot        = Content.XamlRoot,
+                        RequestedTheme  = ((FrameworkElement)Content).ActualTheme
+                    };
+                    await notifDlg.ShowAsync();
+                }
+            }
+        }
+
+        private async void AboutMenuItem_Click(object _, RoutedEventArgs __)
+        {
+            var version = System.Reflection.Assembly.GetExecutingAssembly()
+                              .GetName().Version?.ToString(3) ?? R.Get("Version_Unknown");
+
+            var edgeChannel = FindEdgeDevVersionFolder() is not null
+                ? R.Get("EdgeChannel_Dev")
+                : R.Get("EdgeChannel_Runtime");
+            string edgeVersion;
+            try
+            {
+                edgeVersion = CoreWebView2Environment.GetAvailableBrowserVersionString(
+                    FindEdgeDevVersionFolder() ?? "");
+            }
+            catch
+            {
+                edgeVersion = _webViewEnv?.BrowserVersionString ?? R.Get("Version_Unknown");
+            }
+            var versionInfoText = $"XTimelineViewer v{version}\r\n{edgeChannel} {edgeVersion}";
+
+            var monoFont = new FontFamily("Cascadia Mono, Consolas, Courier New");
             var versionInfoBox = new StackPanel
             {
-                Margin  = new Thickness(0, 6, 0, 0),
                 Spacing = 2,
                 Children =
                 {
@@ -532,53 +576,19 @@ namespace XTimelineViewer
             actionsPanel.Children.Add(copyBtn);
             actionsPanel.Children.Add(issueBtn);
 
+            var panel = new StackPanel { Spacing = 8, MinWidth = 300 };
             panel.Children.Add(versionInfoBox);
             panel.Children.Add(actionsPanel);
 
             var dlg = new ContentDialog
             {
-                Title             = R.Get("AppSettings_Title"),
-                Content           = panel,
-                PrimaryButtonText = R.Get("Button_Save"),
-                CloseButtonText   = R.Get("Button_Cancel"),
-                DefaultButton     = ContentDialogButton.Primary,
-                XamlRoot          = Content.XamlRoot,
-                RequestedTheme    = ((FrameworkElement)Content).ActualTheme
+                Title           = R.Get("About_Title"),
+                Content         = panel,
+                CloseButtonText = R.Get("Button_Close"),
+                XamlRoot        = Content.XamlRoot,
+                RequestedTheme  = ((FrameworkElement)Content).ActualTheme
             };
-
-            if (await dlg.ShowAsync() == ContentDialogResult.Primary)
-            {
-                _appSettings.Theme = themeCombo.SelectedIndex switch { 1 => "Light", 2 => "Dark", _ => "Default" };
-                _appSettings.OpenComposerInBrowser = openPostToggle.IsOn;
-                _appSettings.OpenTweetInBrowser    = openTweetToggle.IsOn;
-                _appSettings.AutoActivateMinutes   = (int)Math.Clamp(autoActivateBox.Value, 0, 60);
-
-                var newLang    = langValues[Math.Max(0, Math.Min(langCombo.SelectedIndex, langValues.Length - 1))];
-                var langChanged = newLang != _appSettings.Language;
-                _appSettings.Language = newLang;
-
-                SaveSettings();
-                ApplySavedTheme();
-
-                var flag = _appSettings.OpenTweetInBrowser ? "true" : "false";
-                foreach (var wv in _webViews)
-                    if (wv.CoreWebView2 is not null)
-                        await wv.CoreWebView2.ExecuteScriptAsync(
-                            $"window._xtvOpenTweetInBrowser = {flag};");
-                ApplyAutoActivateTimer();
-
-                if (langChanged)
-                {
-                    var notifDlg = new ContentDialog
-                    {
-                        Content         = R.Get("RestartRequired"),
-                        CloseButtonText = R.Get("Button_Close"),
-                        XamlRoot        = Content.XamlRoot,
-                        RequestedTheme  = ((FrameworkElement)Content).ActualTheme
-                    };
-                    await notifDlg.ShowAsync();
-                }
-            }
+            await dlg.ShowAsync();
         }
 
         // ── Theme ─────────────────────────────────────────────────────────────
