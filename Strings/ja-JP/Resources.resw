@@ -92,4 +92,12 @@
   <data name="ExtSettings_Format" xml:space="preserve"><value>{0} の設定</value></data>
   <data name="ExtSettings_Homepage" xml:space="preserve"><value>ホームページを開く</value></data>
   <data name="ExtSettings_StoreLink" xml:space="preserve"><value>Chrome Web Store で開く</value></data>
+
+  <!-- About dialog sections -->
+  <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>
+  <data name="About_Links" xml:space="preserve"><value>リンク</value></data>
+  <data name="About_Repository" xml:space="preserve"><value>GitHub リポジトリ</value></data>
+  <data name="About_Acknowledgements" xml:space="preserve"><value>謝辞</value></data>
+  <data name="About_License" xml:space="preserve"><value>ライセンス</value></data>
+  <data name="About_Components" xml:space="preserve"><value>コンポーネント</value></data>
 </root>
