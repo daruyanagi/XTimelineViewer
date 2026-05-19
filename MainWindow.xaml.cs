@@ -516,38 +516,48 @@ namespace XTimelineViewer
                 $"- {R.Get("IssueLabel_Symptoms")}:\n");
             var issueUrl = $"https://github.com/daruyanagi/XTimelineViewer/issues/new?labels=bug&title=&body={issueBody}";
 
-            // ── Header (icon + name + version + copyright) ────────────────────
+            // ── Header (icon left + name/version/copyright right) ─────────────
             var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "StoreLogo.png");
-            var header = new StackPanel { Spacing = 4, Margin = new Thickness(0, 0, 0, 8) };
 
-            if (File.Exists(iconPath))
-                header.Children.Add(new Microsoft.UI.Xaml.Controls.Image
-                {
-                    Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(iconPath)),
-                    Width  = 48,
-                    Height = 48,
-                    HorizontalAlignment = HorizontalAlignment.Left,
-                    Margin = new Thickness(0, 0, 0, 4),
-                });
-
-            header.Children.Add(new TextBlock
+            var textStack = new StackPanel
+            {
+                Spacing           = 3,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            textStack.Children.Add(new TextBlock
             {
                 Text       = "XTimelineViewer",
                 FontSize   = 20,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
             });
-            header.Children.Add(new TextBlock
+            textStack.Children.Add(new TextBlock
             {
                 Text     = $"v{version}",
                 FontSize = 13,
                 Opacity  = 0.7,
             });
-            header.Children.Add(new TextBlock
+            textStack.Children.Add(new TextBlock
             {
                 Text     = R.Get("About_Copyright"),
                 FontSize = 12,
                 Opacity  = 0.6,
             });
+
+            var titleRow = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing     = 12,
+                Margin      = new Thickness(0, 0, 0, 8),
+            };
+            if (File.Exists(iconPath))
+                titleRow.Children.Add(new Microsoft.UI.Xaml.Controls.Image
+                {
+                    Source              = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(iconPath)),
+                    Width               = 48,
+                    Height              = 48,
+                    VerticalAlignment   = VerticalAlignment.Top,
+                });
+            titleRow.Children.Add(textStack);
 
             var copyBtn = new Button
             {
@@ -566,7 +576,7 @@ namespace XTimelineViewer
                         new TextBlock { Text = R.Get("Button_Copy") },
                     }
                 },
-                Margin = new Thickness(0, 8, 0, 0),
+                Margin = new Thickness(0, 4, 0, 0),
             };
             copyBtn.Click += (_, _) =>
             {
@@ -574,6 +584,9 @@ namespace XTimelineViewer
                 dp.SetText(versionInfoText);
                 Clipboard.SetContent(dp);
             };
+
+            var header = new StackPanel { Spacing = 4, Margin = new Thickness(0, 0, 0, 4) };
+            header.Children.Add(titleRow);
             header.Children.Add(copyBtn);
 
             // ── Section helper ────────────────────────────────────────────────
@@ -592,29 +605,39 @@ namespace XTimelineViewer
                 return s;
             }
 
+            // ── Link helper (text + external icon) ────────────────────────────
+            HyperlinkButton MakeLink(string text, string url) => new HyperlinkButton
+            {
+                NavigateUri = new Uri(url),
+                Padding     = new Thickness(0),
+                Content     = new StackPanel
+                {
+                    Orientation     = Orientation.Horizontal,
+                    Spacing         = 4,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Children        =
+                    {
+                        new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center },
+                        new FontIcon
+                        {
+                            Glyph      = "",
+                            FontFamily = new FontFamily("Segoe Fluent Icons"),
+                            FontSize   = 10,
+                            Opacity    = 0.6,
+                            VerticalAlignment = VerticalAlignment.Center,
+                        },
+                    }
+                },
+            };
+
             // ── Links ─────────────────────────────────────────────────────────
             var linksSection = MakeSection(R.Get("About_Links"));
-            linksSection.Children.Add(new HyperlinkButton
-            {
-                Content     = R.Get("About_Repository"),
-                NavigateUri = new Uri("https://github.com/daruyanagi/XTimelineViewer"),
-                Padding     = new Thickness(0),
-            });
-            linksSection.Children.Add(new HyperlinkButton
-            {
-                Content     = R.Get("Button_ReportIssue"),
-                NavigateUri = new Uri(issueUrl),
-                Padding     = new Thickness(0),
-            });
+            linksSection.Children.Add(MakeLink(R.Get("About_Repository"), "https://github.com/daruyanagi/XTimelineViewer"));
+            linksSection.Children.Add(MakeLink(R.Get("Button_ReportIssue"), issueUrl));
 
             // ── Acknowledgements ──────────────────────────────────────────────
             var acksSection = MakeSection(R.Get("About_Acknowledgements"));
-            acksSection.Children.Add(new HyperlinkButton
-            {
-                Content     = "TwitterTimelineLoader",
-                NavigateUri = new Uri("https://chromewebstore.google.com/detail/twittertimelineloader/ipmgjpmedafkmmadinmeoannpofakpbh"),
-                Padding     = new Thickness(0),
-            });
+            acksSection.Children.Add(MakeLink("TwitterTimelineLoader", "https://chromewebstore.google.com/detail/twittertimelineloader/ipmgjpmedafkmmadinmeoannpofakpbh"));
 
             // ── License ───────────────────────────────────────────────────────
             var licenseSection = MakeSection(R.Get("About_License"));
