@@ -111,6 +111,8 @@ namespace XTimelineViewer
         private readonly Dictionary<WebView2, DispatcherTimer>  _hardReloadTimers    = [];
         private readonly Dictionary<WebView2, DateTimeOffset>   _hardReloadStartTimes = [];
         private readonly Dictionary<WebView2, Action>           _hardReloadUiUpdaters = [];
+        private readonly HashSet<WebView2>                       _pointerOverWebViews  = [];
+        private readonly HashSet<WebView2>                       _urlDivergedWebViews  = [];
         private DispatcherTimer? _hardReloadUiTimer;
         private DispatcherTimer? _autoActivateTimer;
 
@@ -1030,8 +1032,8 @@ namespace XTimelineViewer
                 _focusedHeaderGrid = headerGrid;
                 foreach (var r in _headerRefreshers) r();
             };
-            webView.PointerEntered += (s, e) => PauseHardReloadTimer(webView);
-            webView.PointerExited  += (s, e) => ResumeHardReloadTimer(webView);
+            webView.PointerEntered += (s, e) => { _pointerOverWebViews.Add(webView);    EvaluateHardReloadPause(webView); };
+            webView.PointerExited  += (s, e) => { _pointerOverWebViews.Remove(webView); EvaluateHardReloadPause(webView); };
 
             _hardReloadUiUpdaters[webView] = () => UpdateHardReloadTooltip(webView, hardReloadTooltip);
             EnsureHardReloadUiTimer();
@@ -1202,6 +1204,8 @@ namespace XTimelineViewer
                     StopHardReloadTimer(webView);
                     _hardReloadUiUpdaters.Remove(webView);
                     _hardReloadStartTimes.Remove(webView);
+                    _pointerOverWebViews.Remove(webView);
+                    _urlDivergedWebViews.Remove(webView);
                     if (_hardReloadUiUpdaters.Count == 0)
                     {
                         _hardReloadUiTimer?.Stop();
@@ -1276,18 +1280,25 @@ namespace XTimelineViewer
             _hardReloadStartTimes.Remove(wv);
         }
 
-        private void PauseHardReloadTimer(WebView2 wv)
+        private void EvaluateHardReloadPause(WebView2 wv)
         {
-            if (_hardReloadTimers.TryGetValue(wv, out var t)) t.Stop();
-        }
-
-        private void ResumeHardReloadTimer(WebView2 wv)
-        {
-            if (_hardReloadTimers.TryGetValue(wv, out var t))
+            if (!_hardReloadTimers.TryGetValue(wv, out var t)) return;
+            bool shouldPause = _pointerOverWebViews.Contains(wv) || _urlDivergedWebViews.Contains(wv);
+            if (shouldPause && t.IsEnabled)
+                t.Stop();
+            else if (!shouldPause && !t.IsEnabled)
             {
                 _hardReloadStartTimes[wv] = DateTimeOffset.Now;
                 t.Start();
             }
+        }
+
+        private static bool IsOnBaseUrl(string currentUrl, string baseUrl)
+        {
+            if (!Uri.TryCreate(currentUrl, UriKind.Absolute, out var cur))  return false;
+            if (!Uri.TryCreate(baseUrl,    UriKind.Absolute, out var @base)) return false;
+            return string.Equals(cur.Host,         @base.Host,         StringComparison.OrdinalIgnoreCase)
+                && string.Equals(cur.AbsolutePath, @base.AbsolutePath, StringComparison.OrdinalIgnoreCase);
         }
 
         private void UpdateHardReloadTooltip(WebView2 wv, ToolTip tooltip)
@@ -1299,7 +1310,9 @@ namespace XTimelineViewer
             }
             if (!t.IsEnabled)
             {
-                tooltip.Content = R.Get("HardReload_Paused");
+                tooltip.Content = _urlDivergedWebViews.Contains(wv)
+                    ? R.Get("HardReload_Paused_Nav")
+                    : R.Get("HardReload_Paused");
                 return;
             }
             if (_hardReloadStartTimes.TryGetValue(wv, out var start))
@@ -1647,6 +1660,13 @@ namespace XTimelineViewer
             {
                 var env = await GetOrCreateEnvAsync();
                 await webView.EnsureCoreWebView2Async(env);
+                webView.CoreWebView2.SourceChanged += (s, e) =>
+                {
+                    bool diverged = !IsOnBaseUrl(webView.CoreWebView2.Source, cfg.Url);
+                    if (diverged) _urlDivergedWebViews.Add(webView);
+                    else          _urlDivergedWebViews.Remove(webView);
+                    EvaluateHardReloadPause(webView);
+                };
                 await LoadExtensionsAsync(webView);
                 ApplyThemeToWebViews();
             }

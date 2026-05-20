@@ -68,6 +68,7 @@
   <data name="Timeline_ReloadInterval" xml:space="preserve"><value>定期リロード間隔（分、0 で無効）</value></data>
   <data name="HardReload_Active" xml:space="preserve"><value>🔄 定期ハードリロード有効: ⏱ 残り {0}:{1}</value></data>
   <data name="HardReload_Paused" xml:space="preserve"><value>⏸ 定期ハードリロード一時停止中</value></data>
+  <data name="HardReload_Paused_Nav" xml:space="preserve"><value>⏸ ページ閲覧中（定期ハードリロード停止）</value></data>
   <data name="HardReload_Disabled" xml:space="preserve"><value>⏹ 定期ハードリロード無効</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>設定</value></data>
   <data name="Pane_Close_Tooltip" xml:space="preserve"><value>閉じる</value></data>
