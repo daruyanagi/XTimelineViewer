@@ -39,8 +39,9 @@ namespace XTimelineViewer
         public string  Theme                 { get; set; } = "Default"; // "Light" | "Dark" | "Default"
         public int     AutoActivateMinutes   { get; set; } = 0;
         public string  Language              { get; set; } = "system";  // "system" | "ja-JP" | "en-US"
-        public string? LastUpdateCheck       { get; set; } = null;       // UTC ISO-8601
-        public string? CachedLatestVersion   { get; set; } = null;       // "v1.4.0" など
+        public string? LastUpdateCheck           { get; set; } = null;   // UTC ISO-8601
+        public string? CachedLatestVersion     { get; set; } = null;   // "v1.4.0" など
+        public bool    ShowAutoActivateLabel   { get; set; } = false;
     }
 
     public sealed partial class MainWindow : Window
@@ -120,8 +121,11 @@ namespace XTimelineViewer
         private readonly Dictionary<WebView2, Action>           _hardReloadUiUpdaters = [];
         private readonly HashSet<WebView2>                       _pointerOverWebViews  = [];
         private readonly HashSet<WebView2>                       _urlDivergedWebViews  = [];
-        private DispatcherTimer? _hardReloadUiTimer;
-        private DispatcherTimer? _autoActivateTimer;
+        private DispatcherTimer?  _hardReloadUiTimer;
+        private DispatcherTimer?  _autoActivateTimer;
+        private int               _dialogOpenCount      = 0;
+        private DateTimeOffset    _autoActivateStartTime;
+        private readonly HashSet<Grid> _homeHeaderGrids = [];
 
         // キーボードショートカット処理スクリプト（各 WebView2 に注入）
         private static readonly string KeyboardShortcutScript = """
@@ -308,6 +312,14 @@ namespace XTimelineViewer
             File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(_appSettings, JsonOptions));
         }
 
+        private void RestartAutoActivateTimer()
+        {
+            if (_autoActivateTimer is null) return;
+            _autoActivateTimer.Stop();
+            _autoActivateStartTime = DateTimeOffset.Now;
+            _autoActivateTimer.Start();
+        }
+
         private void ApplyAutoActivateTimer()
         {
             _autoActivateTimer?.Stop();
@@ -317,13 +329,21 @@ namespace XTimelineViewer
             {
                 Interval = TimeSpan.FromMinutes(_appSettings.AutoActivateMinutes)
             };
+            _autoActivateStartTime = DateTimeOffset.Now;
             _autoActivateTimer.Tick += (_, _) =>
             {
+                _autoActivateStartTime = DateTimeOffset.Now;
+                if (_pointerOverWebViews.Count > 0)                 return;  // ① ポインターオーバー中
+                if (_dialogOpenCount > 0)                           return;  // ② ダイアログ表示中
+                if (_homeHeaderGrids.Contains(_focusedHeaderGrid))  return;  // ④ ホームにフォーカス中
+
                 foreach (var wv in _webViews)
                 {
                     if (wv.CoreWebView2 is null) continue;
-                    if (!Uri.TryCreate(wv.CoreWebView2.Source, UriKind.Absolute, out var uri)) continue;
-                    if (!uri.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (!Uri.TryCreate(wv.CoreWebView2.Source, UriKind.Absolute, out var src)) continue;
+                    if (!src.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (_urlDivergedWebViews.Contains(wv)) continue;  // ③ 別ページ閲覧中
+
                     if (_webViewToPane.TryGetValue(wv, out var pane) &&
                         _paneToSetFocus.TryGetValue(pane, out var setFocus))
                     {
@@ -455,6 +475,17 @@ namespace XTimelineViewer
             };
             panel.Children.Add(MakeRow(R.Get("Settings_AutoActivate"), autoActivateBox));
 
+            var showAutoActivateLabelToggle = new ToggleSwitch
+            {
+                IsOn                = _appSettings.ShowAutoActivateLabel,
+                OnContent           = R.Get("Toggle_On"),
+                OffContent          = R.Get("Toggle_Off"),
+                Margin              = new Thickness(12, 0, 0, 0),
+                VerticalAlignment   = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+            panel.Children.Add(MakeRow(R.Get("Settings_ShowAutoActivateLabel"), showAutoActivateLabelToggle));
+
             var dlg = new ContentDialog
             {
                 Title             = R.Get("AppSettings_Title"),
@@ -466,12 +497,13 @@ namespace XTimelineViewer
                 RequestedTheme    = ((FrameworkElement)Content).ActualTheme
             };
 
-                        if (await dlg.ShowAsync() == ContentDialogResult.Primary)
+                        if (await ShowDialogAsync(dlg) == ContentDialogResult.Primary)
             {
                 _appSettings.Theme = themeCombo.SelectedIndex switch { 1 => "Light", 2 => "Dark", _ => "Default" };
                 _appSettings.OpenComposerInBrowser = openPostToggle.IsOn;
                 _appSettings.OpenTweetInBrowser    = openTweetToggle.IsOn;
                 _appSettings.AutoActivateMinutes   = (int)Math.Clamp(autoActivateBox.Value, 0, 60);
+                _appSettings.ShowAutoActivateLabel = showAutoActivateLabelToggle.IsOn;
 
                 var newLang    = langValues[Math.Max(0, Math.Min(langCombo.SelectedIndex, langValues.Length - 1))];
                 var langChanged = newLang != _appSettings.Language;
@@ -496,7 +528,7 @@ namespace XTimelineViewer
                         XamlRoot        = Content.XamlRoot,
                         RequestedTheme  = ((FrameworkElement)Content).ActualTheme
                     };
-                    await notifDlg.ShowAsync();
+                    await ShowDialogAsync(notifDlg);
                 }
             }
         }
@@ -744,7 +776,7 @@ namespace XTimelineViewer
                 XamlRoot        = Content.XamlRoot,
                 RequestedTheme  = ((FrameworkElement)Content).ActualTheme,
             };
-            await dlg.ShowAsync();
+            await ShowDialogAsync(dlg);
         }
 
                 // ── Theme ─────────────────────────────────────────────────────────────
@@ -821,7 +853,7 @@ namespace XTimelineViewer
                 wv.Visibility = Visibility.Collapsed;
             try
             {
-                await dlg.ShowAsync();
+                await ShowDialogAsync(dlg);
             }
             finally
             {
@@ -1084,6 +1116,8 @@ namespace XTimelineViewer
 
             void SetFocus()
             {
+                if (_homeHeaderGrids.Contains(_focusedHeaderGrid) && !_homeHeaderGrids.Contains(headerGrid))
+                    RestartAutoActivateTimer();  // ホームから別タイムラインへ
                 _focusedHeaderGrid = headerGrid;
                 foreach (var r in _headerRefreshers) r();
                 webView.Focus(FocusState.Programmatic);
@@ -1098,11 +1132,22 @@ namespace XTimelineViewer
             };
             webView.GotFocus   += (s, e) =>
             {
+                if (_homeHeaderGrids.Contains(_focusedHeaderGrid) && !_homeHeaderGrids.Contains(headerGrid))
+                    RestartAutoActivateTimer();  // ホームから別タイムラインへ
                 _focusedHeaderGrid = headerGrid;
                 foreach (var r in _headerRefreshers) r();
             };
             webView.PointerEntered += (s, e) => { _pointerOverWebViews.Add(webView);    EvaluateHardReloadPause(webView); };
-            webView.PointerExited  += (s, e) => { _pointerOverWebViews.Remove(webView); EvaluateHardReloadPause(webView); };
+            webView.PointerExited  += (s, e) =>
+            {
+                _pointerOverWebViews.Remove(webView);
+                EvaluateHardReloadPause(webView);
+                if (_pointerOverWebViews.Count == 0) RestartAutoActivateTimer();
+            };
+
+            bool isHomeTimeline = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var cfgUri)
+                               && cfgUri.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase);
+            if (isHomeTimeline) _homeHeaderGrids.Add(headerGrid);
 
             _hardReloadUiUpdaters[webView] = () => UpdateHardReloadTooltip(webView, hardReloadTooltip);
             EnsureHardReloadUiTimer();
@@ -1266,7 +1311,7 @@ namespace XTimelineViewer
                 bool shouldDelete = false;
                 deleteBtn.Click += (_, _) => { shouldDelete = true; dlg.Hide(); };
 
-                var result = await dlg.ShowAsync();
+                var result = await ShowDialogAsync(dlg);
 
                 if (shouldDelete)
                 {
@@ -1362,6 +1407,31 @@ namespace XTimelineViewer
             }
         }
 
+        private string GetAutoActivateTooltipText(WebView2 wv)
+        {
+            if (_autoActivateTimer is null)
+                return R.Get("AutoActivate_Disabled");
+            if (_pointerOverWebViews.Count > 0 || _dialogOpenCount > 0)
+                return R.Get("AutoActivate_Paused");
+            if (_urlDivergedWebViews.Contains(wv))
+                return R.Get("AutoActivate_Paused_Nav");
+            var remaining = _autoActivateTimer.Interval - (DateTimeOffset.Now - _autoActivateStartTime);
+            return remaining > TimeSpan.Zero
+                ? string.Format(R.Get("AutoActivate_Active"), (int)remaining.TotalMinutes, remaining.Seconds.ToString("D2"))
+                : string.Empty;
+        }
+
+        private async Task<ContentDialogResult> ShowDialogAsync(ContentDialog dlg)
+        {
+            _dialogOpenCount++;
+            try   { return await dlg.ShowAsync(); }
+            finally
+            {
+                _dialogOpenCount--;
+                if (_dialogOpenCount == 0) RestartAutoActivateTimer();
+            }
+        }
+
         private static bool IsOnBaseUrl(string currentUrl, string baseUrl)
         {
             if (!Uri.TryCreate(currentUrl, UriKind.Absolute, out var cur))  return false;
@@ -1370,27 +1440,56 @@ namespace XTimelineViewer
                 && string.Equals(cur.AbsolutePath, @base.AbsolutePath, StringComparison.OrdinalIgnoreCase);
         }
 
-        private void UpdateHardReloadTooltip(WebView2 wv, ToolTip tooltip)
+        private string GetHardReloadTooltipText(WebView2 wv)
         {
             if (!_hardReloadTimers.TryGetValue(wv, out var t))
-            {
-                tooltip.Content = R.Get("HardReload_Disabled");
-                return;
-            }
+                return R.Get("HardReload_Disabled");
             if (!t.IsEnabled)
-            {
-                tooltip.Content = _urlDivergedWebViews.Contains(wv)
+                return _urlDivergedWebViews.Contains(wv)
                     ? R.Get("HardReload_Paused_Nav")
                     : R.Get("HardReload_Paused");
-                return;
-            }
             if (_hardReloadStartTimes.TryGetValue(wv, out var start))
             {
                 var remaining = t.Interval - (DateTimeOffset.Now - start);
-                tooltip.Content = remaining > TimeSpan.Zero
-                    ? string.Format(R.Get("HardReload_Active"), (int)remaining.TotalMinutes, remaining.Seconds.ToString("D2"))
-                    : null;
+                if (remaining > TimeSpan.Zero)
+                    return string.Format(R.Get("HardReload_Active"), (int)remaining.TotalMinutes, remaining.Seconds.ToString("D2"));
             }
+            return string.Empty;
+        }
+
+        private void UpdateHardReloadTooltip(WebView2 wv, ToolTip tooltip)
+        {
+            tooltip.Content = GetHardReloadTooltipText(wv) is { Length: > 0 } text ? text : null;
+        }
+
+        private void UpdateAutoActivateLabel()
+        {
+            if (!_appSettings.ShowAutoActivateLabel)
+            {
+                AutoActivateLabel.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var homeWv = _webViews.FirstOrDefault(wv =>
+                wv.CoreWebView2 is not null &&
+                Uri.TryCreate(wv.CoreWebView2.Source, UriKind.Absolute, out var u) &&
+                u.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase));
+
+            if (homeWv is null)
+            {
+                AutoActivateLabel.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var state = GetAutoActivateTooltipText(homeWv);
+            if (string.IsNullOrEmpty(state))
+            {
+                AutoActivateLabel.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            AutoActivateLabel.Text       = string.Format(R.Get("AutoActivateLabel_Format"), state);
+            AutoActivateLabel.Visibility = Visibility.Visible;
         }
 
         private void EnsureHardReloadUiTimer()
@@ -1400,6 +1499,7 @@ namespace XTimelineViewer
             _hardReloadUiTimer.Tick += (_, _) =>
             {
                 foreach (var (wv, update) in _hardReloadUiUpdaters) update();
+                UpdateAutoActivateLabel();
             };
             _hardReloadUiTimer.Start();
         }
@@ -1484,7 +1584,7 @@ namespace XTimelineViewer
                 RequestedTheme    = ((FrameworkElement)Content).ActualTheme,
             };
 
-            if (await confirmDlg.ShowAsync() != ContentDialogResult.Primary) return;
+            if (await ShowDialogAsync(confirmDlg) != ContentDialogResult.Primary) return;
 
             var winget = FindWinget();
             if (winget is null)
@@ -1703,7 +1803,7 @@ namespace XTimelineViewer
                     CloseButtonText = R.Get("Button_Close"),
                     XamlRoot        = Content.XamlRoot
                 };
-                await dlg.ShowAsync();
+                await ShowDialogAsync(dlg);
             }
         }
 
@@ -1798,7 +1898,7 @@ namespace XTimelineViewer
                 var env = await GetOrCreateEnvAsync();
                 await optWebView.EnsureCoreWebView2Async(env);
                 optWebView.Source = new Uri(optPageUrl);
-                await dlg.ShowAsync();
+                await ShowDialogAsync(dlg);
             };
 
             // 設定ボタン（末尾）の左隣に挿入
@@ -1830,8 +1930,17 @@ namespace XTimelineViewer
                 webView.CoreWebView2.SourceChanged += (s, e) =>
                 {
                     bool diverged = !IsOnBaseUrl(webView.CoreWebView2.Source, cfg.Url);
-                    if (diverged) _urlDivergedWebViews.Add(webView);
-                    else          _urlDivergedWebViews.Remove(webView);
+                    if (diverged)
+                    {
+                        _urlDivergedWebViews.Add(webView);
+                    }
+                    else
+                    {
+                        _urlDivergedWebViews.Remove(webView);
+                        if (Uri.TryCreate(cfg.Url, UriKind.Absolute, out var cfgU) &&
+                            cfgU.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase))
+                            RestartAutoActivateTimer();
+                    }
                     EvaluateHardReloadPause(webView);
                 };
                 await LoadExtensionsAsync(webView);
@@ -1865,7 +1974,7 @@ namespace XTimelineViewer
                         CloseButtonText = R.Get("Button_Close"),
                         XamlRoot        = Content.XamlRoot
                     };
-                    await dlg.ShowAsync();
+                    await ShowDialogAsync(dlg);
                 }
                 return;
             }

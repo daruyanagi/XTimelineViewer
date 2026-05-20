@@ -7,3 +7,4 @@
 - [コードベースに言語文字列を埋め込まない](feedback_no_hardcoded_strings.md) — 多言語対応のため UI 文字列は .resw リソースファイルに書き、コードに直接埋め込まない。
 - [WinUI 3 unpackaged モードでの言語切り替え](feedback_winui3_language_switching.md) — PrimaryLanguageOverride は MSIX パッケージ ID 必須。unpackaged では resw ファイル直接パースを使う。
 - [イシューは daruyanagi にアサイン](feedback_assign_issues.md) — gh issue create に毎回 --assignee daruyanagi を付ける。
+- [EXE ロック時はユーザーに伝える](feedback_exe_locked.md) — ビルド時に EXE がロックされていたらユーザーに通知してアプリを閉じてもらう。自分でkillしない。
