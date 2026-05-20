@@ -39,8 +39,9 @@ namespace XTimelineViewer
         public string  Theme                 { get; set; } = "Default"; // "Light" | "Dark" | "Default"
         public int     AutoActivateMinutes   { get; set; } = 0;
         public string  Language              { get; set; } = "system";  // "system" | "ja-JP" | "en-US"
-        public string? LastUpdateCheck       { get; set; } = null;       // UTC ISO-8601
-        public string? CachedLatestVersion   { get; set; } = null;       // "v1.4.0" など
+        public string? LastUpdateCheck           { get; set; } = null;   // UTC ISO-8601
+        public string? CachedLatestVersion     { get; set; } = null;   // "v1.4.0" など
+        public bool    ShowAutoActivateLabel   { get; set; } = false;
     }
 
     public sealed partial class MainWindow : Window
@@ -310,6 +311,14 @@ namespace XTimelineViewer
             File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(_appSettings, JsonOptions));
         }
 
+        private void RestartAutoActivateTimer()
+        {
+            if (_autoActivateTimer is null) return;
+            _autoActivateTimer.Stop();
+            _autoActivateStartTime = DateTimeOffset.Now;
+            _autoActivateTimer.Start();
+        }
+
         private void ApplyAutoActivateTimer()
         {
             _autoActivateTimer?.Stop();
@@ -464,6 +473,17 @@ namespace XTimelineViewer
             };
             panel.Children.Add(MakeRow(R.Get("Settings_AutoActivate"), autoActivateBox));
 
+            var showAutoActivateLabelToggle = new ToggleSwitch
+            {
+                IsOn                = _appSettings.ShowAutoActivateLabel,
+                OnContent           = R.Get("Toggle_On"),
+                OffContent          = R.Get("Toggle_Off"),
+                Margin              = new Thickness(12, 0, 0, 0),
+                VerticalAlignment   = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+            panel.Children.Add(MakeRow(R.Get("Settings_ShowAutoActivateLabel"), showAutoActivateLabelToggle));
+
             var dlg = new ContentDialog
             {
                 Title             = R.Get("AppSettings_Title"),
@@ -481,6 +501,7 @@ namespace XTimelineViewer
                 _appSettings.OpenComposerInBrowser = openPostToggle.IsOn;
                 _appSettings.OpenTweetInBrowser    = openTweetToggle.IsOn;
                 _appSettings.AutoActivateMinutes   = (int)Math.Clamp(autoActivateBox.Value, 0, 60);
+                _appSettings.ShowAutoActivateLabel = showAutoActivateLabelToggle.IsOn;
 
                 var newLang    = langValues[Math.Max(0, Math.Min(langCombo.SelectedIndex, langValues.Length - 1))];
                 var langChanged = newLang != _appSettings.Language;
@@ -1111,7 +1132,12 @@ namespace XTimelineViewer
                 foreach (var r in _headerRefreshers) r();
             };
             webView.PointerEntered += (s, e) => { _pointerOverWebViews.Add(webView);    EvaluateHardReloadPause(webView); };
-            webView.PointerExited  += (s, e) => { _pointerOverWebViews.Remove(webView); EvaluateHardReloadPause(webView); };
+            webView.PointerExited  += (s, e) =>
+            {
+                _pointerOverWebViews.Remove(webView);
+                EvaluateHardReloadPause(webView);
+                if (_pointerOverWebViews.Count == 0) RestartAutoActivateTimer();
+            };
 
             _hardReloadUiUpdaters[webView] = () => UpdateHardReloadTooltip(webView, hardReloadTooltip);
             EnsureHardReloadUiTimer();
@@ -1389,7 +1415,11 @@ namespace XTimelineViewer
         {
             _dialogOpenCount++;
             try   { return await dlg.ShowAsync(); }
-            finally { _dialogOpenCount--; }
+            finally
+            {
+                _dialogOpenCount--;
+                if (_dialogOpenCount == 0) RestartAutoActivateTimer();
+            }
         }
 
         private static bool IsOnBaseUrl(string currentUrl, string baseUrl)
@@ -1424,6 +1454,12 @@ namespace XTimelineViewer
 
         private void UpdateAutoActivateLabel()
         {
+            if (!_appSettings.ShowAutoActivateLabel)
+            {
+                AutoActivateLabel.Visibility = Visibility.Collapsed;
+                return;
+            }
+
             var homeWv = _webViews.FirstOrDefault(wv =>
                 wv.CoreWebView2 is not null &&
                 Uri.TryCreate(wv.CoreWebView2.Source, UriKind.Absolute, out var u) &&
@@ -1435,14 +1471,14 @@ namespace XTimelineViewer
                 return;
             }
 
-            var text = GetAutoActivateTooltipText(homeWv);
-            if (string.IsNullOrEmpty(text))
+            var state = GetAutoActivateTooltipText(homeWv);
+            if (string.IsNullOrEmpty(state))
             {
                 AutoActivateLabel.Visibility = Visibility.Collapsed;
                 return;
             }
 
-            AutoActivateLabel.Text       = text;
+            AutoActivateLabel.Text       = string.Format(R.Get("AutoActivateLabel_Format"), state);
             AutoActivateLabel.Visibility = Visibility.Visible;
         }
 
@@ -1884,8 +1920,17 @@ namespace XTimelineViewer
                 webView.CoreWebView2.SourceChanged += (s, e) =>
                 {
                     bool diverged = !IsOnBaseUrl(webView.CoreWebView2.Source, cfg.Url);
-                    if (diverged) _urlDivergedWebViews.Add(webView);
-                    else          _urlDivergedWebViews.Remove(webView);
+                    if (diverged)
+                    {
+                        _urlDivergedWebViews.Add(webView);
+                    }
+                    else
+                    {
+                        _urlDivergedWebViews.Remove(webView);
+                        if (Uri.TryCreate(cfg.Url, UriKind.Absolute, out var cfgU) &&
+                            cfgU.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase))
+                            RestartAutoActivateTimer();
+                    }
                     EvaluateHardReloadPause(webView);
                 };
                 await LoadExtensionsAsync(webView);
