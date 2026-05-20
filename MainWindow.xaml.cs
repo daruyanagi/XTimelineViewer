@@ -3,7 +3,12 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
+using System.Net.Http;
+using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
@@ -28,12 +33,14 @@ namespace XTimelineViewer
 
     internal class AppSettings
     {
-        public bool   SeparateComposeEnv    { get; set; } = false;
-        public bool   OpenComposerInBrowser { get; set; } = false;
-        public bool   OpenTweetInBrowser    { get; set; } = false;
-        public string Theme                 { get; set; } = "Default"; // "Light" | "Dark" | "Default"
-        public int    AutoActivateMinutes   { get; set; } = 0;
-        public string Language              { get; set; } = "system";  // "system" | "ja-JP" | "en-US"
+        public bool    SeparateComposeEnv    { get; set; } = false;
+        public bool    OpenComposerInBrowser { get; set; } = false;
+        public bool    OpenTweetInBrowser    { get; set; } = false;
+        public string  Theme                 { get; set; } = "Default"; // "Light" | "Dark" | "Default"
+        public int     AutoActivateMinutes   { get; set; } = 0;
+        public string  Language              { get; set; } = "system";  // "system" | "ja-JP" | "en-US"
+        public string? LastUpdateCheck       { get; set; } = null;       // UTC ISO-8601
+        public string? CachedLatestVersion   { get; set; } = null;       // "v1.4.0" など
     }
 
     public sealed partial class MainWindow : Window
@@ -277,7 +284,9 @@ namespace XTimelineViewer
             LoadSettings();
             ApplySavedTheme();
             ApplyAutoActivateTimer();
+            UpdateMenuUpdateBadge();
             _ = RestoreTimelinesAsync();
+            _ = CheckForUpdatesInBackgroundAsync();
         }
 
         // ── App settings ──────────────────────────────────────────────────────
@@ -494,8 +503,8 @@ namespace XTimelineViewer
 
         private async void AboutMenuItem_Click(object _, RoutedEventArgs __)
         {
-            var version = System.Reflection.Assembly.GetExecutingAssembly()
-                              .GetName().Version?.ToString(3) ?? R.Get("Version_Unknown");
+            var currentVersion = Assembly.GetExecutingAssembly().GetName().Version!;
+            var versionStr     = currentVersion.ToString(3);
 
             var edgeChannel = FindEdgeDevVersionFolder() is not null
                 ? R.Get("EdgeChannel_Dev")
@@ -510,40 +519,28 @@ namespace XTimelineViewer
             {
                 edgeVersion = _webViewEnv?.BrowserVersionString ?? R.Get("Version_Unknown");
             }
-            var versionInfoText = $"XTimelineViewer v{version}\r\n{edgeChannel} {edgeVersion}";
+            var versionInfoText = $"XTimelineViewer v{versionStr}\r\n{edgeChannel} {edgeVersion}";
 
             var issueBody = Uri.EscapeDataString(
-                $"- {R.Get("IssueLabel_AppVersion")}: v{version}\n" +
+                $"- {R.Get("IssueLabel_AppVersion")}: v{versionStr}\n" +
                 $"- {R.Get("IssueLabel_EdgeVersion")}: {edgeChannel} {edgeVersion}\n" +
                 $"- {R.Get("IssueLabel_Symptoms")}:\n");
-            var issueUrl = $"https://github.com/daruyanagi/XTimelineViewer/issues/new?labels=bug&title=&body={issueBody}";
+            var issueUrl    = $"https://github.com/daruyanagi/XTimelineViewer/issues/new?labels=bug&title=&body={issueBody}";
+            var repoUrl     = "https://github.com/daruyanagi/XTimelineViewer";
+            var fallbackUrl = repoUrl + "/releases/latest";
 
-            // ── Header (icon left + name/version/copyright right) ─────────────
+            // ── Header ────────────────────────────────────────────────────────
             var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "StoreLogo.png");
 
-            var textStack = new StackPanel
-            {
-                Spacing           = 3,
-                VerticalAlignment = VerticalAlignment.Center,
-            };
+            var textStack = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
             textStack.Children.Add(new TextBlock
             {
                 Text       = "XTimelineViewer",
                 FontSize   = 20,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
             });
-            textStack.Children.Add(new TextBlock
-            {
-                Text     = $"v{version}",
-                FontSize = 13,
-                Opacity  = 0.7,
-            });
-            textStack.Children.Add(new TextBlock
-            {
-                Text     = R.Get("About_Copyright"),
-                FontSize = 12,
-                Opacity  = 0.6,
-            });
+            textStack.Children.Add(new TextBlock { Text = $"v{versionStr}", FontSize = 13, Opacity = 0.7 });
+            textStack.Children.Add(new TextBlock { Text = R.Get("About_Copyright"), FontSize = 12, Opacity = 0.6 });
 
             var titleRow = new StackPanel
             {
@@ -554,10 +551,10 @@ namespace XTimelineViewer
             if (File.Exists(iconPath))
                 titleRow.Children.Add(new Microsoft.UI.Xaml.Controls.Image
                 {
-                    Source              = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(iconPath)),
-                    Width               = 48,
-                    Height              = 48,
-                    VerticalAlignment   = VerticalAlignment.Top,
+                    Source            = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(iconPath)),
+                    Width             = 48,
+                    Height            = 48,
+                    VerticalAlignment = VerticalAlignment.Top,
                 });
             titleRow.Children.Add(textStack);
 
@@ -569,16 +566,11 @@ namespace XTimelineViewer
                     Spacing     = 6,
                     Children    =
                     {
-                        new FontIcon
-                        {
-                            Glyph      = "",
-                            FontFamily = new FontFamily("Segoe Fluent Icons"),
-                            FontSize   = 14,
-                        },
+                        new FontIcon { Glyph = "", FontFamily = new FontFamily("Segoe Fluent Icons"), FontSize = 14 },
                         new TextBlock { Text = R.Get("Button_Copy") },
                     }
                 },
-                Margin = new Thickness(0, 4, 0, 0),
+                Margin = new Thickness(0, 4, 8, 0),
             };
             copyBtn.Click += (_, _) =>
             {
@@ -587,9 +579,95 @@ namespace XTimelineViewer
                 Clipboard.SetContent(dp);
             };
 
-            var header = new StackPanel { Spacing = 4, Margin = new Thickness(0, 0, 0, 4) };
+            // ── Update check ─────────────────────────────────────────────────
+            string? latestReleaseUrl = null;
+
+            var statusText = new TextBlock { FontSize = 13, Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed };
+
+            bool hasWinget = !PackageContext.IsPackaged && FindWinget() is not null;
+            var updateBtnLabel = PackageContext.IsPackaged
+                ? R.Get("CheckUpdate_Download_Store")
+                : hasWinget
+                    ? R.Get("CheckUpdate_Download_Winget")
+                    : R.Get("CheckUpdate_Download_GitHub");
+            var updateBtn = new Button { Content = updateBtnLabel, Margin = new Thickness(0, 4, 0, 0), Visibility = Visibility.Collapsed };
+
+            // キャッシュがあれば初期表示
+            if (_appSettings.CachedLatestVersion is { } cached
+                && Version.TryParse(cached.TrimStart('v'), out var cachedVersion)
+                && IsUpdateAvailable(currentVersion, cachedVersion))
+            {
+                latestReleaseUrl = $"{repoUrl}/releases/tag/{cached}";
+                statusText.Text       = string.Format(R.Get("CheckUpdate_Available"), cached);
+                statusText.Visibility = Visibility.Visible;
+                updateBtn.Visibility  = Visibility.Visible;
+            }
+
+            var checkBtn = new Button { Content = R.Get("CheckUpdate_Btn"), Margin = new Thickness(0, 4, 0, 0) };
+            checkBtn.Click += async (_, _) =>
+            {
+                checkBtn.IsEnabled    = false;
+                statusText.Text       = R.Get("CheckUpdate_Checking");
+                statusText.Visibility = Visibility.Visible;
+                updateBtn.Visibility  = Visibility.Collapsed;
+                try
+                {
+                    var (latest, tag, freshUrl) = await FetchLatestReleaseAsync();
+                    latestReleaseUrl = freshUrl;
+                    _appSettings.LastUpdateCheck = DateTime.UtcNow.ToString("O");
+                    if (IsUpdateAvailable(currentVersion, latest))
+                    {
+                        _appSettings.CachedLatestVersion = tag;
+                        statusText.Text      = string.Format(R.Get("CheckUpdate_Available"), tag);
+                        updateBtn.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        _appSettings.CachedLatestVersion = null;
+                        statusText.Text = R.Get("CheckUpdate_Latest");
+                    }
+                    SaveSettings();
+                    UpdateMenuUpdateBadge();
+                }
+                catch
+                {
+                    statusText.Text = R.Get("CheckUpdate_Error");
+                }
+                finally
+                {
+                    checkBtn.IsEnabled = true;
+                }
+            };
+
+            ContentDialog dlg = null!;
+
+            updateBtn.Click += async (_, _) =>
+            {
+                var url = latestReleaseUrl ?? fallbackUrl;
+                if (PackageContext.IsPackaged)
+                {
+                    _ = Windows.System.Launcher.LaunchUriAsync(new Uri("ms-windows-store://pdp/?ProductId=9P308HB5BLJ1"));
+                }
+                else if (FindWinget() is not null)
+                {
+                    dlg.Hide();
+                    await SelfUpdateViaWingetAsync(url);
+                }
+                else
+                {
+                    _ = Windows.System.Launcher.LaunchUriAsync(new Uri(url));
+                }
+            };
+
+            var updateRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            updateRow.Children.Add(copyBtn);
+            updateRow.Children.Add(checkBtn);
+
+            var header = new StackPanel { Spacing = 0, Margin = new Thickness(0, 0, 0, 4) };
             header.Children.Add(titleRow);
-            header.Children.Add(copyBtn);
+            header.Children.Add(updateRow);
+            header.Children.Add(statusText);
+            header.Children.Add(updateBtn);
 
             // ── Section helper ────────────────────────────────────────────────
             static StackPanel MakeSection(string title)
@@ -607,50 +685,41 @@ namespace XTimelineViewer
                 return s;
             }
 
-            // ── Link helper (text + external icon) ────────────────────────────
             HyperlinkButton MakeLink(string text, string url) => new HyperlinkButton
             {
                 NavigateUri = new Uri(url),
                 Padding     = new Thickness(0),
                 Content     = new StackPanel
                 {
-                    Orientation     = Orientation.Horizontal,
-                    Spacing         = 4,
+                    Orientation       = Orientation.Horizontal,
+                    Spacing           = 4,
                     VerticalAlignment = VerticalAlignment.Center,
-                    Children        =
+                    Children          =
                     {
                         new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center },
                         new FontIcon
                         {
-                            Glyph      = "",
-                            FontFamily = new FontFamily("Segoe Fluent Icons"),
-                            FontSize   = 10,
-                            Opacity    = 0.6,
+                            Glyph             = "",
+                            FontFamily        = new FontFamily("Segoe Fluent Icons"),
+                            FontSize          = 10,
+                            Opacity           = 0.6,
                             VerticalAlignment = VerticalAlignment.Center,
                         },
                     }
                 },
             };
 
-            // ── Links ─────────────────────────────────────────────────────────
             var linksSection = MakeSection(R.Get("About_Links"));
-            linksSection.Children.Add(MakeLink(R.Get("About_Repository"), "https://github.com/daruyanagi/XTimelineViewer"));
+            linksSection.Children.Add(MakeLink(R.Get("About_Repository"), repoUrl));
             linksSection.Children.Add(MakeLink(R.Get("Button_ReportIssue"), issueUrl));
 
-            // ── Acknowledgements ──────────────────────────────────────────────
             var acksSection = MakeSection(R.Get("About_Acknowledgements"));
-            acksSection.Children.Add(MakeLink("TwitterTimelineLoader", "https://chromewebstore.google.com/detail/twittertimelineloader/ipmgjpmedafkmmadinmeoannpofakpbh"));
+            acksSection.Children.Add(MakeLink("TwitterTimelineLoader",
+                "https://chromewebstore.google.com/detail/twittertimelineloader/ipmgjpmedafkmmadinmeoannpofakpbh"));
 
-            // ── License ───────────────────────────────────────────────────────
             var licenseSection = MakeSection(R.Get("About_License"));
-            licenseSection.Children.Add(new TextBlock
-            {
-                Text                   = "MIT License",
-                IsTextSelectionEnabled = true,
-                FontSize               = 13,
-            });
+            licenseSection.Children.Add(new TextBlock { Text = "MIT License", IsTextSelectionEnabled = true, FontSize = 13 });
 
-            // ── Components ────────────────────────────────────────────────────
             var componentsSection = MakeSection(R.Get("About_Components"));
             componentsSection.Children.Add(new TextBlock
             {
@@ -667,7 +736,7 @@ namespace XTimelineViewer
             panel.Children.Add(licenseSection);
             panel.Children.Add(componentsSection);
 
-            var dlg = new ContentDialog
+            dlg = new ContentDialog
             {
                 Title           = R.Get("About_Title"),
                 Content         = panel,
@@ -1333,6 +1402,104 @@ namespace XTimelineViewer
                 foreach (var (wv, update) in _hardReloadUiUpdaters) update();
             };
             _hardReloadUiTimer.Start();
+        }
+
+        // ── Update check ─────────────────────────────────────────────────────
+
+        private static bool IsUpdateAvailable(Version current, Version latest)
+        {
+            if (PackageContext.IsPackaged)
+                return latest.Major > current.Major
+                    || (latest.Major == current.Major && latest.Minor > current.Minor);
+            return latest > current;
+        }
+
+        private static async Task<(Version version, string tag, string releaseUrl)> FetchLatestReleaseAsync()
+        {
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("User-Agent", "XTimelineViewer");
+            var json = await client.GetStringAsync(
+                "https://api.github.com/repos/daruyanagi/XTimelineViewer/releases/latest");
+            using var doc = JsonDocument.Parse(json);
+            var tag = doc.RootElement.GetProperty("tag_name").GetString()!;
+            var url = doc.RootElement.GetProperty("html_url").GetString()!;
+            return (new Version(tag.TrimStart('v')), tag, url);
+        }
+
+        private async Task CheckForUpdatesInBackgroundAsync()
+        {
+            await Task.Delay(3000);
+            if (!NetworkInterface.GetIsNetworkAvailable()) return;
+
+            if (_appSettings.LastUpdateCheck is { } raw
+                && DateTime.TryParse(raw, null, DateTimeStyles.RoundtripKind, out var last)
+                && (DateTime.UtcNow - last).TotalDays < 7)
+                return;
+
+            try
+            {
+                var (latest, tag, _) = await FetchLatestReleaseAsync();
+                var current = Assembly.GetExecutingAssembly().GetName().Version!;
+                _appSettings.LastUpdateCheck     = DateTime.UtcNow.ToString("O");
+                _appSettings.CachedLatestVersion = IsUpdateAvailable(current, latest) ? tag : null;
+                SaveSettings();
+                UpdateMenuUpdateBadge();
+            }
+            catch { }
+        }
+
+        private void UpdateMenuUpdateBadge()
+        {
+            UpdateBadgeDot.Visibility = _appSettings.CachedLatestVersion is not null
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        private static string? FindWinget()
+        {
+            var candidate = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Microsoft", "WindowsApps", "winget.exe");
+            if (File.Exists(candidate)) return candidate;
+
+            return Environment.GetEnvironmentVariable("PATH")
+                ?.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                .Select(d => Path.Combine(d, "winget.exe"))
+                .FirstOrDefault(File.Exists);
+        }
+
+        private async Task SelfUpdateViaWingetAsync(string releaseUrl)
+        {
+            var confirmDlg = new ContentDialog
+            {
+                Title             = R.Get("CheckUpdate_WingetTitle"),
+                Content           = new TextBlock
+                {
+                    Text         = R.Get("CheckUpdate_WingetBody"),
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                PrimaryButtonText = R.Get("CheckUpdate_WingetConfirm"),
+                CloseButtonText   = R.Get("Button_Cancel"),
+                XamlRoot          = Content.XamlRoot,
+                RequestedTheme    = ((FrameworkElement)Content).ActualTheme,
+            };
+
+            if (await confirmDlg.ShowAsync() != ContentDialogResult.Primary) return;
+
+            var winget = FindWinget();
+            if (winget is null)
+            {
+                _ = Windows.System.Launcher.LaunchUriAsync(new Uri(releaseUrl));
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName        = "cmd.exe",
+                Arguments       = "/c timeout /t 2 /nobreak > nul && winget upgrade daruyanagi.XTimelineViewer",
+                UseShellExecute = true,
+            });
+            Application.Current.Exit();
         }
 
         // ── WebView2 init ─────────────────────────────────────────────────────

@@ -37,6 +37,7 @@
                         Spacing="4"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center">
+                <Grid>
                 <Button x:Name="AppMenuBtn" Width="32" Height="32" Padding="0" FontSize="14">
                     <FontIcon Glyph="&#xE700;" FontFamily="Segoe Fluent Icons" FontSize="14"/>
                     <Button.Flyout>
@@ -49,6 +50,14 @@
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>
+                <Ellipse x:Name="UpdateBadgeDot"
+                         Width="8" Height="8"
+                         Fill="{ThemeResource SystemAccentColor}"
+                         HorizontalAlignment="Right" VerticalAlignment="Top"
+                         Margin="0,2,2,0"
+                         Visibility="Collapsed"
+                         IsHitTestVisible="False"/>
+                </Grid>
             </StackPanel>
         </Grid>
 
