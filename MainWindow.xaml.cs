@@ -121,10 +121,11 @@ namespace XTimelineViewer
         private readonly Dictionary<WebView2, Action>           _hardReloadUiUpdaters = [];
         private readonly HashSet<WebView2>                       _pointerOverWebViews  = [];
         private readonly HashSet<WebView2>                       _urlDivergedWebViews  = [];
-        private DispatcherTimer? _hardReloadUiTimer;
-        private DispatcherTimer? _autoActivateTimer;
-        private int              _dialogOpenCount      = 0;
-        private DateTimeOffset   _autoActivateStartTime;
+        private DispatcherTimer?  _hardReloadUiTimer;
+        private DispatcherTimer?  _autoActivateTimer;
+        private int               _dialogOpenCount      = 0;
+        private DateTimeOffset    _autoActivateStartTime;
+        private readonly HashSet<Grid> _homeHeaderGrids = [];
 
         // キーボードショートカット処理スクリプト（各 WebView2 に注入）
         private static readonly string KeyboardShortcutScript = """
@@ -332,8 +333,9 @@ namespace XTimelineViewer
             _autoActivateTimer.Tick += (_, _) =>
             {
                 _autoActivateStartTime = DateTimeOffset.Now;
-                if (_pointerOverWebViews.Count > 0) return;  // ① ポインターオーバー中
-                if (_dialogOpenCount > 0)           return;  // ② ダイアログ表示中
+                if (_pointerOverWebViews.Count > 0)                 return;  // ① ポインターオーバー中
+                if (_dialogOpenCount > 0)                           return;  // ② ダイアログ表示中
+                if (_homeHeaderGrids.Contains(_focusedHeaderGrid))  return;  // ④ ホームにフォーカス中
 
                 foreach (var wv in _webViews)
                 {
@@ -1114,6 +1116,8 @@ namespace XTimelineViewer
 
             void SetFocus()
             {
+                if (_homeHeaderGrids.Contains(_focusedHeaderGrid) && !_homeHeaderGrids.Contains(headerGrid))
+                    RestartAutoActivateTimer();  // ホームから別タイムラインへ
                 _focusedHeaderGrid = headerGrid;
                 foreach (var r in _headerRefreshers) r();
                 webView.Focus(FocusState.Programmatic);
@@ -1128,6 +1132,8 @@ namespace XTimelineViewer
             };
             webView.GotFocus   += (s, e) =>
             {
+                if (_homeHeaderGrids.Contains(_focusedHeaderGrid) && !_homeHeaderGrids.Contains(headerGrid))
+                    RestartAutoActivateTimer();  // ホームから別タイムラインへ
                 _focusedHeaderGrid = headerGrid;
                 foreach (var r in _headerRefreshers) r();
             };
@@ -1138,6 +1144,10 @@ namespace XTimelineViewer
                 EvaluateHardReloadPause(webView);
                 if (_pointerOverWebViews.Count == 0) RestartAutoActivateTimer();
             };
+
+            bool isHomeTimeline = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var cfgUri)
+                               && cfgUri.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase);
+            if (isHomeTimeline) _homeHeaderGrids.Add(headerGrid);
 
             _hardReloadUiUpdaters[webView] = () => UpdateHardReloadTooltip(webView, hardReloadTooltip);
             EnsureHardReloadUiTimer();
