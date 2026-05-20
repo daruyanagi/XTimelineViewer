@@ -70,6 +70,10 @@
   <data name="HardReload_Paused" xml:space="preserve"><value>⏸ Auto-Reload Paused</value></data>
   <data name="HardReload_Paused_Nav" xml:space="preserve"><value>⏸ Browsing — Auto-Reload Paused</value></data>
   <data name="HardReload_Disabled" xml:space="preserve"><value>⏹ Auto-Reload Off</value></data>
+  <data name="AutoActivate_Active" xml:space="preserve"><value>🏠 Auto-Activate On: ⏱ {0}:{1} remaining</value></data>
+  <data name="AutoActivate_Paused" xml:space="preserve"><value>⏸ Auto-Activate Paused</value></data>
+  <data name="AutoActivate_Paused_Nav" xml:space="preserve"><value>⏸ Browsing — Auto-Activate Paused</value></data>
+  <data name="AutoActivate_Disabled" xml:space="preserve"><value>⏹ Auto-Activate Off</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>Settings</value></data>
   <data name="Pane_Close_Tooltip" xml:space="preserve"><value>Close</value></data>
   <data name="Pane_Delete" xml:space="preserve"><value>Remove This Timeline</value></data>

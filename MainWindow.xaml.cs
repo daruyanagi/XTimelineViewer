@@ -122,7 +122,8 @@ namespace XTimelineViewer
         private readonly HashSet<WebView2>                       _urlDivergedWebViews  = [];
         private DispatcherTimer? _hardReloadUiTimer;
         private DispatcherTimer? _autoActivateTimer;
-        private int              _dialogOpenCount = 0;
+        private int              _dialogOpenCount      = 0;
+        private DateTimeOffset   _autoActivateStartTime;
 
         // キーボードショートカット処理スクリプト（各 WebView2 に注入）
         private static readonly string KeyboardShortcutScript = """
@@ -318,8 +319,10 @@ namespace XTimelineViewer
             {
                 Interval = TimeSpan.FromMinutes(_appSettings.AutoActivateMinutes)
             };
+            _autoActivateStartTime = DateTimeOffset.Now;
             _autoActivateTimer.Tick += (_, _) =>
             {
+                _autoActivateStartTime = DateTimeOffset.Now;
                 if (_pointerOverWebViews.Count > 0) return;  // ① ポインターオーバー中
                 if (_dialogOpenCount > 0)           return;  // ② ダイアログ表示中
 
@@ -1109,7 +1112,9 @@ namespace XTimelineViewer
             webView.PointerEntered += (s, e) => { _pointerOverWebViews.Add(webView);    EvaluateHardReloadPause(webView); };
             webView.PointerExited  += (s, e) => { _pointerOverWebViews.Remove(webView); EvaluateHardReloadPause(webView); };
 
-            _hardReloadUiUpdaters[webView] = () => UpdateHardReloadTooltip(webView, hardReloadTooltip);
+            _hardReloadUiUpdaters[webView] = IsOnBaseUrl(cfg.Url, "https://x.com/home")
+                ? () => UpdateAutoActivateTooltip(webView, hardReloadTooltip)
+                : () => UpdateHardReloadTooltip(webView, hardReloadTooltip);
             EnsureHardReloadUiTimer();
 
             // ── Drag & Drop reorder ───────────────────────────────────────────
@@ -1365,6 +1370,29 @@ namespace XTimelineViewer
                 _hardReloadStartTimes[wv] = DateTimeOffset.Now;
                 t.Start();
             }
+        }
+
+        private void UpdateAutoActivateTooltip(WebView2 wv, ToolTip tooltip)
+        {
+            if (_autoActivateTimer is null)
+            {
+                tooltip.Content = R.Get("AutoActivate_Disabled");
+                return;
+            }
+            if (_pointerOverWebViews.Count > 0 || _dialogOpenCount > 0)
+            {
+                tooltip.Content = R.Get("AutoActivate_Paused");
+                return;
+            }
+            if (_urlDivergedWebViews.Contains(wv))
+            {
+                tooltip.Content = R.Get("AutoActivate_Paused_Nav");
+                return;
+            }
+            var remaining = _autoActivateTimer.Interval - (DateTimeOffset.Now - _autoActivateStartTime);
+            tooltip.Content = remaining > TimeSpan.Zero
+                ? string.Format(R.Get("AutoActivate_Active"), (int)remaining.TotalMinutes, remaining.Seconds.ToString("D2"))
+                : null;
         }
 
         private async Task<ContentDialogResult> ShowDialogAsync(ContentDialog dlg)
