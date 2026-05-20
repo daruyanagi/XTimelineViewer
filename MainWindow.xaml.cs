@@ -329,7 +329,8 @@ namespace XTimelineViewer
                 foreach (var wv in _webViews)
                 {
                     if (wv.CoreWebView2 is null) continue;
-                    if (!IsOnBaseUrl(wv.CoreWebView2.Source, "https://x.com/home")) continue;
+                    if (!Uri.TryCreate(wv.CoreWebView2.Source, UriKind.Absolute, out var src)) continue;
+                    if (!src.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase)) continue;
                     if (_urlDivergedWebViews.Contains(wv)) continue;  // ③ 別ページ閲覧中
 
                     if (_webViewToPane.TryGetValue(wv, out var pane) &&
@@ -1112,9 +1113,7 @@ namespace XTimelineViewer
             webView.PointerEntered += (s, e) => { _pointerOverWebViews.Add(webView);    EvaluateHardReloadPause(webView); };
             webView.PointerExited  += (s, e) => { _pointerOverWebViews.Remove(webView); EvaluateHardReloadPause(webView); };
 
-            _hardReloadUiUpdaters[webView] = IsOnBaseUrl(cfg.Url, "https://x.com/home")
-                ? () => UpdateAutoActivateTooltip(webView, hardReloadTooltip)
-                : () => UpdateHardReloadTooltip(webView, hardReloadTooltip);
+            _hardReloadUiUpdaters[webView] = () => UpdateHardReloadTooltip(webView, hardReloadTooltip);
             EnsureHardReloadUiTimer();
 
             // ── Drag & Drop reorder ───────────────────────────────────────────
@@ -1372,27 +1371,18 @@ namespace XTimelineViewer
             }
         }
 
-        private void UpdateAutoActivateTooltip(WebView2 wv, ToolTip tooltip)
+        private string GetAutoActivateTooltipText(WebView2 wv)
         {
             if (_autoActivateTimer is null)
-            {
-                tooltip.Content = R.Get("AutoActivate_Disabled");
-                return;
-            }
+                return R.Get("AutoActivate_Disabled");
             if (_pointerOverWebViews.Count > 0 || _dialogOpenCount > 0)
-            {
-                tooltip.Content = R.Get("AutoActivate_Paused");
-                return;
-            }
+                return R.Get("AutoActivate_Paused");
             if (_urlDivergedWebViews.Contains(wv))
-            {
-                tooltip.Content = R.Get("AutoActivate_Paused_Nav");
-                return;
-            }
+                return R.Get("AutoActivate_Paused_Nav");
             var remaining = _autoActivateTimer.Interval - (DateTimeOffset.Now - _autoActivateStartTime);
-            tooltip.Content = remaining > TimeSpan.Zero
+            return remaining > TimeSpan.Zero
                 ? string.Format(R.Get("AutoActivate_Active"), (int)remaining.TotalMinutes, remaining.Seconds.ToString("D2"))
-                : null;
+                : string.Empty;
         }
 
         private async Task<ContentDialogResult> ShowDialogAsync(ContentDialog dlg)
@@ -1410,27 +1400,50 @@ namespace XTimelineViewer
                 && string.Equals(cur.AbsolutePath, @base.AbsolutePath, StringComparison.OrdinalIgnoreCase);
         }
 
-        private void UpdateHardReloadTooltip(WebView2 wv, ToolTip tooltip)
+        private string GetHardReloadTooltipText(WebView2 wv)
         {
             if (!_hardReloadTimers.TryGetValue(wv, out var t))
-            {
-                tooltip.Content = R.Get("HardReload_Disabled");
-                return;
-            }
+                return R.Get("HardReload_Disabled");
             if (!t.IsEnabled)
-            {
-                tooltip.Content = _urlDivergedWebViews.Contains(wv)
+                return _urlDivergedWebViews.Contains(wv)
                     ? R.Get("HardReload_Paused_Nav")
                     : R.Get("HardReload_Paused");
-                return;
-            }
             if (_hardReloadStartTimes.TryGetValue(wv, out var start))
             {
                 var remaining = t.Interval - (DateTimeOffset.Now - start);
-                tooltip.Content = remaining > TimeSpan.Zero
-                    ? string.Format(R.Get("HardReload_Active"), (int)remaining.TotalMinutes, remaining.Seconds.ToString("D2"))
-                    : null;
+                if (remaining > TimeSpan.Zero)
+                    return string.Format(R.Get("HardReload_Active"), (int)remaining.TotalMinutes, remaining.Seconds.ToString("D2"));
             }
+            return string.Empty;
+        }
+
+        private void UpdateHardReloadTooltip(WebView2 wv, ToolTip tooltip)
+        {
+            tooltip.Content = GetHardReloadTooltipText(wv) is { Length: > 0 } text ? text : null;
+        }
+
+        private void UpdateAutoActivateLabel()
+        {
+            var homeWv = _webViews.FirstOrDefault(wv =>
+                wv.CoreWebView2 is not null &&
+                Uri.TryCreate(wv.CoreWebView2.Source, UriKind.Absolute, out var u) &&
+                u.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase));
+
+            if (homeWv is null)
+            {
+                AutoActivateLabel.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var text = GetAutoActivateTooltipText(homeWv);
+            if (string.IsNullOrEmpty(text))
+            {
+                AutoActivateLabel.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            AutoActivateLabel.Text       = text;
+            AutoActivateLabel.Visibility = Visibility.Visible;
         }
 
         private void EnsureHardReloadUiTimer()
@@ -1440,6 +1453,7 @@ namespace XTimelineViewer
             _hardReloadUiTimer.Tick += (_, _) =>
             {
                 foreach (var (wv, update) in _hardReloadUiUpdaters) update();
+                UpdateAutoActivateLabel();
             };
             _hardReloadUiTimer.Start();
         }
