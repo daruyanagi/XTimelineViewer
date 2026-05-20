@@ -122,6 +122,7 @@ namespace XTimelineViewer
         private readonly HashSet<WebView2>                       _urlDivergedWebViews  = [];
         private DispatcherTimer? _hardReloadUiTimer;
         private DispatcherTimer? _autoActivateTimer;
+        private int              _dialogOpenCount = 0;
 
         // キーボードショートカット処理スクリプト（各 WebView2 に注入）
         private static readonly string KeyboardShortcutScript = """
@@ -319,11 +320,15 @@ namespace XTimelineViewer
             };
             _autoActivateTimer.Tick += (_, _) =>
             {
+                if (_pointerOverWebViews.Count > 0) return;  // ① ポインターオーバー中
+                if (_dialogOpenCount > 0)           return;  // ② ダイアログ表示中
+
                 foreach (var wv in _webViews)
                 {
                     if (wv.CoreWebView2 is null) continue;
-                    if (!Uri.TryCreate(wv.CoreWebView2.Source, UriKind.Absolute, out var uri)) continue;
-                    if (!uri.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (!IsOnBaseUrl(wv.CoreWebView2.Source, "https://x.com/home")) continue;
+                    if (_urlDivergedWebViews.Contains(wv)) continue;  // ③ 別ページ閲覧中
+
                     if (_webViewToPane.TryGetValue(wv, out var pane) &&
                         _paneToSetFocus.TryGetValue(pane, out var setFocus))
                     {
@@ -466,7 +471,7 @@ namespace XTimelineViewer
                 RequestedTheme    = ((FrameworkElement)Content).ActualTheme
             };
 
-                        if (await dlg.ShowAsync() == ContentDialogResult.Primary)
+                        if (await ShowDialogAsync(dlg) == ContentDialogResult.Primary)
             {
                 _appSettings.Theme = themeCombo.SelectedIndex switch { 1 => "Light", 2 => "Dark", _ => "Default" };
                 _appSettings.OpenComposerInBrowser = openPostToggle.IsOn;
@@ -496,7 +501,7 @@ namespace XTimelineViewer
                         XamlRoot        = Content.XamlRoot,
                         RequestedTheme  = ((FrameworkElement)Content).ActualTheme
                     };
-                    await notifDlg.ShowAsync();
+                    await ShowDialogAsync(notifDlg);
                 }
             }
         }
@@ -744,7 +749,7 @@ namespace XTimelineViewer
                 XamlRoot        = Content.XamlRoot,
                 RequestedTheme  = ((FrameworkElement)Content).ActualTheme,
             };
-            await dlg.ShowAsync();
+            await ShowDialogAsync(dlg);
         }
 
                 // ── Theme ─────────────────────────────────────────────────────────────
@@ -821,7 +826,7 @@ namespace XTimelineViewer
                 wv.Visibility = Visibility.Collapsed;
             try
             {
-                await dlg.ShowAsync();
+                await ShowDialogAsync(dlg);
             }
             finally
             {
@@ -1266,7 +1271,7 @@ namespace XTimelineViewer
                 bool shouldDelete = false;
                 deleteBtn.Click += (_, _) => { shouldDelete = true; dlg.Hide(); };
 
-                var result = await dlg.ShowAsync();
+                var result = await ShowDialogAsync(dlg);
 
                 if (shouldDelete)
                 {
@@ -1360,6 +1365,13 @@ namespace XTimelineViewer
                 _hardReloadStartTimes[wv] = DateTimeOffset.Now;
                 t.Start();
             }
+        }
+
+        private async Task<ContentDialogResult> ShowDialogAsync(ContentDialog dlg)
+        {
+            _dialogOpenCount++;
+            try   { return await dlg.ShowAsync(); }
+            finally { _dialogOpenCount--; }
         }
 
         private static bool IsOnBaseUrl(string currentUrl, string baseUrl)
@@ -1484,7 +1496,7 @@ namespace XTimelineViewer
                 RequestedTheme    = ((FrameworkElement)Content).ActualTheme,
             };
 
-            if (await confirmDlg.ShowAsync() != ContentDialogResult.Primary) return;
+            if (await ShowDialogAsync(confirmDlg) != ContentDialogResult.Primary) return;
 
             var winget = FindWinget();
             if (winget is null)
@@ -1703,7 +1715,7 @@ namespace XTimelineViewer
                     CloseButtonText = R.Get("Button_Close"),
                     XamlRoot        = Content.XamlRoot
                 };
-                await dlg.ShowAsync();
+                await ShowDialogAsync(dlg);
             }
         }
 
@@ -1798,7 +1810,7 @@ namespace XTimelineViewer
                 var env = await GetOrCreateEnvAsync();
                 await optWebView.EnsureCoreWebView2Async(env);
                 optWebView.Source = new Uri(optPageUrl);
-                await dlg.ShowAsync();
+                await ShowDialogAsync(dlg);
             };
 
             // 設定ボタン（末尾）の左隣に挿入
@@ -1865,7 +1877,7 @@ namespace XTimelineViewer
                         CloseButtonText = R.Get("Button_Close"),
                         XamlRoot        = Content.XamlRoot
                     };
-                    await dlg.ShowAsync();
+                    await ShowDialogAsync(dlg);
                 }
                 return;
             }
