@@ -94,6 +94,19 @@
   <data name="ExtSettings_Homepage" xml:space="preserve"><value>Open Homepage</value></data>
   <data name="ExtSettings_StoreLink" xml:space="preserve"><value>Open in Chrome Web Store</value></data>
 
+  <!-- Update check -->
+  <data name="CheckUpdate_Btn" xml:space="preserve"><value>Check for Updates</value></data>
+  <data name="CheckUpdate_Checking" xml:space="preserve"><value>Checking...</value></data>
+  <data name="CheckUpdate_Latest" xml:space="preserve"><value>You're up to date</value></data>
+  <data name="CheckUpdate_Available" xml:space="preserve"><value>{0} is available</value></data>
+  <data name="CheckUpdate_Download_Store" xml:space="preserve"><value>Update in Microsoft Store</value></data>
+  <data name="CheckUpdate_Download_Winget" xml:space="preserve"><value>Exit and Update via winget</value></data>
+  <data name="CheckUpdate_Download_GitHub" xml:space="preserve"><value>Download from GitHub</value></data>
+  <data name="CheckUpdate_Error" xml:space="preserve"><value>Update check failed</value></data>
+  <data name="CheckUpdate_WingetTitle" xml:space="preserve"><value>Update via winget</value></data>
+  <data name="CheckUpdate_WingetBody" xml:space="preserve"><value>The app will close and update via winget. Please restart the app manually after the update completes.</value></data>
+  <data name="CheckUpdate_WingetConfirm" xml:space="preserve"><value>Exit and Update</value></data>
+
   <!-- About dialog sections -->
   <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>
   <data name="About_Links" xml:space="preserve"><value>Links</value></data>

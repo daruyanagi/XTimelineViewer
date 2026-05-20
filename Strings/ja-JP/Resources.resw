@@ -94,6 +94,19 @@
   <data name="ExtSettings_Homepage" xml:space="preserve"><value>ホームページを開く</value></data>
   <data name="ExtSettings_StoreLink" xml:space="preserve"><value>Chrome Web Store で開く</value></data>
 
+  <!-- Update check -->
+  <data name="CheckUpdate_Btn" xml:space="preserve"><value>更新を確認</value></data>
+  <data name="CheckUpdate_Checking" xml:space="preserve"><value>確認中...</value></data>
+  <data name="CheckUpdate_Latest" xml:space="preserve"><value>最新版です</value></data>
+  <data name="CheckUpdate_Available" xml:space="preserve"><value>{0} が利用可能です</value></data>
+  <data name="CheckUpdate_Download_Store" xml:space="preserve"><value>Microsoft Store で更新</value></data>
+  <data name="CheckUpdate_Download_Winget" xml:space="preserve"><value>winget で更新してアプリを終了</value></data>
+  <data name="CheckUpdate_Download_GitHub" xml:space="preserve"><value>GitHub でダウンロード</value></data>
+  <data name="CheckUpdate_Error" xml:space="preserve"><value>確認に失敗しました</value></data>
+  <data name="CheckUpdate_WingetTitle" xml:space="preserve"><value>winget でアップデート</value></data>
+  <data name="CheckUpdate_WingetBody" xml:space="preserve"><value>アプリを終了して winget でアップデートします。完了後、アプリを手動で再起動してください。</value></data>
+  <data name="CheckUpdate_WingetConfirm" xml:space="preserve"><value>終了して更新</value></data>
+
   <!-- About dialog sections -->
   <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>
   <data name="About_Links" xml:space="preserve"><value>リンク</value></data>
