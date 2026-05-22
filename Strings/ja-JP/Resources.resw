@@ -41,7 +41,6 @@
   <data name="Section_About" xml:space="preserve"><value>バージョン情報</value></data>
   <data name="Settings_SeparateCompose" xml:space="preserve"><value>投稿画面を別プロファイルで開く（廃止予定）</value></data>
   <data name="Settings_OpenComposerInBrowser" xml:space="preserve"><value>新規投稿を外部ブラウザーで開く</value></data>
-  <data name="Settings_OpenTweetInBrowser" xml:space="preserve"><value>ツイートを外部ブラウザーで開く</value></data>
   <data name="Settings_AutoActivate" xml:space="preserve"><value>ホームタイムラインを定期的にアクティブ化（分、0 で無効）</value></data>
 
   <!-- Language selector items -->
