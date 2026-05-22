@@ -35,7 +35,7 @@ namespace XTimelineViewer
     {
         public bool    SeparateComposeEnv    { get; set; } = false;
         public bool    OpenComposerInBrowser { get; set; } = false;
-
+        public bool    OpenTimestampInBrowser { get; set; } = false;
         public string  Theme                 { get; set; } = "Default"; // "Light" | "Dark" | "Default"
         public int     AutoActivateMinutes   { get; set; } = 0;
         public string  Language              { get; set; } = "system";  // "system" | "ja-JP" | "en-US"
@@ -183,6 +183,26 @@ namespace XTimelineViewer
                         if (k === 'F5')              { e.preventDefault(); location.reload(); return; }
                         if (k === 'Backspace' && ni) { e.preventDefault(); history.back(); return; }
                     }
+                }, true);
+            })();
+            """;
+
+        private static readonly string TimestampInterceptScript = """
+            (function() {
+                if (window._xtvTimestamp) return;
+                window._xtvTimestamp = true;
+                document.addEventListener('click', function(e) {
+                    if (!window._xtvOpenTimestampInBrowser) return;
+                    var a = e.target.closest('a[href]');
+                    if (!a || !a.querySelector('time')) return;
+                    try {
+                        var url = new URL(a.href);
+                        if (/\/status\/\d+/.test(url.pathname)) {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                            window.chrome.webview.postMessage('openTimestamp:' + url.href);
+                        }
+                    } catch(ex) {}
                 }, true);
             })();
             """;
@@ -407,6 +427,17 @@ namespace XTimelineViewer
             };
             panel.Children.Add(MakeRow(R.Get("Settings_OpenComposerInBrowser"), openPostToggle));
 
+            var openTimestampToggle = new ToggleSwitch
+            {
+                IsOn                = _appSettings.OpenTimestampInBrowser,
+                OnContent           = R.Get("Toggle_On"),
+                OffContent          = R.Get("Toggle_Off"),
+                Margin              = new Thickness(12, 0, 0, 0),
+                VerticalAlignment   = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+            panel.Children.Add(MakeRow(R.Get("Settings_OpenTimestampInBrowser"), openTimestampToggle));
+
             var autoActivateBox = new NumberBox
             {
                 Value                   = _appSettings.AutoActivateMinutes,
@@ -445,7 +476,7 @@ namespace XTimelineViewer
             {
                 _appSettings.Theme = themeCombo.SelectedIndex switch { 1 => "Light", 2 => "Dark", _ => "Default" };
                 _appSettings.OpenComposerInBrowser = openPostToggle.IsOn;
-
+                _appSettings.OpenTimestampInBrowser = openTimestampToggle.IsOn;
                 _appSettings.AutoActivateMinutes   = (int)Math.Clamp(autoActivateBox.Value, 0, 60);
                 _appSettings.ShowAutoActivateLabel = showAutoActivateLabelToggle.IsOn;
 
@@ -455,6 +486,12 @@ namespace XTimelineViewer
 
                 SaveSettings();
                 ApplySavedTheme();
+
+                var tsFlag = _appSettings.OpenTimestampInBrowser ? "true" : "false";
+                foreach (var wv in _webViews)
+                    if (wv.CoreWebView2 is not null)
+                        await wv.CoreWebView2.ExecuteScriptAsync(
+                            $"window._xtvOpenTimestampInBrowser = {tsFlag};");
 
                 ApplyAutoActivateTimer();
 
@@ -814,6 +851,13 @@ namespace XTimelineViewer
 
         private void OnWebViewMessageReceived(WebView2 senderWebView, string message)
         {
+            if (message.StartsWith("openTimestamp:") &&
+                Uri.TryCreate(message[14..], UriKind.Absolute, out var timestampUri))
+            {
+                _ = Windows.System.Launcher.LaunchUriAsync(timestampUri);
+                return;
+            }
+
             switch (message)
             {
                 case "focusNext": FocusAdjacentTimeline(senderWebView, +1); break;
@@ -1916,6 +1960,7 @@ namespace XTimelineViewer
             // キーボードショートカット：ブラウザ既定アクセラレータを無効化し JS で代替処理
             webView.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(KeyboardShortcutScript);
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(TimestampInterceptScript);
             webView.CoreWebView2.WebMessageReceived += (s, e) =>
                 OnWebViewMessageReceived(webView, e.TryGetWebMessageAsString());
 
@@ -1947,6 +1992,10 @@ namespace XTimelineViewer
                     await ApplyHideSidebarAsync(webView, cfg.HideSidebar);
                     await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
                     await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
+
+                    var tsFlag = _appSettings.OpenTimestampInBrowser ? "true" : "false";
+                    await webView.CoreWebView2.ExecuteScriptAsync(
+                        $"window._xtvOpenTimestampInBrowser = {tsFlag};");
 
                     // x.com/home の場合だけ新着ポスト自動表示機能を適用する
                     if (Uri.TryCreate(webView.CoreWebView2.Source, UriKind.Absolute, out var current) &&
