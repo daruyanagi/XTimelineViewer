@@ -41,6 +41,7 @@
   <data name="Section_About" xml:space="preserve"><value>About</value></data>
   <data name="Settings_SeparateCompose" xml:space="preserve"><value>Open Composer in Separate Profile (Deprecated)</value></data>
   <data name="Settings_OpenComposerInBrowser" xml:space="preserve"><value>Open Composer in External Browser</value></data>
+  <data name="Settings_OpenTimestampInBrowser" xml:space="preserve"><value>Open Timestamp Links in External Browser</value></data>
   <data name="Settings_AutoActivate" xml:space="preserve"><value>Auto-activate Home Timeline (min, 0 to disable)</value></data>
 
   <!-- Language selector items -->
