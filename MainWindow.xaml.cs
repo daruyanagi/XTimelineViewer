@@ -29,6 +29,13 @@ namespace XTimelineViewer
         public bool   HideListHeader       { get; set; } = false;
         public bool   HardReloadEnabled    { get; set; } = false;
         public int    HardReloadInterval   { get; set; } = 3;
+        public string ProfileId            { get; set; } = "default";
+    }
+
+    internal class ProfileConfig
+    {
+        public string Id   { get; set; } = Guid.NewGuid().ToString("N");
+        public string Name { get; set; } = "";
     }
 
     internal class AppSettings
@@ -46,8 +53,9 @@ namespace XTimelineViewer
 
     public sealed partial class MainWindow : Window
     {
-        private static readonly string SaveFilePath     = GetDataFilePath("timelines.json");
-        private static readonly string SettingsFilePath = GetDataFilePath("settings.json");
+        private static readonly string SaveFilePath      = GetDataFilePath("timelines.json");
+        private static readonly string SettingsFilePath  = GetDataFilePath("settings.json");
+        private static readonly string ProfilesFilePath  = GetDataFilePath("profiles.json");
 
         // MSIX パッケージ環境では ApplicationData.Current.LocalFolder を使用する。
         // 旧バージョン（アンパッケージド）からの移行のため、旧パスにファイルが存在すれば自動コピーする。
@@ -112,8 +120,9 @@ namespace XTimelineViewer
         private readonly List<Action> _headerRefreshers = [];
         private readonly List<WebView2> _webViews = [];
         private bool _extensionsLoaded = false;
-        private CoreWebView2Environment? _webViewEnv;
+        private readonly Dictionary<string, CoreWebView2Environment> _profileEnvs = [];
         private CoreWebView2Environment? _composeEnv;
+        private List<ProfileConfig> _profiles = [];
         private readonly Dictionary<WebView2, Grid>            _webViewToPane  = [];
         private readonly Dictionary<Grid, Action>              _paneToSetFocus = [];
         private readonly Dictionary<WebView2, DispatcherTimer>  _hardReloadTimers    = [];
@@ -219,14 +228,26 @@ namespace XTimelineViewer
                 .FirstOrDefault();
         }
 
-        private async Task<CoreWebView2Environment> GetOrCreateEnvAsync()
+        private static string GetProfilesDataDir()
         {
-            if (_webViewEnv is not null) return _webViewEnv;
-            var versionFolder = FindEdgeDevVersionFolder();
+            if (PackageContext.IsPackaged)
+                return Path.Combine(
+                    Windows.Storage.ApplicationData.Current.LocalFolder.Path, "profiles");
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "XTimelineViewer", "profiles");
+        }
+
+        private async Task<CoreWebView2Environment> GetOrCreateProfileEnvAsync(string profileId)
+        {
+            if (_profileEnvs.TryGetValue(profileId, out var cached)) return cached;
+            var folder = Path.Combine(GetProfilesDataDir(), profileId);
+            Directory.CreateDirectory(folder);
             var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
-            _webViewEnv = await CoreWebView2Environment.CreateWithOptionsAsync(
-                versionFolder ?? "", userDataFolder: "", options);
-            return _webViewEnv;
+            var env = await CoreWebView2Environment.CreateWithOptionsAsync(
+                FindEdgeDevVersionFolder() ?? "", folder, options);
+            _profileEnvs[profileId] = env;
+            return env;
         }
 
         private static readonly string ComposeUserDataFolder = Path.Combine(
@@ -261,6 +282,7 @@ namespace XTimelineViewer
             Closed += async (s, e) => await SaveTimelinesAsync();
             ((FrameworkElement)Content).ActualThemeChanged += (s, e) => ApplyThemeToWebViews();
             LoadSettings();
+            LoadProfiles();
             ApplySavedTheme();
             ApplyAutoActivateTimer();
             UpdateMenuUpdateBadge();
@@ -285,6 +307,24 @@ namespace XTimelineViewer
         {
             Directory.CreateDirectory(Path.GetDirectoryName(SettingsFilePath)!);
             File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(_appSettings, JsonOptions));
+        }
+
+        private void LoadProfiles()
+        {
+            try
+            {
+                var json = File.ReadAllText(ProfilesFilePath);
+                _profiles = JsonSerializer.Deserialize<List<ProfileConfig>>(json) ?? [];
+            }
+            catch { /* ファイルが存在しない場合などは無視 */ }
+            if (_profiles.Count == 0)
+                _profiles.Add(new ProfileConfig { Id = "default", Name = "Default" });
+        }
+
+        private void SaveProfiles()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(ProfilesFilePath)!);
+            File.WriteAllText(ProfilesFilePath, JsonSerializer.Serialize(_profiles, JsonOptions));
         }
 
         private void RestartAutoActivateTimer()
@@ -525,7 +565,8 @@ namespace XTimelineViewer
             }
             catch
             {
-                edgeVersion = _webViewEnv?.BrowserVersionString ?? R.Get("Version_Unknown");
+                edgeVersion = _profileEnvs.Values.FirstOrDefault()?.BrowserVersionString
+                              ?? R.Get("Version_Unknown");
             }
             var versionInfoText = $"XTimelineViewer v{versionStr}\r\n{edgeChannel} {edgeVersion}";
 
@@ -779,7 +820,7 @@ namespace XTimelineViewer
 
             var env = _appSettings.SeparateComposeEnv
                 ? await GetOrCreateComposeEnvAsync()
-                : await GetOrCreateEnvAsync();
+                : await GetOrCreateProfileEnvAsync("default");
             await webView.EnsureCoreWebView2Async(env);
 
             // テーマを適用
@@ -1769,7 +1810,7 @@ namespace XTimelineViewer
                         Content   = new TextBlock
                         {
                             Text       = errors.ToString().TrimEnd()
-                            + "\n\n" + _webViewEnv!.BrowserVersionString,
+                            + "\n\n" + webView.CoreWebView2.Environment.BrowserVersionString,
                             FontFamily = new FontFamily("Cascadia Mono, Consolas, Courier New"),
                             FontSize   = 12,
                             IsTextSelectionEnabled = true,
@@ -1871,7 +1912,7 @@ namespace XTimelineViewer
                         _ = Windows.System.Launcher.LaunchUriAsync(homepageUri);
                     };
 
-                var env = await GetOrCreateEnvAsync();
+                var env = await GetOrCreateProfileEnvAsync("default");
                 await optWebView.EnsureCoreWebView2Async(env);
                 optWebView.Source = new Uri(optPageUrl);
                 await ShowDialogAsync(dlg);
@@ -1901,7 +1942,7 @@ namespace XTimelineViewer
         {
             try
             {
-                var env = await GetOrCreateEnvAsync();
+                var env = await GetOrCreateProfileEnvAsync(cfg.ProfileId);
                 await webView.EnsureCoreWebView2Async(env);
                 webView.CoreWebView2.SourceChanged += (s, e) =>
                 {
