@@ -32,7 +32,7 @@ namespace XTimelineViewer
         public string ProfileId            { get; set; } = "default";
     }
 
-    internal class ProfileConfig
+    public class ProfileConfig
     {
         public string Id   { get; set; } = Guid.NewGuid().ToString("N");
         public string Name { get; set; } = "";
@@ -385,6 +385,17 @@ namespace XTimelineViewer
                 _       => ElementTheme.Default,
             };
             ApplyThemeToWebViews();
+        }
+
+        private void NewProfileMenuItem_Click(object _, RoutedEventArgs __)
+        {
+            var win = new AddProfileWindow();
+            win.ProfileCreated += (__, profile) =>
+            {
+                _profiles.Add(profile);
+                SaveProfiles();
+            };
+            win.Activate();
         }
 
         private async void AppSettingsMenuItem_Click(object _, RoutedEventArgs __)
