@@ -282,7 +282,6 @@ namespace XTimelineViewer
             DropHintSubtitle.Text = R.Get("DropHintSubtitle.Text");
             ToolTipService.SetToolTip(PostBtn, R.Get("PostBtn_Tooltip"));
             ToolTipService.SetToolTip(AppMenuBtn, R.Get("AppMenu_Tooltip"));
-            NewProfileMenuItem.Text      = R.Get("Menu_NewProfile");
             ManageProfilesMenuItem.Text = R.Get("Menu_ManageProfiles");
             AppSettingsMenuItem.Text     = R.Get("Menu_Settings");
             AboutMenuItem.Text       = R.Get("Menu_About");
@@ -419,18 +418,6 @@ namespace XTimelineViewer
             ApplyThemeToWebViews();
         }
 
-        private void NewProfileMenuItem_Click(object _, RoutedEventArgs __)
-        {
-            var win = new AddProfileWindow();
-            win.ProfileCreated += (__, profile) =>
-            {
-                _profiles.Add(profile);
-                SaveProfiles();
-                Debug.WriteLine($"[Profile] Saved to profiles.json: Id={profile.Id}, Name={profile.Name}");
-            };
-            win.Activate();
-        }
-
         private void ManageProfilesMenuItem_Click(object _, RoutedEventArgs __)
         {
             var ownerHwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
@@ -448,6 +435,12 @@ namespace XTimelineViewer
                 }
                 SaveProfiles();
                 RefreshAllProfileBadges();
+            };
+            win.ProfileCreated += (__, profile) =>
+            {
+                SaveProfiles();
+                RefreshAllProfileBadges();
+                Debug.WriteLine($"[Profile] Saved to profiles.json: Id={profile.Id}, Name={profile.Name}");
             };
             win.ProfileDeleteRequested += async (__, profileId) =>
             {
