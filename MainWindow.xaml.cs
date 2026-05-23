@@ -252,6 +252,7 @@ namespace XTimelineViewer
             var env = await CoreWebView2Environment.CreateWithOptionsAsync(
                 FindEdgeDevVersionFolder() ?? "", userDataFolder, options);
             _profileEnvs[profileId] = env;
+            Debug.WriteLine($"[Profile] Env created: profileId={profileId}, UserDataFolder={env.UserDataFolder}");
             return env;
         }
 
@@ -433,7 +434,8 @@ namespace XTimelineViewer
         private void ManageProfilesMenuItem_Click(object _, RoutedEventArgs __)
         {
             var ownerHwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            var win = new ManageProfilesWindow(_profiles, ProfileBadgeColors, ownerHwnd);
+            var win = new ManageProfilesWindow(_profiles, ProfileBadgeColors, ownerHwnd,
+                profileId => _configs.Count(c => c.ProfileId == profileId));
             win.ProfilesChanged += (__, args) =>
             {
                 foreach (var change in args.Changes)
@@ -446,25 +448,6 @@ namespace XTimelineViewer
                 }
                 SaveProfiles();
                 RefreshAllProfileBadges();
-            };
-            win.ProfileResetRequested += async (__, profileId) =>
-            {
-                RemoveTimelinesForProfile(profileId);
-                _profileEnvs.Remove(profileId);
-                try
-                {
-                    var defaultDir = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                        "XTimelineViewer", "EBWebView");
-                    if (Directory.Exists(defaultDir))
-                        Directory.Delete(defaultDir, recursive: true);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[Profile] Failed to delete default profile data: {ex.Message}");
-                }
-                await SaveTimelinesAsync();
-                Debug.WriteLine("[Profile] Default profile reset");
             };
             win.ProfileDeleteRequested += async (__, profileId) =>
             {

@@ -16,21 +16,22 @@ namespace XTimelineViewer
     {
         private readonly List<ProfileConfig> _profiles;
         private readonly Color[] _badgeColors;
+        private readonly Func<string, int> _getTimelineCount;
         private readonly List<(ProfileConfig profile, TextBox nameBox, ComboBox colorBox, TextBox badgeTextBox, Grid row)> _rows = [];
 
         public event EventHandler<ProfileChangedEventArgs>? ProfilesChanged;
-        public event EventHandler<string>? ProfileResetRequested;
         public event EventHandler<string>? ProfileDeleteRequested;
 
         [DllImport("user32.dll")]
         private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
         private const int GWLP_HWNDPARENT = -8;
 
-        public ManageProfilesWindow(List<ProfileConfig> profiles, Color[] badgeColors, IntPtr ownerHwnd)
+        public ManageProfilesWindow(List<ProfileConfig> profiles, Color[] badgeColors, IntPtr ownerHwnd, Func<string, int> getTimelineCount)
         {
             this.InitializeComponent();
             _profiles = profiles;
             _badgeColors = badgeColors;
+            _getTimelineCount = getTimelineCount;
             AppWindow.Resize(new SizeInt32(520, 400));
             Title = R.Get("Menu_ManageProfiles");
             CancelBtn.Content = R.Get("Button_Cancel");
@@ -113,24 +114,7 @@ namespace XTimelineViewer
                 if (profile.Id == "default")
                 {
                     actionBtn.Content = R.Get("Profile_Reset");
-                    actionBtn.Click += async (s, e) =>
-                    {
-                        var dlg = new ContentDialog
-                        {
-                            Title             = R.Get("Profile_ResetConfirmTitle"),
-                            Content           = R.Get("Profile_ResetConfirmBody"),
-                            PrimaryButtonText = R.Get("Profile_ResetConfirm"),
-                            CloseButtonText   = R.Get("Button_Cancel"),
-                            DefaultButton     = ContentDialogButton.Close,
-                            XamlRoot          = Content.XamlRoot,
-                            RequestedTheme    = ((FrameworkElement)Content).ActualTheme,
-                        };
-                        if (await dlg.ShowAsync() == ContentDialogResult.Primary)
-                        {
-                            ProfileResetRequested?.Invoke(this, "default");
-                            Debug.WriteLine("[Profile] Default profile reset requested");
-                        }
-                    };
+                    actionBtn.IsEnabled = false;
                 }
                 else
                 {
@@ -142,7 +126,7 @@ namespace XTimelineViewer
                         var dlg = new ContentDialog
                         {
                             Title             = R.Get("Profile_DeleteConfirmTitle"),
-                            Content           = string.Format(R.Get("Profile_DeleteConfirmBody"), "?"),
+                            Content           = string.Format(R.Get("Profile_DeleteConfirmBody"), _getTimelineCount(capturedProfile.Id)),
                             PrimaryButtonText = R.Get("Profile_DeleteConfirm"),
                             CloseButtonText   = R.Get("Button_Cancel"),
                             DefaultButton     = ContentDialogButton.Close,

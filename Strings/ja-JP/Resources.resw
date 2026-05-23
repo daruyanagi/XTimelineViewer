@@ -94,7 +94,7 @@
   <data name="Profile_Reset" xml:space="preserve"><value>初期化</value></data>
   <data name="Profile_Delete" xml:space="preserve"><value>削除</value></data>
   <data name="Profile_ResetConfirmTitle" xml:space="preserve"><value>プロファイルの初期化</value></data>
-  <data name="Profile_ResetConfirmBody" xml:space="preserve"><value>Cookie やログイン情報がすべて削除されます。このプロファイルを使用しているタイムラインは再度ログインが必要です。</value></data>
+  <data name="Profile_ResetConfirmBody" xml:space="preserve"><value>Cookie やログイン情報がすべて削除されます。このプロファイルを使用しているタイムラインは削除され、次回起動時にデータが消去されます。</value></data>
   <data name="Profile_ResetConfirm" xml:space="preserve"><value>初期化する</value></data>
   <data name="Profile_DeleteConfirmTitle" xml:space="preserve"><value>プロファイルの削除</value></data>
   <data name="Profile_DeleteConfirmBody" xml:space="preserve"><value>このプロファイルを使用している {0} 個のタイムラインも削除されます。</value></data>
