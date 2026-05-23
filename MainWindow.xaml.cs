@@ -1265,7 +1265,7 @@ namespace XTimelineViewer
 
             // ── Settings dialog ───────────────────────────────────────────────
 
-            settingsBtn.Click += async (s, _) =>
+            settingsBtn.Click += async (s, e2) =>
             {
                 var widthBox = new NumberBox
                 {
@@ -1338,8 +1338,18 @@ namespace XTimelineViewer
                     Foreground          = new SolidColorBrush(Color.FromArgb(255, 196, 43, 28)),
                 };
 
+                var profileBox = new ComboBox { MinWidth = 200 };
+                foreach (var p in _profiles)
+                    profileBox.Items.Add(new ComboBoxItem { Content = p.Name, Tag = p.Id });
+                profileBox.SelectedItem = profileBox.Items
+                    .OfType<ComboBoxItem>()
+                    .FirstOrDefault(i => (string)i.Tag == cfg.ProfileId)
+                    ?? profileBox.Items.OfType<ComboBoxItem>().FirstOrDefault();
+
                 var panel = new StackPanel { Spacing = 8 };
-                panel.Children.Add(new TextBlock { Text = R.Get("Timeline_Width") });
+                panel.Children.Add(new TextBlock { Text = R.Get("Timeline_Profile") });
+                panel.Children.Add(profileBox);
+                panel.Children.Add(new TextBlock { Text = R.Get("Timeline_Width"), Margin = new Thickness(0, 8, 0, 0) });
                 panel.Children.Add(widthBox);
                 panel.Children.Add(new TextBlock
                 {
@@ -1409,25 +1419,51 @@ namespace XTimelineViewer
                 }
                 else if (result == ContentDialogResult.Primary)
                 {
+                    var prevProfileId = cfg.ProfileId;
+                    cfg.ProfileId = (profileBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "default";
+
                     cfg.Width  = Math.Clamp(widthBox.Value, 100, 2000);
                     pane.Width = cfg.Width;
 
                     cfg.HideSidebar = hideSidebarToggle.IsOn;
-                    if (webView.CoreWebView2 is not null)
-                        await ApplyHideSidebarAsync(webView, cfg.HideSidebar);
-
                     cfg.HideCompose = hideComposeToggle.IsOn;
-                    if (webView.CoreWebView2 is not null)
-                        await ApplyHideComposeAsync(webView, cfg.HideCompose);
-
                     cfg.HideListHeader = hideListHeaderToggle.IsOn;
-                    if (webView.CoreWebView2 is not null)
-                        await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
-
                     cfg.HardReloadEnabled  = hardReloadToggle.IsOn;
                     cfg.HardReloadInterval = (int)Math.Clamp(hardReloadIntervalBox.Value, 1, 60);
-                    StartHardReloadTimer(webView, cfg);
 
+                    if (prevProfileId != cfg.ProfileId)
+                    {
+                        StopHardReloadTimer(webView);
+                        _webViews.Remove(webView);
+                        _webViewToPane.Remove(webView);
+                        _pointerOverWebViews.Remove(webView);
+                        _urlDivergedWebViews.Remove(webView);
+                        pane.Children.Remove(webView);
+                        webView.Close();
+
+                        webView = new WebView2
+                        {
+                            VerticalAlignment   = VerticalAlignment.Stretch,
+                            HorizontalAlignment = HorizontalAlignment.Stretch
+                        };
+                        Grid.SetRow(webView, 1);
+                        pane.Children.Add(webView);
+                        _webViews.Add(webView);
+                        _webViewToPane[webView] = pane;
+                        Debug.WriteLine($"[Profile] WebView2 recreated for profile switch: {prevProfileId} -> {cfg.ProfileId}");
+                        _ = InitWebViewAsync(webView, cfg);
+                    }
+                    else
+                    {
+                        if (webView.CoreWebView2 is not null)
+                        {
+                            await ApplyHideSidebarAsync(webView, cfg.HideSidebar);
+                            await ApplyHideComposeAsync(webView, cfg.HideCompose);
+                            await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
+                        }
+                    }
+
+                    StartHardReloadTimer(webView, cfg);
                     await SaveTimelinesAsync();
                 }
             };
