@@ -16,6 +16,7 @@
   <!-- App menu items -->
   <data name="Menu_NewProfile" xml:space="preserve"><value>新規プロファイルの作成</value></data>
   <data name="Menu_Settings" xml:space="preserve"><value>設定</value></data>
+  <data name="Menu_ManageProfiles" xml:space="preserve"><value>プロファイルを管理</value></data>
   <data name="Menu_About" xml:space="preserve"><value>XTimelineViewer について</value></data>
 
   <!-- Add profile window -->
@@ -88,6 +89,16 @@
   <data name="Pane_Close_Tooltip" xml:space="preserve"><value>閉じる</value></data>
   <data name="Pane_Delete" xml:space="preserve"><value>このタイムラインを削除</value></data>
   <data name="DragCaption" xml:space="preserve"><value>タイムラインを追加</value></data>
+
+  <!-- Profile management -->
+  <data name="Profile_Reset" xml:space="preserve"><value>初期化</value></data>
+  <data name="Profile_Delete" xml:space="preserve"><value>削除</value></data>
+  <data name="Profile_ResetConfirmTitle" xml:space="preserve"><value>プロファイルの初期化</value></data>
+  <data name="Profile_ResetConfirmBody" xml:space="preserve"><value>Cookie やログイン情報がすべて削除されます。このプロファイルを使用しているタイムラインは再度ログインが必要です。</value></data>
+  <data name="Profile_ResetConfirm" xml:space="preserve"><value>初期化する</value></data>
+  <data name="Profile_DeleteConfirmTitle" xml:space="preserve"><value>プロファイルの削除</value></data>
+  <data name="Profile_DeleteConfirmBody" xml:space="preserve"><value>このプロファイルを使用している {0} 個のタイムラインも削除されます。</value></data>
+  <data name="Profile_DeleteConfirm" xml:space="preserve"><value>削除する</value></data>
 
   <!-- Error dialogs -->
   <data name="ExtLoadError_Title" xml:space="preserve"><value>拡張機能の読み込みに失敗しました</value></data>

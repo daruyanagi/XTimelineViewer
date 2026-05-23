@@ -16,6 +16,7 @@
   <!-- App menu items -->
   <data name="Menu_NewProfile" xml:space="preserve"><value>New Profile</value></data>
   <data name="Menu_Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="Menu_ManageProfiles" xml:space="preserve"><value>Manage Profiles</value></data>
   <data name="Menu_About" xml:space="preserve"><value>About XTimelineViewer</value></data>
 
   <!-- Add profile window -->
@@ -88,6 +89,16 @@
   <data name="Pane_Close_Tooltip" xml:space="preserve"><value>Close</value></data>
   <data name="Pane_Delete" xml:space="preserve"><value>Remove This Timeline</value></data>
   <data name="DragCaption" xml:space="preserve"><value>Add Timeline</value></data>
+
+  <!-- Profile management -->
+  <data name="Profile_Reset" xml:space="preserve"><value>Reset</value></data>
+  <data name="Profile_Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Profile_ResetConfirmTitle" xml:space="preserve"><value>Reset Profile</value></data>
+  <data name="Profile_ResetConfirmBody" xml:space="preserve"><value>All cookies and login data will be deleted. Timelines using this profile will need to sign in again.</value></data>
+  <data name="Profile_ResetConfirm" xml:space="preserve"><value>Reset</value></data>
+  <data name="Profile_DeleteConfirmTitle" xml:space="preserve"><value>Delete Profile</value></data>
+  <data name="Profile_DeleteConfirmBody" xml:space="preserve"><value>{0} timeline(s) using this profile will also be removed.</value></data>
+  <data name="Profile_DeleteConfirm" xml:space="preserve"><value>Delete</value></data>
 
   <!-- Error dialogs -->
   <data name="ExtLoadError_Title" xml:space="preserve"><value>Failed to Load Extensions</value></data>

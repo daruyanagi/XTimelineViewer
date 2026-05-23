@@ -48,6 +48,7 @@
                     <Button.Flyout>
                         <MenuFlyout>
                             <MenuFlyoutItem x:Name="NewProfileMenuItem" Click="NewProfileMenuItem_Click"/>
+                            <MenuFlyoutItem x:Name="ManageProfilesMenuItem" Click="ManageProfilesMenuItem_Click"/>
                             <MenuFlyoutSeparator/>
                             <MenuFlyoutItem x:Name="AppSettingsMenuItem" Click="AppSettingsMenuItem_Click"/>
                             <MenuFlyoutSeparator/>
