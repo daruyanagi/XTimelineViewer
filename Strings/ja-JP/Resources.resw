@@ -16,7 +16,7 @@
   <!-- App menu items -->
   <data name="Menu_NewProfile" xml:space="preserve"><value>新規プロファイルの作成</value></data>
   <data name="Menu_Settings" xml:space="preserve"><value>設定</value></data>
-  <data name="Menu_ManageProfiles" xml:space="preserve"><value>プロファイルを管理</value></data>
+  <data name="Menu_ManageProfiles" xml:space="preserve"><value>プロファイルを管理（試験機能）</value></data>
   <data name="Menu_About" xml:space="preserve"><value>XTimelineViewer について</value></data>
 
   <!-- Add profile window -->
@@ -69,7 +69,7 @@
 
   <!-- Timeline pane settings dialog -->
   <data name="Timeline_Settings_Title" xml:space="preserve"><value>設定</value></data>
-  <data name="Timeline_Profile" xml:space="preserve"><value>プロファイル</value></data>
+  <data name="Timeline_Profile" xml:space="preserve"><value>プロファイル（試験機能）</value></data>
   <data name="Timeline_Width" xml:space="preserve"><value>タイムラインの幅（px）</value></data>
   <data name="Timeline_Sidebar" xml:space="preserve"><value>X のサイドバー</value></data>
   <data name="Timeline_Compose" xml:space="preserve"><value>投稿画面</value></data>
