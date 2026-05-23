@@ -286,6 +286,7 @@ namespace XTimelineViewer
             ((FrameworkElement)Content).ActualThemeChanged += (s, e) => ApplyThemeToWebViews();
             LoadSettings();
             LoadProfiles();
+            CleanupOrphanedProfiles();
             ApplySavedTheme();
             ApplyAutoActivateTimer();
             UpdateMenuUpdateBadge();
@@ -331,6 +332,26 @@ namespace XTimelineViewer
         {
             Directory.CreateDirectory(Path.GetDirectoryName(ProfilesFilePath)!);
             File.WriteAllText(ProfilesFilePath, JsonSerializer.Serialize(_profiles, JsonOptions));
+        }
+
+        private void CleanupOrphanedProfiles()
+        {
+            try
+            {
+                var dir = GetProfilesDataDir();
+                if (!Directory.Exists(dir)) return;
+                var knownIds = new HashSet<string>(_profiles.Select(p => p.Id));
+                foreach (var folder in Directory.GetDirectories(dir))
+                {
+                    var name = Path.GetFileName(folder);
+                    if (!knownIds.Contains(name))
+                    {
+                        try { Directory.Delete(folder, recursive: true); }
+                        catch { }
+                    }
+                }
+            }
+            catch { }
         }
 
         private void RestartAutoActivateTimer()

@@ -97,20 +97,7 @@ namespace XTimelineViewer
 
         private void CancelBtn_Click(object sender, RoutedEventArgs e)
         {
-            CleanupProfileData();
             Close();
-        }
-
-        private void CleanupProfileData()
-        {
-            try
-            {
-                LoginWebView.Close();
-                var folder = Path.Combine(GetProfilesDataDir(), _profileId);
-                if (Directory.Exists(folder))
-                    Directory.Delete(folder, recursive: true);
-            }
-            catch { }
         }
     }
 }
