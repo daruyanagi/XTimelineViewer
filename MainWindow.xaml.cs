@@ -1062,6 +1062,50 @@ namespace XTimelineViewer
             url.Contains("x.com",       StringComparison.OrdinalIgnoreCase) ||
             url.Contains("twitter.com", StringComparison.OrdinalIgnoreCase);
 
+        private static readonly Color[] ProfileBadgeColors =
+        [
+            Color.FromArgb(255,  56, 142, 60),   // green
+            Color.FromArgb(255, 211,  47,  47),  // red
+            Color.FromArgb(255,  25, 118, 210),  // blue
+            Color.FromArgb(255, 156,  39, 176),  // purple
+            Color.FromArgb(255, 245, 124,   0),  // orange
+            Color.FromArgb(255,   0, 151, 167),  // teal
+            Color.FromArgb(255, 121,  85,  72),  // brown
+            Color.FromArgb(255,  63,  81, 181),  // indigo
+        ];
+
+        private static Color GetProfileColor(string profileId)
+        {
+            var hash = Math.Abs(profileId.GetHashCode());
+            return ProfileBadgeColors[hash % ProfileBadgeColors.Length];
+        }
+
+        private Border CreateProfileBadge(string profileId)
+        {
+            var showBadge = _profiles.Count > 1 && profileId != "default";
+            var profile = _profiles.FirstOrDefault(p => p.Id == profileId);
+            var name = profile?.Name ?? profileId;
+            var badgeText = name.Length > 3 ? name[..3] : name;
+            var color = GetProfileColor(profileId);
+
+            return new Border
+            {
+                Background    = new SolidColorBrush(color),
+                CornerRadius  = new CornerRadius(4),
+                Padding       = new Thickness(4, 1, 4, 1),
+                Margin        = new Thickness(0, 0, 6, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Visibility    = showBadge ? Visibility.Visible : Visibility.Collapsed,
+                Child = new TextBlock
+                {
+                    Text       = badgeText,
+                    FontSize   = 10,
+                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                    Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255)),
+                }
+            };
+        }
+
         // ── AddTimeline ───────────────────────────────────────────────────────
 
         private void AddTimeline(TimelineConfig cfg)
@@ -1086,9 +1130,10 @@ namespace XTimelineViewer
 
             // Header
             var headerGrid = new Grid { Padding = new Thickness(8, 4, 4, 4) };
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // typeIcon
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // profileBadge
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // urlLabel
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // buttons
             Grid.SetRow(headerGrid, 0);
 
             // Theme
@@ -1125,6 +1170,10 @@ namespace XTimelineViewer
             var hardReloadTooltip = new ToolTip();
             ToolTipService.SetToolTip(typeIcon, hardReloadTooltip);
 
+            // Profile badge
+            var profileBadge = CreateProfileBadge(cfg.ProfileId);
+            Grid.SetColumn(profileBadge, 1);
+
             var urlLabel = new TextBlock
             {
                 Text              = displayText,
@@ -1133,7 +1182,7 @@ namespace XTimelineViewer
                 VerticalAlignment = VerticalAlignment.Center,
                 Opacity           = 0.8
             };
-            Grid.SetColumn(urlLabel, 1);
+            Grid.SetColumn(urlLabel, 2);
 
             // WebView2
             var webView = new WebView2
@@ -1150,7 +1199,7 @@ namespace XTimelineViewer
                 Spacing           = 4,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            Grid.SetColumn(buttonPanel, 2);
+            Grid.SetColumn(buttonPanel, 3);
 
             var settingsBtn = new Button
             {
@@ -1163,6 +1212,7 @@ namespace XTimelineViewer
             buttonPanel.Children.Add(settingsBtn);
 
             headerGrid.Children.Add(typeIcon);
+            headerGrid.Children.Add(profileBadge);
             headerGrid.Children.Add(urlLabel);
             headerGrid.Children.Add(buttonPanel);
 
@@ -1450,6 +1500,13 @@ namespace XTimelineViewer
                         pane.Children.Add(webView);
                         _webViews.Add(webView);
                         _webViewToPane[webView] = pane;
+
+                        var newBadge = CreateProfileBadge(cfg.ProfileId);
+                        Grid.SetColumn(newBadge, 1);
+                        headerGrid.Children.Remove(profileBadge);
+                        headerGrid.Children.Add(newBadge);
+                        profileBadge = newBadge;
+
                         Debug.WriteLine($"[Profile] WebView2 recreated for profile switch: {prevProfileId} -> {cfg.ProfileId}");
                         _ = InitWebViewAsync(webView, cfg);
                     }
