@@ -346,8 +346,15 @@ namespace XTimelineViewer
                     var name = Path.GetFileName(folder);
                     if (!knownIds.Contains(name))
                     {
-                        try { Directory.Delete(folder, recursive: true); }
-                        catch { }
+                        try
+                        {
+                            Directory.Delete(folder, recursive: true);
+                            Debug.WriteLine($"[Profile] Cleaned up orphaned folder: {name}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[Profile] Failed to clean up orphaned folder: {name} ({ex.Message})");
+                        }
                     }
                 }
             }
@@ -415,6 +422,7 @@ namespace XTimelineViewer
             {
                 _profiles.Add(profile);
                 SaveProfiles();
+                Debug.WriteLine($"[Profile] Saved to profiles.json: Id={profile.Id}, Name={profile.Name}");
             };
             win.Activate();
         }

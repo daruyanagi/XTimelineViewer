@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Windows.Graphics;
@@ -91,12 +92,14 @@ namespace XTimelineViewer
                 Id = _profileId,
                 Name = name,
             };
+            Debug.WriteLine($"[Profile] Created: Id={profile.Id}, Name={profile.Name}");
             ProfileCreated?.Invoke(this, profile);
             Close();
         }
 
         private void CancelBtn_Click(object sender, RoutedEventArgs e)
         {
+            Debug.WriteLine($"[Profile] Cancelled: Id={_profileId} (will be cleaned up on next launch)");
             Close();
         }
     }
