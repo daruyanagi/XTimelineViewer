@@ -36,6 +36,8 @@ namespace XTimelineViewer
     {
         public string Id   { get; set; } = Guid.NewGuid().ToString("N");
         public string Name { get; set; } = "";
+        public int?    BadgeColorIndex { get; set; }
+        public string? BadgeText       { get; set; }
     }
 
     internal class AppSettings
@@ -250,6 +252,7 @@ namespace XTimelineViewer
             var env = await CoreWebView2Environment.CreateWithOptionsAsync(
                 FindEdgeDevVersionFolder() ?? "", userDataFolder, options);
             _profileEnvs[profileId] = env;
+            Debug.WriteLine($"[Profile] Env created: profileId={profileId}, UserDataFolder={env.UserDataFolder}");
             return env;
         }
 
@@ -279,8 +282,9 @@ namespace XTimelineViewer
             DropHintSubtitle.Text = R.Get("DropHintSubtitle.Text");
             ToolTipService.SetToolTip(PostBtn, R.Get("PostBtn_Tooltip"));
             ToolTipService.SetToolTip(AppMenuBtn, R.Get("AppMenu_Tooltip"));
-            NewProfileMenuItem.Text  = R.Get("Menu_NewProfile");
-            AppSettingsMenuItem.Text = R.Get("Menu_Settings");
+            NewProfileMenuItem.Text      = R.Get("Menu_NewProfile");
+            ManageProfilesMenuItem.Text = R.Get("Menu_ManageProfiles");
+            AppSettingsMenuItem.Text     = R.Get("Menu_Settings");
             AboutMenuItem.Text       = R.Get("Menu_About");
             Closed += async (s, e) => await SaveTimelinesAsync();
             ((FrameworkElement)Content).ActualThemeChanged += (s, e) => ApplyThemeToWebViews();
@@ -425,6 +429,118 @@ namespace XTimelineViewer
                 Debug.WriteLine($"[Profile] Saved to profiles.json: Id={profile.Id}, Name={profile.Name}");
             };
             win.Activate();
+        }
+
+        private void ManageProfilesMenuItem_Click(object _, RoutedEventArgs __)
+        {
+            var ownerHwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            var win = new ManageProfilesWindow(_profiles, ProfileBadgeColors, ownerHwnd,
+                profileId => _configs.Count(c => c.ProfileId == profileId));
+            win.ProfilesChanged += (__, args) =>
+            {
+                foreach (var change in args.Changes)
+                {
+                    var p = _profiles.FirstOrDefault(p => p.Id == change.ProfileId);
+                    if (p == null) continue;
+                    p.Name = change.NewName;
+                    p.BadgeColorIndex = change.NewColorIndex;
+                    p.BadgeText = change.NewBadgeText;
+                }
+                SaveProfiles();
+                RefreshAllProfileBadges();
+            };
+            win.ProfileDeleteRequested += async (__, profileId) =>
+            {
+                RemoveTimelinesForProfile(profileId);
+                _profileEnvs.Remove(profileId);
+                var profile = _profiles.FirstOrDefault(p => p.Id == profileId);
+                if (profile != null) _profiles.Remove(profile);
+                if (_profiles.Count == 0)
+                    _profiles.Add(new ProfileConfig { Id = "default", Name = "Default" });
+                SaveProfiles();
+                try
+                {
+                    var folder = Path.Combine(GetProfilesDataDir(), profileId);
+                    if (Directory.Exists(folder))
+                        Directory.Delete(folder, recursive: true);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[Profile] Failed to delete profile folder: {ex.Message}");
+                }
+                await SaveTimelinesAsync();
+                RefreshAllProfileBadges();
+                Debug.WriteLine($"[Profile] Deleted: {profileId}");
+            };
+            win.Activate();
+        }
+
+        private void RefreshAllProfileBadges()
+        {
+            for (int i = 0; i < _configs.Count && i < TimelinePanel.Children.Count; i++)
+            {
+                var pane = (Grid)TimelinePanel.Children[i];
+                var headerGrid = pane.Children.OfType<Grid>().FirstOrDefault();
+                if (headerGrid == null) continue;
+                var oldBadge = headerGrid.Children.OfType<Border>()
+                    .FirstOrDefault(b => Grid.GetColumn(b) == 1);
+                if (oldBadge != null)
+                    headerGrid.Children.Remove(oldBadge);
+                var newBadge = CreateProfileBadge(_configs[i].ProfileId);
+                Grid.SetColumn(newBadge, 1);
+                headerGrid.Children.Add(newBadge);
+            }
+        }
+
+        private void RemoveTimelinesForProfile(string profileId)
+        {
+            var indices = new List<int>();
+            for (int i = 0; i < _configs.Count; i++)
+                if (_configs[i].ProfileId == profileId)
+                    indices.Add(i);
+
+            for (int i = indices.Count - 1; i >= 0; i--)
+            {
+                var idx = indices[i];
+                if (idx >= TimelinePanel.Children.Count) continue;
+                var pane = (Grid)TimelinePanel.Children[idx];
+                var wv = pane.Children.OfType<WebView2>().FirstOrDefault();
+                if (wv != null)
+                {
+                    StopHardReloadTimer(wv);
+                    _hardReloadUiUpdaters.Remove(wv);
+                    _hardReloadStartTimes.Remove(wv);
+                    _pointerOverWebViews.Remove(wv);
+                    _urlDivergedWebViews.Remove(wv);
+                    _webViews.Remove(wv);
+                    _webViewToPane.Remove(wv);
+                    try { wv.Close(); } catch { }
+                }
+                var headerGrid = pane.Children.OfType<Grid>().FirstOrDefault();
+                if (headerGrid != null)
+                {
+                    _homeHeaderGrids.Remove(headerGrid);
+                    if (_focusedHeaderGrid == headerGrid)
+                        _focusedHeaderGrid = null;
+                }
+                _paneToSetFocus.Remove(pane);
+                TimelinePanel.Children.RemoveAt(idx);
+                _configs.RemoveAt(idx);
+            }
+
+            if (_hardReloadUiUpdaters.Count == 0)
+            {
+                _hardReloadUiTimer?.Stop();
+                _hardReloadUiTimer = null;
+            }
+            if (_focusedHeaderGrid == null)
+                foreach (var r in _headerRefreshers) r();
+
+            if (TimelinePanel.Children.Count == 0)
+            {
+                TimelineScroll.Visibility = Visibility.Collapsed;
+                DropHintBorder.Visibility = Visibility.Visible;
+            }
         }
 
         private async void AppSettingsMenuItem_Click(object _, RoutedEventArgs __)
@@ -1080,13 +1196,22 @@ namespace XTimelineViewer
             return ProfileBadgeColors[hash % ProfileBadgeColors.Length];
         }
 
+        private Color GetProfileColor(ProfileConfig? profile, string profileId)
+        {
+            if (profile?.BadgeColorIndex is int idx && idx >= 0 && idx < ProfileBadgeColors.Length)
+                return ProfileBadgeColors[idx];
+            return GetProfileColor(profileId);
+        }
+
         private Border CreateProfileBadge(string profileId)
         {
             var showBadge = _profiles.Count > 1 && profileId != "default";
             var profile = _profiles.FirstOrDefault(p => p.Id == profileId);
             var name = profile?.Name ?? profileId;
-            var badgeText = name.Length > 3 ? name[..3] : name;
-            var color = GetProfileColor(profileId);
+            var badgeText = profile?.BadgeText is { Length: > 0 } custom
+                ? custom
+                : (name.Length > 3 ? name[..3] : name);
+            var color = GetProfileColor(profile, profileId);
 
             return new Border
             {
