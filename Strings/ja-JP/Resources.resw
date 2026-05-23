@@ -18,6 +18,13 @@
   <data name="Menu_Settings" xml:space="preserve"><value>設定</value></data>
   <data name="Menu_About" xml:space="preserve"><value>XTimelineViewer について</value></data>
 
+  <!-- Add profile window -->
+  <data name="AddProfile_Title" xml:space="preserve"><value>新しいプロファイルを追加</value></data>
+  <data name="AddProfile_LoginHint" xml:space="preserve"><value>X にサインインしてください</value></data>
+  <data name="AddProfile_Detected" xml:space="preserve"><value>{0} としてログインしました</value></data>
+  <data name="AddProfile_CreateBtn" xml:space="preserve"><value>プロファイルを作成</value></data>
+  <data name="AddProfile_FallbackLabel" xml:space="preserve"><value>プロファイル名</value></data>
+
   <!-- About dialog -->
   <data name="About_Title" xml:space="preserve"><value>XTimelineViewer について</value></data>
 

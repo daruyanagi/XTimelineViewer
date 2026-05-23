@@ -47,7 +47,7 @@
                     <FontIcon Glyph="&#xE700;" FontFamily="Segoe Fluent Icons" FontSize="14"/>
                     <Button.Flyout>
                         <MenuFlyout>
-                            <MenuFlyoutItem x:Name="NewProfileMenuItem" IsEnabled="False"/>
+                            <MenuFlyoutItem x:Name="NewProfileMenuItem" Click="NewProfileMenuItem_Click"/>
                             <MenuFlyoutSeparator/>
                             <MenuFlyoutItem x:Name="AppSettingsMenuItem" Click="AppSettingsMenuItem_Click"/>
                             <MenuFlyoutSeparator/>

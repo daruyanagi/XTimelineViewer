@@ -32,7 +32,7 @@ namespace XTimelineViewer
         public string ProfileId            { get; set; } = "default";
     }
 
-    internal class ProfileConfig
+    public class ProfileConfig
     {
         public string Id   { get; set; } = Guid.NewGuid().ToString("N");
         public string Name { get; set; } = "";
@@ -286,6 +286,7 @@ namespace XTimelineViewer
             ((FrameworkElement)Content).ActualThemeChanged += (s, e) => ApplyThemeToWebViews();
             LoadSettings();
             LoadProfiles();
+            CleanupOrphanedProfiles();
             ApplySavedTheme();
             ApplyAutoActivateTimer();
             UpdateMenuUpdateBadge();
@@ -331,6 +332,33 @@ namespace XTimelineViewer
         {
             Directory.CreateDirectory(Path.GetDirectoryName(ProfilesFilePath)!);
             File.WriteAllText(ProfilesFilePath, JsonSerializer.Serialize(_profiles, JsonOptions));
+        }
+
+        private void CleanupOrphanedProfiles()
+        {
+            try
+            {
+                var dir = GetProfilesDataDir();
+                if (!Directory.Exists(dir)) return;
+                var knownIds = new HashSet<string>(_profiles.Select(p => p.Id));
+                foreach (var folder in Directory.GetDirectories(dir))
+                {
+                    var name = Path.GetFileName(folder);
+                    if (!knownIds.Contains(name))
+                    {
+                        try
+                        {
+                            Directory.Delete(folder, recursive: true);
+                            Debug.WriteLine($"[Profile] Cleaned up orphaned folder: {name}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[Profile] Failed to clean up orphaned folder: {name} ({ex.Message})");
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         private void RestartAutoActivateTimer()
@@ -385,6 +413,18 @@ namespace XTimelineViewer
                 _       => ElementTheme.Default,
             };
             ApplyThemeToWebViews();
+        }
+
+        private void NewProfileMenuItem_Click(object _, RoutedEventArgs __)
+        {
+            var win = new AddProfileWindow();
+            win.ProfileCreated += (__, profile) =>
+            {
+                _profiles.Add(profile);
+                SaveProfiles();
+                Debug.WriteLine($"[Profile] Saved to profiles.json: Id={profile.Id}, Name={profile.Name}");
+            };
+            win.Activate();
         }
 
         private async void AppSettingsMenuItem_Click(object _, RoutedEventArgs __)
