@@ -13,7 +13,18 @@
         <ScrollViewer Grid.Row="0"
                       VerticalScrollBarVisibility="Auto"
                       Padding="16,12">
-            <StackPanel x:Name="ProfileList" Spacing="0"/>
+            <StackPanel Spacing="8">
+                <StackPanel x:Name="ProfileList" Spacing="0"/>
+                <Button x:Name="AddProfileBtn" Click="AddProfileBtn_Click"
+                        HorizontalAlignment="Stretch"
+                        Padding="8,6"
+                        Margin="0,4,0,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE710;" FontFamily="Segoe Fluent Icons" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="AddProfileLabel" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
         </ScrollViewer>
 
         <StackPanel Grid.Row="1"

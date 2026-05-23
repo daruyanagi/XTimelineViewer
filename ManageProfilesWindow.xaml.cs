@@ -21,6 +21,7 @@ namespace XTimelineViewer
 
         public event EventHandler<ProfileChangedEventArgs>? ProfilesChanged;
         public event EventHandler<string>? ProfileDeleteRequested;
+        public event EventHandler<ProfileConfig>? ProfileCreated;
 
         [DllImport("user32.dll")]
         private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
@@ -36,6 +37,7 @@ namespace XTimelineViewer
             Title = R.Get("Menu_ManageProfiles");
             CancelBtn.Content = R.Get("Button_Cancel");
             SaveBtn.Content = R.Get("Button_Save");
+            AddProfileLabel.Text = R.Get("Menu_NewProfile");
 
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             SetWindowLongPtr(hwnd, GWLP_HWNDPARENT, ownerHwnd);
@@ -192,6 +194,18 @@ namespace XTimelineViewer
         }
 
         private void CancelBtn_Click(object sender, RoutedEventArgs e) => Close();
+
+        private void AddProfileBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new AddProfileWindow();
+            win.ProfileCreated += (__, profile) =>
+            {
+                _profiles.Add(profile);
+                ProfileCreated?.Invoke(this, profile);
+                BuildList();
+            };
+            win.Activate();
+        }
     }
 
     public class ProfileChange
