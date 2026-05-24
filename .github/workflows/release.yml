@@ -64,4 +64,5 @@ jobs:
         uses: vedantmgoyal9/winget-releaser@v2
         with:
           identifier: daruyanagi.XTimelineViewer
+          installers-regex: \.zip$
           token: ${{ secrets.WINGET_TOKEN }}
