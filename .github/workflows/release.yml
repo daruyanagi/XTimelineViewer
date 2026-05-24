@@ -13,15 +13,12 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
-
-      - name: Restore packages
-        run: dotnet restore XTimelineViewer.csproj
 
       - name: Build x64
         run: >
@@ -44,13 +41,21 @@ jobs:
           Compress-Archive -Path publish/x64/*   -DestinationPath "XTimelineViewer-$tag-win-x64.zip"
           Compress-Archive -Path publish/arm64/* -DestinationPath "XTimelineViewer-$tag-win-arm64.zip"
 
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create ${{ github.ref_name }} \
-            XTimelineViewer-${{ github.ref_name }}-win-x64.zip \
-            XTimelineViewer-${{ github.ref_name }}-win-arm64.zip \
-            --title "${{ github.ref_name }}" \
-            --generate-notes
+          tag="${{ github.ref_name }}"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            gh release upload "$tag" \
+              "XTimelineViewer-${tag}-win-x64.zip" \
+              "XTimelineViewer-${tag}-win-arm64.zip" \
+              --clobber
+          else
+            gh release create "$tag" \
+              "XTimelineViewer-${tag}-win-x64.zip" \
+              "XTimelineViewer-${tag}-win-arm64.zip" \
+              --title "$tag" \
+              --generate-notes
+          fi
