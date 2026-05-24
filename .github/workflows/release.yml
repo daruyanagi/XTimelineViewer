@@ -59,3 +59,9 @@ jobs:
               --title "$tag" \
               --generate-notes
           fi
+
+      - name: Publish to winget
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: daruyanagi.XTimelineViewer
+          token: ${{ secrets.WINGET_TOKEN }}
