@@ -387,7 +387,7 @@ namespace XTimelineViewer
                 _autoActivateStartTime = DateTimeOffset.Now;
                 if (_pointerOverWebViews.Count > 0)                 return;  // ① ポインターオーバー中
                 if (_dialogOpenCount > 0)                           return;  // ② ダイアログ表示中
-                if (_homeHeaderGrids.Contains(_focusedHeaderGrid))  return;  // ④ ホームにフォーカス中
+                if (_focusedHeaderGrid is not null && _homeHeaderGrids.Contains(_focusedHeaderGrid))  return;  // ④ ホームにフォーカス中
 
                 foreach (var wv in _webViews)
                 {
@@ -1347,7 +1347,7 @@ namespace XTimelineViewer
 
             void SetFocus()
             {
-                if (_homeHeaderGrids.Contains(_focusedHeaderGrid) && !_homeHeaderGrids.Contains(headerGrid))
+                if (_focusedHeaderGrid is not null && _homeHeaderGrids.Contains(_focusedHeaderGrid) && !_homeHeaderGrids.Contains(headerGrid))
                     RestartAutoActivateTimer();  // ホームから別タイムラインへ
                 _focusedHeaderGrid = headerGrid;
                 foreach (var r in _headerRefreshers) r();
@@ -1363,7 +1363,7 @@ namespace XTimelineViewer
             };
             webView.GotFocus   += (s, e) =>
             {
-                if (_homeHeaderGrids.Contains(_focusedHeaderGrid) && !_homeHeaderGrids.Contains(headerGrid))
+                if (_focusedHeaderGrid is not null && _homeHeaderGrids.Contains(_focusedHeaderGrid) && !_homeHeaderGrids.Contains(headerGrid))
                     RestartAutoActivateTimer();  // ホームから別タイムラインへ
                 _focusedHeaderGrid = headerGrid;
                 foreach (var r in _headerRefreshers) r();
