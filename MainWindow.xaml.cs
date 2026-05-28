@@ -1260,11 +1260,15 @@ namespace XTimelineViewer
             // Theme
             void ApplyPaneTheme(ElementTheme theme)
             {
-                bool focused = _focusedHeaderGrid == headerGrid;
-                var res = Application.Current.Resources;
-                pane.Background       = (Brush)res["TimelinePaneBackgroundBrush"];
-                pane.BorderBrush      = (Brush)res["TimelinePaneBorderBrush"];
-                headerGrid.Background = (Brush)res[focused
+                // Application.Current.Resources はアプリレベルのテーマを参照するため、
+                // 要素単位で RequestedTheme を設定している場合に正しい辞書が返らない。
+                // pane.ActualTheme（解決済み）を使い ThemeDictionaries を直接引く。
+                bool focused   = _focusedHeaderGrid == headerGrid;
+                var themeKey   = theme == ElementTheme.Light ? "Light" : "Default";
+                var themeDict  = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[themeKey];
+                pane.Background       = (Brush)themeDict["TimelinePaneBackgroundBrush"];
+                pane.BorderBrush      = (Brush)themeDict["TimelinePaneBorderBrush"];
+                headerGrid.Background = (Brush)themeDict[focused
                     ? "TimelineHeaderFocusedBackgroundBrush"
                     : "TimelineHeaderBackgroundBrush"];
             }
