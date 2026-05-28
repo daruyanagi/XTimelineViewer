@@ -433,6 +433,7 @@ namespace XTimelineViewer
             var ownerHwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             var win = new ManageProfilesWindow(_profiles, ProfileBadgeColors, ownerHwnd,
                 profileId => _configs.Count(c => c.ProfileId == profileId));
+            ((FrameworkElement)win.Content).RequestedTheme = ((FrameworkElement)Content).RequestedTheme;
             win.ProfilesChanged += (__, args) =>
             {
                 foreach (var change in args.Changes)
