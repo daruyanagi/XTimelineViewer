@@ -285,7 +285,14 @@ namespace XTimelineViewer
             ManageProfilesMenuItem.Text = R.Get("Menu_ManageProfiles");
             AppSettingsMenuItem.Text     = R.Get("Menu_Settings");
             AboutMenuItem.Text       = R.Get("Menu_About");
-            Closed += async (s, e) => await SaveTimelinesAsync();
+            Closed += async (s, e) =>
+            {
+                _hardReloadUiTimer?.Stop();
+                _autoActivateTimer?.Stop();
+                foreach (var wv in _webViews.ToList())
+                    CleanupWebView(wv);
+                await SaveTimelinesAsync();
+            };
             ((FrameworkElement)Content).ActualThemeChanged += (s, e) => ApplyThemeToWebViews();
             LoadSettings();
             LoadProfiles();
@@ -500,14 +507,7 @@ namespace XTimelineViewer
                 var wv = pane.Children.OfType<WebView2>().FirstOrDefault();
                 if (wv != null)
                 {
-                    StopHardReloadTimer(wv);
-                    _hardReloadUiUpdaters.Remove(wv);
-                    _hardReloadStartTimes.Remove(wv);
-                    _pointerOverWebViews.Remove(wv);
-                    _urlDivergedWebViews.Remove(wv);
-                    _webViews.Remove(wv);
-                    _webViewToPane.Remove(wv);
-                    try { wv.Close(); } catch { }
+                    CleanupWebView(wv);
                 }
                 var headerGrid = pane.Children.OfType<Grid>().FirstOrDefault();
                 if (headerGrid != null)
@@ -1556,19 +1556,13 @@ namespace XTimelineViewer
 
                 if (shouldDelete)
                 {
-                    StopHardReloadTimer(webView);
-                    _hardReloadUiUpdaters.Remove(webView);
-                    _hardReloadStartTimes.Remove(webView);
-                    _pointerOverWebViews.Remove(webView);
-                    _urlDivergedWebViews.Remove(webView);
+                    CleanupWebView(webView);
                     if (_hardReloadUiUpdaters.Count == 0)
                     {
                         _hardReloadUiTimer?.Stop();
                         _hardReloadUiTimer = null;
                     }
                     _configs.Remove(cfg);
-                    _webViews.Remove(webView);
-                    _webViewToPane.Remove(webView);
                     _paneToSetFocus.Remove(pane);
                     _headerRefreshers.Remove(refreshHeader);
                     if (_focusedHeaderGrid == headerGrid)
@@ -1601,13 +1595,8 @@ namespace XTimelineViewer
 
                     if (prevProfileId != cfg.ProfileId)
                     {
-                        StopHardReloadTimer(webView);
-                        _webViews.Remove(webView);
-                        _webViewToPane.Remove(webView);
-                        _pointerOverWebViews.Remove(webView);
-                        _urlDivergedWebViews.Remove(webView);
+                        CleanupWebView(webView);
                         pane.Children.Remove(webView);
-                        webView.Close();
 
                         webView = new WebView2
                         {
@@ -1666,6 +1655,30 @@ namespace XTimelineViewer
         {
             if (_hardReloadTimers.Remove(wv, out var t)) t.Stop();
             _hardReloadStartTimes.Remove(wv);
+        }
+
+        // WebView2 インスタンスに紐づくすべてのリソースを解放し、CoreWebView2 を閉じる。
+        // タイムライン削除・プロファイル切り替え・ウィンドウクローズ時に必ず呼ぶこと。
+        private void CleanupWebView(WebView2 wv)
+        {
+            var source = wv.CoreWebView2?.Source ?? "(not initialized)";
+            Debug.WriteLine($"[WebView2] CleanupWebView: source={source}");
+
+            StopHardReloadTimer(wv);
+            _hardReloadUiUpdaters.Remove(wv);
+            _pointerOverWebViews.Remove(wv);
+            _urlDivergedWebViews.Remove(wv);
+            _webViews.Remove(wv);
+            _webViewToPane.Remove(wv);
+            try
+            {
+                wv.Close();
+                Debug.WriteLine($"[WebView2] Closed: source={source}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WebView2] Close failed: source={source}, error={ex.Message}");
+            }
         }
 
         private void EvaluateHardReloadPause(WebView2 wv)
