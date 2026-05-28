@@ -1,4 +1,5 @@
 ﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
@@ -282,6 +283,8 @@ namespace XTimelineViewer
             DropHintSubtitle.Text = R.Get("DropHintSubtitle.Text");
             ToolTipService.SetToolTip(PostBtn, R.Get("PostBtn_Tooltip"));
             ToolTipService.SetToolTip(AppMenuBtn, R.Get("AppMenu_Tooltip"));
+            AutomationProperties.SetName(PostBtn,   R.Get("PostBtn_Tooltip"));
+            AutomationProperties.SetName(AppMenuBtn, R.Get("AppMenu_Tooltip"));
             ManageProfilesMenuItem.Text = R.Get("Menu_ManageProfiles");
             AppSettingsMenuItem.Text     = R.Get("Menu_Settings");
             AboutMenuItem.Text       = R.Get("Menu_About");
@@ -1326,6 +1329,8 @@ namespace XTimelineViewer
                 Padding = new Thickness(0)
             };
             ToolTipService.SetToolTip(settingsBtn, R.Get("Pane_Settings_Tooltip"));
+            AutomationProperties.SetName(settingsBtn, R.Get("Pane_Settings_Tooltip"));
+            AutomationProperties.SetName(webView, displayText);
 
             buttonPanel.Children.Add(settingsBtn);
 
