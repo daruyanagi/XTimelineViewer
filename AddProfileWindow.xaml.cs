@@ -48,6 +48,15 @@ namespace XTimelineViewer
             var env = await CoreWebView2Environment.CreateWithOptionsAsync("", folder, options);
             await LoginWebView.EnsureCoreWebView2Async(env);
 
+            // ウィンドウテーマを WebView2 にも反映する
+            LoginWebView.CoreWebView2.Profile.PreferredColorScheme =
+                ((FrameworkElement)Content).ActualTheme switch
+                {
+                    ElementTheme.Light => CoreWebView2PreferredColorScheme.Light,
+                    ElementTheme.Dark  => CoreWebView2PreferredColorScheme.Dark,
+                    _                  => CoreWebView2PreferredColorScheme.Auto,
+                };
+
             LoginWebView.Source = new Uri("https://x.com/i/flow/login");
 
             LoginWebView.CoreWebView2.NavigationCompleted += async (s, e) =>

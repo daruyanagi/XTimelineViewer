@@ -200,6 +200,9 @@ namespace XTimelineViewer
         private void AddProfileBtn_Click(object sender, RoutedEventArgs e)
         {
             var win = new AddProfileWindow();
+            var childTheme = ((FrameworkElement)Content).ActualTheme;
+            ((FrameworkElement)win.Content).RequestedTheme = childTheme;
+            MainWindow.ApplyTitleBarTheme(win, childTheme);
             win.ProfileCreated += (__, profile) =>
             {
                 _profiles.Add(profile);

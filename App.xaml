@@ -7,6 +7,22 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary.ThemeDictionaries>
+                <!-- Dark -->
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="TimelinePaneBackgroundBrush"          Color="#202020"/>
+                    <SolidColorBrush x:Key="TimelinePaneBorderBrush"              Color="#464646"/>
+                    <SolidColorBrush x:Key="TimelineHeaderBackgroundBrush"        Color="#37373C"/>
+                    <SolidColorBrush x:Key="TimelineHeaderFocusedBackgroundBrush" Color="#1D4E89"/>
+                </ResourceDictionary>
+                <!-- Light -->
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="TimelinePaneBackgroundBrush"          Color="#FFFFFF"/>
+                    <SolidColorBrush x:Key="TimelinePaneBorderBrush"              Color="#D2D2D2"/>
+                    <SolidColorBrush x:Key="TimelineHeaderBackgroundBrush"        Color="#EBEBF0"/>
+                    <SolidColorBrush x:Key="TimelineHeaderFocusedBackgroundBrush" Color="#0078D4"/>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

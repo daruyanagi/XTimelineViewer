@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.Web.WebView2.Core;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
@@ -417,14 +418,31 @@ namespace XTimelineViewer
             _autoActivateTimer.Start();
         }
 
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+        private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+
+        // Win32 タイトルバーは WinUI の RequestedTheme の影響を受けないため
+        // DWM 属性で直接ダークモードを指定する。子ウィンドウにも適用できるよう static に。
+        internal static void ApplyTitleBarTheme(Window window, ElementTheme theme)
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+            var dark = theme == ElementTheme.Dark ? 1
+                     : theme == ElementTheme.Light ? 0
+                     : (Application.Current.RequestedTheme == ApplicationTheme.Dark ? 1 : 0);
+            DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref dark, sizeof(int));
+        }
+
         private void ApplySavedTheme()
         {
-            ((FrameworkElement)Content).RequestedTheme = _appSettings.Theme switch
+            var theme = _appSettings.Theme switch
             {
                 "Light" => ElementTheme.Light,
                 "Dark"  => ElementTheme.Dark,
                 _       => ElementTheme.Default,
             };
+            ((FrameworkElement)Content).RequestedTheme = theme;
+            ApplyTitleBarTheme(this, theme);
             ApplyThemeToWebViews();
         }
 
@@ -433,6 +451,9 @@ namespace XTimelineViewer
             var ownerHwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             var win = new ManageProfilesWindow(_profiles, ProfileBadgeColors, ownerHwnd,
                 profileId => _configs.Count(c => c.ProfileId == profileId));
+            var childTheme = ((FrameworkElement)Content).RequestedTheme;
+            ((FrameworkElement)win.Content).RequestedTheme = childTheme;
+            ApplyTitleBarTheme(win, childTheme);
             win.ProfilesChanged += (__, args) =>
             {
                 foreach (var change in args.Changes)
@@ -1222,7 +1243,7 @@ namespace XTimelineViewer
                     Text       = badgeText,
                     FontSize   = 10,
                     FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                    Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255)),
+                    Foreground = new SolidColorBrush(Microsoft.UI.Colors.White),
                 }
             };
         }
@@ -1260,15 +1281,17 @@ namespace XTimelineViewer
             // Theme
             void ApplyPaneTheme(ElementTheme theme)
             {
-                bool dark    = theme == ElementTheme.Dark;
-                bool focused = _focusedHeaderGrid == headerGrid;
-                pane.Background       = new SolidColorBrush(dark
-                    ? Color.FromArgb(255, 32, 32, 32) : Color.FromArgb(255, 255, 255, 255));
-                pane.BorderBrush      = new SolidColorBrush(dark
-                    ? Color.FromArgb(255, 70, 70, 70) : Color.FromArgb(255, 210, 210, 210));
-                headerGrid.Background = new SolidColorBrush(focused
-                    ? (dark ? Color.FromArgb(255, 29,  78, 137) : Color.FromArgb(255,   0, 120, 212))
-                    : (dark ? Color.FromArgb(255, 55,  55,  60) : Color.FromArgb(255, 235, 235, 240)));
+                // Application.Current.Resources はアプリレベルのテーマを参照するため、
+                // 要素単位で RequestedTheme を設定している場合に正しい辞書が返らない。
+                // pane.ActualTheme（解決済み）を使い ThemeDictionaries を直接引く。
+                bool focused   = _focusedHeaderGrid == headerGrid;
+                var themeKey   = theme == ElementTheme.Light ? "Light" : "Default";
+                var themeDict  = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[themeKey];
+                pane.Background       = (Brush)themeDict["TimelinePaneBackgroundBrush"];
+                pane.BorderBrush      = (Brush)themeDict["TimelinePaneBorderBrush"];
+                headerGrid.Background = (Brush)themeDict[focused
+                    ? "TimelineHeaderFocusedBackgroundBrush"
+                    : "TimelineHeaderBackgroundBrush"];
             }
             ApplyPaneTheme(((FrameworkElement)Content).ActualTheme);
             pane.ActualThemeChanged += (s, _) => ApplyPaneTheme(pane.ActualTheme);
@@ -1508,7 +1531,7 @@ namespace XTimelineViewer
                     Content             = R.Get("Pane_Delete"),
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     Margin              = new Thickness(0, 16, 0, 0),
-                    Foreground          = new SolidColorBrush(Color.FromArgb(255, 196, 43, 28)),
+                    Foreground          = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"],
                 };
 
                 var profileBox = new ComboBox { MinWidth = 200 };
