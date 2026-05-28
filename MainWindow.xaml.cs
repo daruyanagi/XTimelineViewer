@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.Web.WebView2.Core;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
@@ -417,14 +418,31 @@ namespace XTimelineViewer
             _autoActivateTimer.Start();
         }
 
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+        private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+
+        private void ApplyTitleBarTheme(ElementTheme theme)
+        {
+            // Win32 タイトルバーは WinUI の RequestedTheme の影響を受けないため
+            // DWM 属性で直接ダークモードを指定する
+            var hwnd  = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            var dark  = theme == ElementTheme.Dark ? 1
+                      : theme == ElementTheme.Light ? 0
+                      : (Application.Current.RequestedTheme == ApplicationTheme.Dark ? 1 : 0);
+            DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref dark, sizeof(int));
+        }
+
         private void ApplySavedTheme()
         {
-            ((FrameworkElement)Content).RequestedTheme = _appSettings.Theme switch
+            var theme = _appSettings.Theme switch
             {
                 "Light" => ElementTheme.Light,
                 "Dark"  => ElementTheme.Dark,
                 _       => ElementTheme.Default,
             };
+            ((FrameworkElement)Content).RequestedTheme = theme;
+            ApplyTitleBarTheme(theme);
             ApplyThemeToWebViews();
         }
 
