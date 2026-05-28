@@ -1,5 +1,6 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
@@ -38,6 +39,7 @@ namespace XTimelineViewer
             CancelBtn.Content = R.Get("Button_Cancel");
             SaveBtn.Content = R.Get("Button_Save");
             AddProfileLabel.Text = R.Get("Menu_NewProfile");
+            AutomationProperties.SetName(AddProfileBtn, R.Get("Menu_NewProfile"));
 
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             SetWindowLongPtr(hwnd, GWLP_HWNDPARENT, ownerHwnd);

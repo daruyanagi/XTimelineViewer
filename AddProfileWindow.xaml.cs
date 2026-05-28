@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 using System;
@@ -24,6 +25,8 @@ namespace XTimelineViewer
             CancelBtn.Content = R.Get("Button_Cancel");
             CreateBtn.Content = R.Get("AddProfile_CreateBtn");
             ProfileNameBox.PlaceholderText = R.Get("AddProfile_FallbackLabel");
+            AutomationProperties.SetName(ProfileNameBox, R.Get("AddProfile_FallbackLabel"));
+            AutomationProperties.SetName(LoginWebView,   R.Get("AddProfile_LoginHint"));
             _ = InitAsync();
         }
 
