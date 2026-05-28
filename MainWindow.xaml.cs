@@ -1222,7 +1222,7 @@ namespace XTimelineViewer
                     Text       = badgeText,
                     FontSize   = 10,
                     FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                    Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255)),
+                    Foreground = new SolidColorBrush(Microsoft.UI.Colors.White),
                 }
             };
         }
@@ -1260,15 +1260,13 @@ namespace XTimelineViewer
             // Theme
             void ApplyPaneTheme(ElementTheme theme)
             {
-                bool dark    = theme == ElementTheme.Dark;
                 bool focused = _focusedHeaderGrid == headerGrid;
-                pane.Background       = new SolidColorBrush(dark
-                    ? Color.FromArgb(255, 32, 32, 32) : Color.FromArgb(255, 255, 255, 255));
-                pane.BorderBrush      = new SolidColorBrush(dark
-                    ? Color.FromArgb(255, 70, 70, 70) : Color.FromArgb(255, 210, 210, 210));
-                headerGrid.Background = new SolidColorBrush(focused
-                    ? (dark ? Color.FromArgb(255, 29,  78, 137) : Color.FromArgb(255,   0, 120, 212))
-                    : (dark ? Color.FromArgb(255, 55,  55,  60) : Color.FromArgb(255, 235, 235, 240)));
+                var res = Application.Current.Resources;
+                pane.Background       = (Brush)res["TimelinePaneBackgroundBrush"];
+                pane.BorderBrush      = (Brush)res["TimelinePaneBorderBrush"];
+                headerGrid.Background = (Brush)res[focused
+                    ? "TimelineHeaderFocusedBackgroundBrush"
+                    : "TimelineHeaderBackgroundBrush"];
             }
             ApplyPaneTheme(((FrameworkElement)Content).ActualTheme);
             pane.ActualThemeChanged += (s, _) => ApplyPaneTheme(pane.ActualTheme);
@@ -1508,7 +1506,7 @@ namespace XTimelineViewer
                     Content             = R.Get("Pane_Delete"),
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     Margin              = new Thickness(0, 16, 0, 0),
-                    Foreground          = new SolidColorBrush(Color.FromArgb(255, 196, 43, 28)),
+                    Foreground          = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"],
                 };
 
                 var profileBox = new ComboBox { MinWidth = 200 };
