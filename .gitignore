@@ -12,3 +12,7 @@ packages/
 test-cert.pfx
 test-cert.cer
 x_timeline_viewer.png
+
+# UI テスト成果物（実行のたびに生成される）
+test-screenshots/
+test-results.json
