@@ -18,6 +18,12 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
+  <!-- テストプロジェクトのファイルをメインビルドから除外 -->
+  <ItemGroup>
+    <Compile Remove="XTimelineViewer.Tests\**" />
+    <None Remove="XTimelineViewer.Tests\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250602001" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
