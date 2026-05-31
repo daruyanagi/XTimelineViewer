@@ -131,11 +131,7 @@ namespace XTimelineViewer
             if (_focusedHeaderGrid == null)
                 foreach (var r in _headerRefreshers) r();
 
-            if (TimelinePanel.Children.Count == 0)
-            {
-                TimelineScroll.Visibility = Visibility.Collapsed;
-                DropHintBorder.Visibility = Visibility.Visible;
-            }
+            ViewModel.HasTimelines = TimelinePanel.Children.Count > 0;
         }
 
         private static readonly Color[] ProfileBadgeColors =
