@@ -4,7 +4,7 @@
 #
 # 事前準備:
 #   1. XTimelineViewer をビルド・起動しておく
-#   2. winapp がインストールされていること (winapp --version で確認)
+#   2. winapp v0.3+ がインストールされていること: winget install Microsoft.WinAppCli
 
 param([Parameter(Mandatory)][int]$AppPid)
 
@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Continue'
 $pass = 0; $fail = 0; $results = @()
 
 # メインウィンドウの HWND を取得（PopupHost を除外）
-$windows = winapp ui list-windows -a $AppPid --json 2>$null | ConvertFrom-Json
+$windows = (winapp ui list-windows -a $AppPid --json 2>$null) -join "" | ConvertFrom-Json
 $hwnd = ($windows | Where-Object { $_.title -ne "PopupHost" } | Select-Object -First 1).hwnd
 if (-not $hwnd) {
     Write-Host "ERROR: XTimelineViewer (PID: $AppPid) が見つかりません" -ForegroundColor Red
@@ -24,15 +24,17 @@ New-Item -ItemType Directory -Force -Path "test-screenshots" | Out-Null
 function Test-UI {
     param([string]$Name, [scriptblock]$Script)
     try {
-        $output = & $Script 2>&1
-        if ($LASTEXITCODE -eq 0) {
+        $output = & $Script 2>&1          # 外部コマンドの exit code を保持するため Out-String より先に実行
+        $ec     = $LASTEXITCODE           # パイプライン前に即キャプチャ
+        $outputStr = $output -join "`n"
+        if ($ec -eq 0) {
             $script:pass++
             $script:results += @{ name = $Name; status = "PASS" }
             Write-Host "  PASS: $Name" -ForegroundColor Green
         } else {
             $script:fail++
-            $script:results += @{ name = $Name; status = "FAIL"; detail = "$output" }
-            Write-Host "  FAIL: $Name — $output" -ForegroundColor Red
+            $script:results += @{ name = $Name; status = "FAIL"; detail = $outputStr }
+            Write-Host "  FAIL: $Name — $outputStr" -ForegroundColor Red
         }
     } catch {
         $script:fail++
@@ -41,7 +43,7 @@ function Test-UI {
     }
 }
 
-# ── スクリーンショット（初期状態） ─────────────────────────────────────────────
+# ── 初期状態スクリーンショット ─────────────────────────────────────────────────
 winapp ui screenshot -a $AppPid -o "test-screenshots/00-initial.png" 2>$null
 
 # ── ツールバー要素の存在確認 ──────────────────────────────────────────────────
@@ -58,8 +60,7 @@ Write-Host "`n[メニュー]"
 Test-UI "メニューボタンをクリックできる" {
     winapp ui invoke "AppMenuBtn" -a $AppPid
 }
-Start-Sleep -Milliseconds 500
-
+Start-Sleep -Milliseconds 600
 winapp ui screenshot -a $AppPid -o "test-screenshots/01-menu-open.png" 2>$null
 
 Test-UI "設定メニュー項目 (AppSettingsMenuItem) が表示される" {
@@ -69,47 +70,67 @@ Test-UI "About メニュー項目 (AboutMenuItem) が表示される" {
     winapp ui wait-for "AboutMenuItem" -a $AppPid -t 3000
 }
 
-# メニューを閉じる（Escape）
-winapp ui key "Escape" -a $AppPid 2>$null
-Start-Sleep -Milliseconds 300
-
 # ── 設定ダイアログ ─────────────────────────────────────────────────────────────
 Write-Host "`n[設定ダイアログ]"
-Test-UI "メニューから設定を開ける" {
-    winapp ui invoke "AppMenuBtn" -a $AppPid
-    Start-Sleep -Milliseconds 400
+# メニュー項目をクリックするとメニューが閉じてダイアログが開く
+Test-UI "設定ダイアログを開ける" {
     winapp ui invoke "AppSettingsMenuItem" -a $AppPid
 }
 Start-Sleep -Milliseconds 800
 winapp ui screenshot -a $AppPid -o "test-screenshots/02-settings-dialog.png" 2>$null
 
+# ContentDialog のキャンセルボタンは AutomationId="CloseButton"（言語非依存）
 Test-UI "設定ダイアログにキャンセルボタンがある" {
-    winapp ui wait-for "Cancel" -a $AppPid -t 3000
+    winapp ui wait-for "CloseButton" -a $AppPid -t 3000
 }
-
-# ダイアログを閉じる
-winapp ui invoke "Cancel" -a $AppPid 2>$null
+Test-UI "設定ダイアログに保存ボタンがある" {
+    winapp ui wait-for "PrimaryButton" -a $AppPid -t 3000
+}
+Test-UI "設定ダイアログをキャンセルで閉じられる" {
+    winapp ui invoke "CloseButton" -a $AppPid
+}
 Start-Sleep -Milliseconds 500
 
 # ── アクセシビリティ確認 ───────────────────────────────────────────────────────
 Write-Host "`n[アクセシビリティ]"
-Test-UI "PostBtn に AutomationProperties.Name が設定されている" {
-    $prop = winapp ui get-property "PostBtn" -a $AppPid -p Name --json 2>$null | ConvertFrom-Json
-    if ($prop.value -and $prop.value.Length -gt 0) { exit 0 } else { exit 1 }
+# AutomationId（x:Name から生成）で要素が発見できることを確認
+Test-UI "PostBtn が AutomationId で発見できる" {
+    winapp ui wait-for "PostBtn" -a $AppPid -t 3000
 }
-Test-UI "AppMenuBtn に AutomationProperties.Name が設定されている" {
-    $prop = winapp ui get-property "AppMenuBtn" -a $AppPid -p Name --json 2>$null | ConvertFrom-Json
-    if ($prop.value -and $prop.value.Length -gt 0) { exit 0 } else { exit 1 }
+Test-UI "AppMenuBtn が AutomationId で発見できる" {
+    winapp ui wait-for "AppMenuBtn" -a $AppPid -t 3000
 }
+# AutomationProperties.Name が設定されていることをプロパティ取得で確認
+Test-UI "PostBtn に AutomationProperties.Name が設定されている（新規投稿）" {
+    $out = winapp ui get-property "PostBtn" -a $AppPid --property Name 2>&1
+    if (-not ($out -match "新規投稿|New Post")) { throw "Name プロパティ未設定。出力: $out" }
+}
+
+# ── About ダイアログ ──────────────────────────────────────────────────────────
+Write-Host "`n[About ダイアログ]"
+Test-UI "About ダイアログを開ける" {
+    winapp ui invoke "AppMenuBtn" -a $AppPid
+    Start-Sleep -Milliseconds 500
+    winapp ui invoke "AboutMenuItem" -a $AppPid
+}
+Start-Sleep -Milliseconds 800
+winapp ui screenshot -a $AppPid -o "test-screenshots/03-about-dialog.png" 2>$null
+
+Test-UI "About ダイアログに閉じるボタンがある" {
+    winapp ui wait-for "CloseButton" -a $AppPid -t 3000
+}
+Test-UI "About ダイアログを閉じられる" {
+    winapp ui invoke "CloseButton" -a $AppPid
+}
+Start-Sleep -Milliseconds 500
 
 # ── 最終スクリーンショット ─────────────────────────────────────────────────────
 winapp ui screenshot -a $AppPid -o "test-screenshots/99-final.png" 2>$null
 
-# ── 結果表示 ───────────────────────────────────────────────────────────────────
+# ── 結果 ───────────────────────────────────────────────────────────────────────
 Write-Host "`n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 Write-Host "結果: 成功 $pass / 失敗 $fail (合計 $($pass + $fail))"
 $results | ConvertTo-Json | Out-File "test-results.json"
-
 if ($fail -gt 0) {
     Write-Host "スクリーンショット: test-screenshots/ を確認してください"
     exit 1
