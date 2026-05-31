@@ -65,6 +65,7 @@ namespace XTimelineViewer
                 SelectedIndex = _appSettings.Theme switch { "Light" => 1, "Dark" => 2, _ => 0 },
                 MinWidth      = 140
             };
+            AutomationProperties.SetAutomationId(themeCombo, "ThemeComboBox");
 
             var langValues = new[] { "system", "ja-JP", "en-US" };
             var langIdx    = Array.IndexOf(langValues, _appSettings.Language);
@@ -74,6 +75,7 @@ namespace XTimelineViewer
                 SelectedIndex = langIdx < 0 ? 0 : langIdx,
                 MinWidth      = 140
             };
+            AutomationProperties.SetAutomationId(langCombo, "LanguageComboBox");
 
             var openFolderBtn = new Button { Content = R.Get("Button_OpenFolder") };
             openFolderBtn.Click += async (_, _) =>
