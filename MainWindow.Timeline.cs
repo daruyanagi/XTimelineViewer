@@ -107,8 +107,7 @@ namespace XTimelineViewer
             _configs.Add(cfg);
             _ = SaveTimelinesAsync();
 
-            DropHintBorder.Visibility = Visibility.Collapsed;
-            TimelineScroll.Visibility = Visibility.Visible;
+            ViewModel.HasTimelines = true;
 
             // Pane
             var pane = new Grid
@@ -453,11 +452,7 @@ namespace XTimelineViewer
                     await SaveTimelinesAsync();
 
                     TimelinePanel.Children.Remove(pane);
-                    if (TimelinePanel.Children.Count == 0)
-                    {
-                        TimelineScroll.Visibility = Visibility.Collapsed;
-                        DropHintBorder.Visibility = Visibility.Visible;
-                    }
+                    ViewModel.HasTimelines = TimelinePanel.Children.Count > 0;
                 }
                 else if (result == ContentDialogResult.Primary)
                 {

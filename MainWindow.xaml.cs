@@ -19,11 +19,15 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage;
 using Windows.UI;
+using XTimelineViewer.ViewModels;
 
 namespace XTimelineViewer
 {
     public sealed partial class MainWindow : Window
     {
+        /// <summary>x:Bind のバインディングソース。XAML から参照される。</summary>
+        public MainWindowViewModel ViewModel { get; } = new();
+
         private static readonly string SaveFilePath      = GetDataFilePath("timelines.json");
         private static readonly string SettingsFilePath  = GetDataFilePath("settings.json");
         private static readonly string ProfilesFilePath  = GetDataFilePath("profiles.json");

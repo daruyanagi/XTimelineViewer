@@ -74,6 +74,7 @@
 
             <!-- Empty state hint -->
             <Border x:Name="DropHintBorder"
+                    Visibility="{x:Bind ViewModel.DropHintBorderVisibility, Mode=OneWay}"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     BorderBrush="{ThemeResource SystemControlForegroundBaseMediumBrush}"
@@ -97,11 +98,11 @@
 
             <!-- Timeline scroll area -->
             <ScrollViewer x:Name="TimelineScroll"
+                          Visibility="{x:Bind ViewModel.TimelineScrollVisibility, Mode=OneWay}"
                           HorizontalScrollMode="Enabled"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollMode="Disabled"
-                          VerticalScrollBarVisibility="Hidden"
-                          Visibility="Collapsed">
+                          VerticalScrollBarVisibility="Hidden">
                 <StackPanel x:Name="TimelinePanel"
                             Orientation="Horizontal"
                             Padding="4"/>
