@@ -124,6 +124,95 @@ Test-UI "About ダイアログを閉じられる" {
 }
 Start-Sleep -Milliseconds 500
 
+# ── テーマ切り替え ─────────────────────────────────────────────────────────────
+Write-Host "`n[テーマ切り替え]"
+
+# ComboBox 内の指定テキストのアイテムスラグを返すヘルパー
+function Get-ComboItem {
+    param([string]$ComboId, [string]$ItemText, [int]$TargetPid)
+    $out = winapp ui inspect $ComboId -a $TargetPid 2>$null
+    ($out | Where-Object { $_ -match "ListItem.*$ItemText" } | Select-Object -First 1).Trim().Split(" ")[0]
+}
+
+Test-UI "テーマを Dark に変更して保存できる" {
+    winapp ui invoke "AppMenuBtn" -a $AppPid
+    Start-Sleep -Milliseconds 500
+    winapp ui invoke "AppSettingsMenuItem" -a $AppPid
+    Start-Sleep -Milliseconds 800
+    winapp ui invoke "ThemeComboBox" -a $AppPid   # 展開
+    Start-Sleep -Milliseconds 400
+    $slug = Get-ComboItem -ComboId "ThemeComboBox" -ItemText "ダーク" -TargetPid $AppPid
+    if (-not $slug) { throw "ダーク アイテムが見つからない" }
+    winapp ui invoke $slug -a $AppPid
+    Start-Sleep -Milliseconds 200
+    winapp ui invoke "PrimaryButton" -a $AppPid
+}
+Start-Sleep -Milliseconds 600
+winapp ui screenshot -a $AppPid -o "test-screenshots/04-dark-theme.png" 2>$null
+
+Test-UI "テーマをシステムに戻して保存できる" {
+    winapp ui invoke "AppMenuBtn" -a $AppPid
+    Start-Sleep -Milliseconds 500
+    winapp ui invoke "AppSettingsMenuItem" -a $AppPid
+    Start-Sleep -Milliseconds 800
+    winapp ui invoke "ThemeComboBox" -a $AppPid
+    Start-Sleep -Milliseconds 400
+    $slug = Get-ComboItem -ComboId "ThemeComboBox" -ItemText "システム" -TargetPid $AppPid
+    if (-not $slug) { throw "システム アイテムが見つからない" }
+    winapp ui invoke $slug -a $AppPid
+    Start-Sleep -Milliseconds 200
+    winapp ui invoke "PrimaryButton" -a $AppPid
+}
+Start-Sleep -Milliseconds 600
+winapp ui screenshot -a $AppPid -o "test-screenshots/05-system-theme.png" 2>$null
+
+# ── 言語切り替え ───────────────────────────────────────────────────────────────
+Write-Host "`n[言語切り替え]"
+
+Test-UI "言語を English に変更して保存できる" {
+    winapp ui invoke "AppMenuBtn" -a $AppPid
+    Start-Sleep -Milliseconds 500
+    winapp ui invoke "AppSettingsMenuItem" -a $AppPid
+    Start-Sleep -Milliseconds 800
+    winapp ui invoke "LanguageComboBox" -a $AppPid
+    Start-Sleep -Milliseconds 400
+    $slug = Get-ComboItem -ComboId "LanguageComboBox" -ItemText "English" -TargetPid $AppPid
+    if (-not $slug) { throw "English アイテムが見つからない" }
+    winapp ui invoke $slug -a $AppPid
+    Start-Sleep -Milliseconds 200
+    winapp ui invoke "PrimaryButton" -a $AppPid
+}
+Start-Sleep -Milliseconds 800
+
+Test-UI "言語変更後に再起動通知ダイアログが表示される" {
+    winapp ui wait-for "CloseButton" -a $AppPid -t 3000
+}
+Test-UI "再起動通知を閉じられる" {
+    winapp ui invoke "CloseButton" -a $AppPid
+}
+Start-Sleep -Milliseconds 500
+
+Test-UI "言語をシステムに戻して保存できる" {
+    winapp ui invoke "AppMenuBtn" -a $AppPid
+    Start-Sleep -Milliseconds 500
+    winapp ui invoke "AppSettingsMenuItem" -a $AppPid
+    Start-Sleep -Milliseconds 800
+    winapp ui invoke "LanguageComboBox" -a $AppPid
+    Start-Sleep -Milliseconds 400
+    $slug = Get-ComboItem -ComboId "LanguageComboBox" -ItemText "システム言語" -TargetPid $AppPid
+    if (-not $slug) { throw "システム言語 アイテムが見つからない" }
+    winapp ui invoke $slug -a $AppPid
+    Start-Sleep -Milliseconds 200
+    winapp ui invoke "PrimaryButton" -a $AppPid
+}
+Start-Sleep -Milliseconds 800
+
+Test-UI "言語戻し後の再起動通知を閉じられる" {
+    winapp ui wait-for "CloseButton" -a $AppPid -t 3000
+    winapp ui invoke "CloseButton" -a $AppPid
+}
+Start-Sleep -Milliseconds 500
+
 # ── 最終スクリーンショット ─────────────────────────────────────────────────────
 winapp ui screenshot -a $AppPid -o "test-screenshots/99-final.png" 2>$null
 
