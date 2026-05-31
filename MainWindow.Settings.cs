@@ -19,6 +19,7 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage;
 using Windows.UI;
+using XTimelineViewer.Services;
 
 namespace XTimelineViewer
 {
@@ -26,29 +27,17 @@ namespace XTimelineViewer
     {
         private void LoadSettings()
         {
-            try
-            {
-                var json = File.ReadAllText(SettingsFilePath);
-                _appSettings = JsonSerializer.Deserialize<AppSettings>(json) ?? new();
-            }
-            catch { /* ファイルが存在しない場合などは無視 */ }
-            _appSettings.SeparateComposeEnv = false; // 廃止予定: 強制無効化 (#17)
+            _appSettings = SettingsService.LoadSettings(SettingsFilePath);
         }
 
         private void SaveSettings()
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(SettingsFilePath)!);
-            File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(_appSettings, JsonOptions));
+            SettingsService.SaveSettings(SettingsFilePath, _appSettings);
         }
 
         private void LoadProfiles()
         {
-            try
-            {
-                var json = File.ReadAllText(ProfilesFilePath);
-                _profiles = JsonSerializer.Deserialize<List<ProfileConfig>>(json) ?? [];
-            }
-            catch { /* ファイルが存在しない場合などは無視 */ }
+            _profiles = SettingsService.LoadProfiles(ProfilesFilePath);
             if (_profiles.Count == 0)
             {
                 _profiles.Add(new ProfileConfig { Id = "default", Name = "Default" });
@@ -58,35 +47,14 @@ namespace XTimelineViewer
 
         private void SaveProfiles()
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(ProfilesFilePath)!);
-            File.WriteAllText(ProfilesFilePath, JsonSerializer.Serialize(_profiles, JsonOptions));
+            SettingsService.SaveProfiles(ProfilesFilePath, _profiles);
         }
 
         private void CleanupOrphanedProfiles()
         {
-            try
-            {
-                var dir = GetProfilesDataDir();
-                if (!Directory.Exists(dir)) return;
-                var knownIds = new HashSet<string>(_profiles.Select(p => p.Id));
-                foreach (var folder in Directory.GetDirectories(dir))
-                {
-                    var name = Path.GetFileName(folder);
-                    if (!knownIds.Contains(name))
-                    {
-                        try
-                        {
-                            Directory.Delete(folder, recursive: true);
-                            Debug.WriteLine($"[Profile] Cleaned up orphaned folder: {name}");
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"[Profile] Failed to clean up orphaned folder: {name} ({ex.Message})");
-                        }
-                    }
-                }
-            }
-            catch { }
+            SettingsService.CleanupOrphanedProfileFolders(
+                GetProfilesDataDir(),
+                _profiles.Select(p => p.Id));
         }
 
         private async void AppSettingsMenuItem_Click(object _, RoutedEventArgs __)
