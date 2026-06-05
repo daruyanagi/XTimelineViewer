@@ -324,6 +324,13 @@ namespace XTimelineViewer
 
                 var env = await GetOrCreateProfileEnvAsync("default");
                 await optWebView.EnsureCoreWebView2Async(env);
+                optWebView.CoreWebView2.Profile.PreferredColorScheme =
+                    ((FrameworkElement)Content).ActualTheme switch
+                    {
+                        ElementTheme.Light => CoreWebView2PreferredColorScheme.Light,
+                        ElementTheme.Dark  => CoreWebView2PreferredColorScheme.Dark,
+                        _                  => CoreWebView2PreferredColorScheme.Auto,
+                    };
                 optWebView.Source = new Uri(optPageUrl);
                 await ShowDialogAsync(dlg);
             };

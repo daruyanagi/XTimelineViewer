@@ -41,7 +41,6 @@ namespace XTimelineViewer
                 Content         = webView,
                 CloseButtonText = R.Get("Button_Close"),
                 XamlRoot        = Content.XamlRoot,
-                RequestedTheme  = ((FrameworkElement)Content).ActualTheme
             };
 
             var env = _appSettings.SeparateComposeEnv

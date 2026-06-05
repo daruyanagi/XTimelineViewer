@@ -101,7 +101,6 @@ namespace XTimelineViewer
                 PrimaryButtonText = R.Get("CheckUpdate_WingetConfirm"),
                 CloseButtonText   = R.Get("Button_Cancel"),
                 XamlRoot          = Content.XamlRoot,
-                RequestedTheme    = ((FrameworkElement)Content).ActualTheme,
             };
 
             if (await ShowDialogAsync(confirmDlg) != ContentDialogResult.Primary) return;

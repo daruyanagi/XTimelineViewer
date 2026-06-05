@@ -187,7 +187,6 @@ namespace XTimelineViewer
                 CloseButtonText   = R.Get("Button_Cancel"),
                 DefaultButton     = ContentDialogButton.Primary,
                 XamlRoot          = Content.XamlRoot,
-                RequestedTheme    = ((FrameworkElement)Content).ActualTheme
             };
 
                         if (await ShowDialogAsync(dlg) == ContentDialogResult.Primary)
@@ -463,7 +462,6 @@ namespace XTimelineViewer
                 Content         = panel,
                 CloseButtonText = R.Get("Button_Close"),
                 XamlRoot        = Content.XamlRoot,
-                RequestedTheme  = ((FrameworkElement)Content).ActualTheme,
             };
             await ShowDialogAsync(dlg);
         }
