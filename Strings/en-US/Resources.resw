@@ -19,6 +19,12 @@
   <data name="Menu_ManageProfiles" xml:space="preserve"><value>Manage Profiles (Experimental)</value></data>
   <data name="Menu_About" xml:space="preserve"><value>About XTimelineViewer</value></data>
 
+  <!-- Add timeline menu -->
+  <data name="Menu_AddTimeline" xml:space="preserve"><value>Add Timeline</value></data>
+  <data name="Timeline_Home" xml:space="preserve"><value>Home</value></data>
+  <data name="Timeline_Notifications" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Timeline_Bookmarks" xml:space="preserve"><value>Bookmarks</value></data>
+
   <!-- Add profile window -->
   <data name="AddProfile_Title" xml:space="preserve"><value>Add New Profile</value></data>
   <data name="AddProfile_LoginHint" xml:space="preserve"><value>Sign in to X</value></data>

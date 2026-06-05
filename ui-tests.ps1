@@ -91,6 +91,29 @@ Test-UI "設定ダイアログをキャンセルで閉じられる" {
 }
 Start-Sleep -Milliseconds 500
 
+# ── タイムライン追加メニュー (#120) ────────────────────────────────────────────
+# 注: 実際の追加は timelines.json を変更し状態を汚すため、ここでは
+#     サブメニューが開いて定型項目が表示されることのみを検証する。
+Write-Host "`n[タイムライン追加メニュー]"
+Test-UI "タイムライン追加サブメニューを展開できる" {
+    winapp ui invoke "AppMenuBtn" -a $AppPid
+    Start-Sleep -Milliseconds 500
+    winapp ui invoke "AddTimelineSubMenu" -a $AppPid
+}
+Start-Sleep -Milliseconds 500
+Test-UI "ホーム追加項目が表示される" {
+    winapp ui wait-for "AddHomeTimelineItem" -a $AppPid -t 3000
+}
+Test-UI "通知追加項目が表示される" {
+    winapp ui wait-for "AddNotificationsTimelineItem" -a $AppPid -t 3000
+}
+Test-UI "ブックマーク追加項目が表示される" {
+    winapp ui wait-for "AddBookmarksTimelineItem" -a $AppPid -t 3000
+}
+# メニューを閉じる（追加はしない）
+winapp ui invoke "AppMenuBtn" -a $AppPid 2>$null
+Start-Sleep -Milliseconds 500
+
 # ── アクセシビリティ確認 ───────────────────────────────────────────────────────
 Write-Host "`n[アクセシビリティ]"
 # AutomationId（x:Name から生成）で要素が発見できることを確認

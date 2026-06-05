@@ -100,6 +100,21 @@ namespace XTimelineViewer
             url.Contains("x.com",       StringComparison.OrdinalIgnoreCase) ||
             url.Contains("twitter.com", StringComparison.OrdinalIgnoreCase);
 
+        // ── Quick add from menu (#120) ────────────────────────────────────────
+
+        internal const string HomeTimelineUrl          = "https://x.com/home";
+        internal const string NotificationsTimelineUrl = "https://x.com/notifications";
+        internal const string BookmarksTimelineUrl     = "https://x.com/i/bookmarks";
+
+        private void AddHomeTimelineItem_Click(object _, RoutedEventArgs __)
+            => AddTimeline(new TimelineConfig { Url = HomeTimelineUrl });
+
+        private void AddNotificationsTimelineItem_Click(object _, RoutedEventArgs __)
+            => AddTimeline(new TimelineConfig { Url = NotificationsTimelineUrl });
+
+        private void AddBookmarksTimelineItem_Click(object _, RoutedEventArgs __)
+            => AddTimeline(new TimelineConfig { Url = BookmarksTimelineUrl });
+
         // ── AddTimeline ───────────────────────────────────────────────────────
 
         private void AddTimeline(TimelineConfig cfg)
