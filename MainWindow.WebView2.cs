@@ -80,10 +80,12 @@ namespace XTimelineViewer
                         css.push('div:has(>div>div>div>div>div>button[data-testid="app-bar-back"]){display:none!important}');
                         css.push('[data-testid="cellInnerDiv"]:has(a[href*="/i/lists/"][href$="/members"]){display:none!important}');
                     }
-                    // ブックマーク: 上部ナビバー＋nth-child(1)ブロック＋空フォルダの説明文を非表示
+                    // ブックマーク: 上部ナビバー＋タイトルブロック＋空フォルダの説明文を非表示
+                    // nth-child(1) は X の DOM 変更で最初の投稿まで隠れる問題があったため
+                    // :has(h2) でタイトル見出しを含む要素のみを対象にする (#115)
                     if(/^\/(i\/bookmarks|bookmarks)/.test(path)){
                         css.push('div:has(>div>div>div>div>div>button[data-testid="app-bar-back"]){display:none!important}');
-                        css.push('#react-root main section>div>div>div:nth-child(1){display:none!important}');
+                        css.push('#react-root main section>div>div>div:has(h2){display:none!important}');
                         css.push('[data-testid="emptyState"]{display:none!important}');
                     }
                     // プロフィール: ナビバー＋プロフィール情報カード（バナー・アバター・自己紹介・フォロー数）を非表示
