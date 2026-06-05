@@ -23,6 +23,14 @@ namespace XTimelineViewer
             _dict = LoadResw(locale) ?? LoadResw("en-US") ?? [];
         }
 
+        // 実行中に言語を切り替えるためリソース辞書を再読み込みする (#117)。
+        // languageOverride が null の場合はシステム言語にフォールバックする。
+        internal static void Reload(string? languageOverride = null)
+        {
+            _initialized = false;
+            Initialize(languageOverride);
+        }
+
         // システム言語から使用する resw ロケールフォルダー名を決定する。
         // ja 系は "ja-JP"、それ以外は "en-US" にフォールバックする。
         private static string ResolveSystemLocale()
