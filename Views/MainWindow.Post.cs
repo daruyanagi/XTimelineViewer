@@ -29,7 +29,7 @@ namespace XTimelineViewer.Views
         private async void PostBtn_Click(object _, RoutedEventArgs __)
         {
             if (_appSettings.OpenComposerInBrowser)
-                _ = Windows.System.Launcher.LaunchUriAsync(new Uri("https://x.com/compose/post"));
+                _ = LaunchUriByEdgeProfileAsync(new Uri("https://x.com/compose/post"));
             else
                 await OpenPostDialogAsync();
         }
@@ -122,7 +122,7 @@ namespace XTimelineViewer.Views
             if (message.StartsWith("openTimestamp:") &&
                 Uri.TryCreate(message[14..], UriKind.Absolute, out var timestampUri))
             {
-                _ = Windows.System.Launcher.LaunchUriAsync(timestampUri);
+                _ = LaunchUriByEdgeProfileAsync(timestampUri);
                 return;
             }
 
@@ -132,7 +132,7 @@ namespace XTimelineViewer.Views
                 case "focusPrev": FocusAdjacentTimeline(senderWebView, -1); break;
                 case "newPost":
                     if (_appSettings.OpenComposerInBrowser)
-                        _ = Windows.System.Launcher.LaunchUriAsync(new Uri("https://x.com/compose/post"));
+                        _ = LaunchUriByEdgeProfileAsync(new Uri("https://x.com/compose/post"));
                     else
                         _ = OpenPostDialogAsync(senderWebView);
                     break;
