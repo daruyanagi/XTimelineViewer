@@ -11,7 +11,9 @@ using System.Runtime.InteropServices;
 using Windows.Graphics;
 using Windows.UI;
 
-namespace XTimelineViewer
+using XTimelineViewer.Models;
+
+namespace XTimelineViewer.Views
 {
     public sealed partial class ManageProfilesWindow : Window
     {

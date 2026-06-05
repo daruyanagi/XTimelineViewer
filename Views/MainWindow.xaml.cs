@@ -21,7 +21,9 @@ using Windows.Storage;
 using Windows.UI;
 using XTimelineViewer.ViewModels;
 
-namespace XTimelineViewer
+using XTimelineViewer.Models;
+
+namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
     {
