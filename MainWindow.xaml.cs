@@ -284,6 +284,15 @@ namespace XTimelineViewer
             ManageProfilesMenuItem.Text = R.Get("Menu_ManageProfiles");
             AppSettingsMenuItem.Text    = R.Get("Menu_Settings");
             AboutMenuItem.Text          = R.Get("Menu_About");
+
+            AddTimelineSubMenu.Text           = R.Get("Menu_AddTimeline");
+            AddHomeTimelineItem.Text          = R.Get("Timeline_Home");
+            AddNotificationsTimelineItem.Text = R.Get("Timeline_Notifications");
+            AddBookmarksTimelineItem.Text     = R.Get("Timeline_Bookmarks");
+            // アイコンは既存ペインと同じく URL 種別から導出して一貫性を保つ
+            AddHomeIcon.Glyph          = GetTimelineGlyph(HomeTimelineUrl);
+            AddNotificationsIcon.Glyph = GetTimelineGlyph(NotificationsTimelineUrl);
+            AddBookmarksIcon.Glyph     = GetTimelineGlyph(BookmarksTimelineUrl);
         }
 
         private async Task<ContentDialogResult> ShowDialogAsync(ContentDialog dlg)

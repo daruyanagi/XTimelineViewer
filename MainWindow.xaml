@@ -47,6 +47,24 @@
                     <FontIcon Glyph="&#xE700;" FontFamily="Segoe Fluent Icons" FontSize="14"/>
                     <Button.Flyout>
                         <MenuFlyout>
+                            <MenuFlyoutSubItem x:Name="AddTimelineSubMenu">
+                                <MenuFlyoutItem x:Name="AddHomeTimelineItem" Click="AddHomeTimelineItem_Click">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon x:Name="AddHomeIcon" FontFamily="Segoe Fluent Icons"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem x:Name="AddNotificationsTimelineItem" Click="AddNotificationsTimelineItem_Click">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon x:Name="AddNotificationsIcon" FontFamily="Segoe Fluent Icons"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem x:Name="AddBookmarksTimelineItem" Click="AddBookmarksTimelineItem_Click">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon x:Name="AddBookmarksIcon" FontFamily="Segoe Fluent Icons"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyoutSubItem>
+                            <MenuFlyoutSeparator/>
                             <MenuFlyoutItem x:Name="ManageProfilesMenuItem" Click="ManageProfilesMenuItem_Click"/>
                             <MenuFlyoutSeparator/>
                             <MenuFlyoutItem x:Name="AppSettingsMenuItem" Click="AppSettingsMenuItem_Click"/>
