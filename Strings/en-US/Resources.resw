@@ -113,7 +113,7 @@
   <!-- Version info -->
   <data name="Version_Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="EdgeChannel_Runtime" xml:space="preserve"><value>WebView2 Runtime</value></data>
-  <data name="EdgeChannel_Dev" xml:space="preserve"><value>Edge Dev</value></data>
+
 
   <!-- Issue report body labels -->
   <data name="IssueLabel_AppVersion" xml:space="preserve"><value>App version</value></data>

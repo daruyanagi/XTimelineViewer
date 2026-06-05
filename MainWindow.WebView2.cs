@@ -391,7 +391,7 @@ namespace XTimelineViewer
                             MaxHeight = 300,
                             Content   = new TextBlock
                             {
-                                Text = $"EdgeDevAppDir: {EdgeDevAppDir}\n\nログ: {LogFilePath}\n\n{ex}",
+                                Text = $"ログ: {LogFilePath}\n\n{ex}",
                                 FontFamily = new FontFamily("Cascadia Mono, Consolas, Courier New"),
                                 FontSize   = 12,
                                 IsTextSelectionEnabled = true,
