@@ -191,18 +191,6 @@ namespace XTimelineViewer
             })();
             """;
 
-        private static readonly string EdgeDevAppDir =
-            @"C:\Program Files (x86)\Microsoft\Edge Dev\Application";
-
-        private static string? FindEdgeDevVersionFolder()
-        {
-            if (!Directory.Exists(EdgeDevAppDir)) return null;
-            return Directory.GetDirectories(EdgeDevAppDir)
-                .Where(d => Version.TryParse(Path.GetFileName(d), out _))
-                .OrderByDescending(d => Version.Parse(Path.GetFileName(d)))
-                .FirstOrDefault();
-        }
-
         private static string GetProfilesDataDir()
         {
             if (PackageContext.IsPackaged)
@@ -223,7 +211,7 @@ namespace XTimelineViewer
                 Directory.CreateDirectory(userDataFolder);
             var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
             var env = await CoreWebView2Environment.CreateWithOptionsAsync(
-                FindEdgeDevVersionFolder() ?? "", userDataFolder, options);
+                "", userDataFolder, options);
             _profileEnvs[profileId] = env;
             Debug.WriteLine($"[Profile] Env created: profileId={profileId}, UserDataFolder={env.UserDataFolder}");
             return env;
@@ -236,10 +224,9 @@ namespace XTimelineViewer
         private async Task<CoreWebView2Environment> GetOrCreateComposeEnvAsync()
         {
             if (_composeEnv is not null) return _composeEnv;
-            var versionFolder = FindEdgeDevVersionFolder();
             var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = false };
             _composeEnv = await CoreWebView2Environment.CreateWithOptionsAsync(
-                versionFolder ?? "", userDataFolder: ComposeUserDataFolder, options);
+                "", userDataFolder: ComposeUserDataFolder, options);
             return _composeEnv;
         }
 

@@ -229,14 +229,11 @@ namespace XTimelineViewer
             var currentVersion = Assembly.GetExecutingAssembly().GetName().Version!;
             var versionStr     = currentVersion.ToString(3);
 
-            var edgeChannel = FindEdgeDevVersionFolder() is not null
-                ? R.Get("EdgeChannel_Dev")
-                : R.Get("EdgeChannel_Runtime");
+            var edgeChannel = R.Get("EdgeChannel_Runtime");
             string edgeVersion;
             try
             {
-                edgeVersion = CoreWebView2Environment.GetAvailableBrowserVersionString(
-                    FindEdgeDevVersionFolder() ?? "");
+                edgeVersion = CoreWebView2Environment.GetAvailableBrowserVersionString();
             }
             catch
             {
