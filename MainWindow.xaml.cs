@@ -284,6 +284,9 @@ namespace XTimelineViewer
 
         private async Task<ContentDialogResult> ShowDialogAsync(ContentDialog dlg)
         {
+            // すべてのダイアログに現在のテーマを自動適用して設定漏れを防ぐ (#126)
+            dlg.RequestedTheme = ((FrameworkElement)Content).ActualTheme;
+
             _dialogOpenCount++;
             try   { return await dlg.ShowAsync(); }
             finally

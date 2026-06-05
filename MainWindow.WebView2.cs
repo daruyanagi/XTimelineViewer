@@ -324,6 +324,29 @@ namespace XTimelineViewer
 
                 var env = await GetOrCreateProfileEnvAsync("default");
                 await optWebView.EnsureCoreWebView2Async(env);
+                var isDark = ((FrameworkElement)Content).ActualTheme == ElementTheme.Dark;
+                optWebView.CoreWebView2.Profile.PreferredColorScheme = isDark
+                    ? CoreWebView2PreferredColorScheme.Dark
+                    : CoreWebView2PreferredColorScheme.Light;
+                // 拡張機能ページが prefers-color-scheme 未対応の場合に備え、
+                // WebView2 背景色を合わせ、ページ読み込み後に CSS を注入する
+                if (isDark)
+                {
+                    optWebView.DefaultBackgroundColor = Windows.UI.Color.FromArgb(255, 32, 32, 32);
+                    optWebView.CoreWebView2.NavigationCompleted += async (s, e) =>
+                    {
+                        await optWebView.CoreWebView2.ExecuteScriptAsync("""
+                            if (!window.matchMedia('(prefers-color-scheme: dark)').matches ||
+                                getComputedStyle(document.body).backgroundColor === 'rgb(255, 255, 255)') {
+                                document.documentElement.style.cssText += 'background:#202020!important;color:#e0e0e0!important';
+                                document.body.style.cssText += 'background:#202020!important;color:#e0e0e0!important';
+                                document.querySelectorAll('input,select,textarea,button').forEach(el => {
+                                    el.style.cssText += 'background:#333!important;color:#e0e0e0!important;border-color:#555!important';
+                                });
+                            }
+                        """);
+                    };
+                }
                 optWebView.Source = new Uri(optPageUrl);
                 await ShowDialogAsync(dlg);
             };
