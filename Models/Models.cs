@@ -33,5 +33,7 @@ namespace XTimelineViewer.Models
         public string? LastUpdateCheck       { get; set; } = null;      // UTC ISO-8601
         public string? CachedLatestVersion   { get; set; } = null;      // "v1.4.0" など
         public bool    ShowAutoActivateLabel { get; set; } = false;
+        public string  ExternalBrowser       { get; set; } = "system";  // "system" | "edge"
+        public string  EdgeProfileDirectory  { get; set; } = "";        // "Default" | "Profile 1" など
     }
 }

@@ -19,9 +19,9 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage;
 using Windows.UI;
-using XTimelineViewer.ViewModels;
-
 using XTimelineViewer.Models;
+using XTimelineViewer.Services;
+using XTimelineViewer.ViewModels;
 
 namespace XTimelineViewer.Views
 {
@@ -304,6 +304,29 @@ namespace XTimelineViewer.Views
             if (!Uri.TryCreate(baseUrl,    UriKind.Absolute, out var @base)) return false;
             return string.Equals(cur.Host,         @base.Host,         StringComparison.OrdinalIgnoreCase)
                 && string.Equals(cur.AbsolutePath, @base.AbsolutePath, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 外部ブラウザー設定に応じて URI を開く。
+        /// Edge プロファイル指定が有効かつ http/https の場合は Edge で開き、
+        /// それ以外はシステム既定に委ねる。
+        /// </summary>
+        private async Task LaunchUriByEdgeProfileAsync(Uri uri)
+        {
+            if (_appSettings.ExternalBrowser == "edge" &&
+                (uri.Scheme == "http" || uri.Scheme == "https"))
+            {
+                var edgePath = EdgeService.FindEdgePath();
+                if (edgePath is not null)
+                {
+                    EdgeService.LaunchInProfile(edgePath, _appSettings.EdgeProfileDirectory, uri);
+                    return;
+                }
+                // Edge が見つからない場合はシステム既定にフォールバック
+                Debug.WriteLine("[Edge] Falling back to system default — Edge not found");
+            }
+
+            await Windows.System.Launcher.LaunchUriAsync(uri);
         }
     }
 }

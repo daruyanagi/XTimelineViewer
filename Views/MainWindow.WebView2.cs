@@ -321,7 +321,7 @@ namespace XTimelineViewer.Views
                     dlg.SecondaryButtonClick += (s, e) =>
                     {
                         e.Cancel = true;
-                        _ = Windows.System.Launcher.LaunchUriAsync(homepageUri);
+                        _ = LaunchUriByEdgeProfileAsync(homepageUri);
                     };
 
                 var env = await GetOrCreateProfileEnvAsync("default");
@@ -440,11 +440,11 @@ namespace XTimelineViewer.Views
             webView.CoreWebView2.WebMessageReceived += (s, e) =>
                 OnWebViewMessageReceived(webView, e.TryGetWebMessageAsString());
 
-            // 外部リンクをシステム既定ブラウザーで開く
+            // 外部リンクをシステム既定ブラウザーまたは指定 Edge プロファイルで開く
             webView.CoreWebView2.NewWindowRequested += async (s, args) =>
             {
                 args.Handled = true;
-                await Windows.System.Launcher.LaunchUriAsync(new Uri(args.Uri));
+                await LaunchUriByEdgeProfileAsync(new Uri(args.Uri));
             };
 
             webView.CoreWebView2.NavigationStarting += async (s, args) =>
@@ -455,7 +455,7 @@ namespace XTimelineViewer.Views
                     !nav.Host.Equals(origin.Host, StringComparison.OrdinalIgnoreCase))
                 {
                     args.Cancel = true;
-                    await Windows.System.Launcher.LaunchUriAsync(nav);
+                    await LaunchUriByEdgeProfileAsync(nav);
                     return;
                 }
 

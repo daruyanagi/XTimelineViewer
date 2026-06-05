@@ -28,6 +28,7 @@
   <ItemGroup>
     <Compile Include="..\Models\Models.cs"             Link="Models\Models.cs" />
     <Compile Include="..\Services\SettingsService.cs" Link="Services\SettingsService.cs" />
+    <Compile Include="..\Services\EdgeService.cs"    Link="Services\EdgeService.cs" />
   </ItemGroup>
 
 </Project>

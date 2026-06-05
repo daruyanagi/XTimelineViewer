@@ -110,7 +110,7 @@ namespace XTimelineViewer.Views
             var winget = FindWinget();
             if (winget is null)
             {
-                _ = Windows.System.Launcher.LaunchUriAsync(new Uri(releaseUrl));
+                await LaunchUriByEdgeProfileAsync(new Uri(releaseUrl));
                 return;
             }
 

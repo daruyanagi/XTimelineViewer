@@ -19,9 +19,8 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage;
 using Windows.UI;
-using XTimelineViewer.Services;
-
 using XTimelineViewer.Models;
+using XTimelineViewer.Services;
 
 namespace XTimelineViewer.Views
 {
@@ -181,6 +180,60 @@ namespace XTimelineViewer.Views
             };
             panel.Children.Add(MakeRow(R.Get("Settings_ShowAutoActivateLabel"), showAutoActivateLabelToggle));
 
+            // ── 外部ブラウザー ────────────────────────────────────────────────
+            panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 12, 0, 8) });
+            panel.Children.Add(new TextBlock
+            {
+                Text       = R.Get("Section_ExternalBrowser"),
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+            });
+
+            var browserValues = new[] { "system", "edge" };
+            var browserCombo = new ComboBox
+            {
+                ItemsSource   = new List<string> { R.Get("Browser_System"), "Microsoft Edge" },
+                SelectedIndex = _appSettings.ExternalBrowser == "edge" ? 1 : 0,
+                MinWidth      = 200
+            };
+
+            var edgeProfiles = EdgeService.EnumerateProfiles();
+            var profileCombo = new ComboBox
+            {
+                MinWidth  = 200,
+                IsEnabled = _appSettings.ExternalBrowser == "edge" && edgeProfiles.Count > 0
+            };
+
+            // Edge 未インストール時はプルダウンに「Edge が見つかりません」を表示
+            if (edgeProfiles.Count == 0)
+            {
+                profileCombo.ItemsSource   = new List<string> { R.Get("Browser_EdgeNotFound") };
+                profileCombo.SelectedIndex = 0;
+                profileCombo.IsEnabled     = false;
+            }
+            else
+            {
+                var profileDisplayNames = new List<string>();
+                int selectedProfileIdx = 0;
+                for (int i = 0; i < edgeProfiles.Count; i++)
+                {
+                    var p = edgeProfiles[i];
+                    profileDisplayNames.Add($"{p.DisplayName}  ({p.Directory})");
+                    if (p.Directory == _appSettings.EdgeProfileDirectory)
+                        selectedProfileIdx = i;
+                }
+                profileCombo.ItemsSource   = profileDisplayNames;
+                profileCombo.SelectedIndex = selectedProfileIdx;
+            }
+
+            browserCombo.SelectionChanged += (_, _) =>
+            {
+                var isEdge = browserCombo.SelectedIndex == 1;
+                profileCombo.IsEnabled = isEdge && edgeProfiles.Count > 0;
+            };
+
+            panel.Children.Add(MakeRow(R.Get("Settings_ExternalBrowser"), browserCombo));
+            panel.Children.Add(MakeRow(R.Get("Settings_EdgeProfile"), profileCombo));
+
             var dlg = new ContentDialog
             {
                 Title             = R.Get("AppSettings_Title"),
@@ -198,6 +251,9 @@ namespace XTimelineViewer.Views
                 _appSettings.OpenTimestampInBrowser = openTimestampToggle.IsOn;
                 _appSettings.AutoActivateMinutes   = (int)Math.Clamp(autoActivateBox.Value, 0, 60);
                 _appSettings.ShowAutoActivateLabel = showAutoActivateLabelToggle.IsOn;
+                _appSettings.ExternalBrowser      = browserValues[Math.Max(0, Math.Min(browserCombo.SelectedIndex, browserValues.Length - 1))];
+                if (edgeProfiles.Count > 0 && profileCombo.SelectedIndex >= 0 && profileCombo.SelectedIndex < edgeProfiles.Count)
+                    _appSettings.EdgeProfileDirectory = edgeProfiles[profileCombo.SelectedIndex].Directory;
 
                 var newLang    = langValues[Math.Max(0, Math.Min(langCombo.SelectedIndex, langValues.Length - 1))];
                 var langChanged = newLang != _appSettings.Language;
@@ -368,7 +424,8 @@ namespace XTimelineViewer.Views
                 var url = latestReleaseUrl ?? fallbackUrl;
                 if (PackageContext.IsPackaged)
                 {
-                    _ = Windows.System.Launcher.LaunchUriAsync(new Uri("ms-windows-store://pdp/?ProductId=9P308HB5BLJ1"));
+                    // ms-windows-store:// は LaunchUriByEdgeProfileAsync 内でシステム既定にフォールバックする
+                    await LaunchUriByEdgeProfileAsync(new Uri("ms-windows-store://pdp/?ProductId=9P308HB5BLJ1"));
                 }
                 else if (FindWinget() is not null)
                 {
@@ -377,7 +434,7 @@ namespace XTimelineViewer.Views
                 }
                 else
                 {
-                    _ = Windows.System.Launcher.LaunchUriAsync(new Uri(url));
+                    await LaunchUriByEdgeProfileAsync(new Uri(url));
                 }
             };
 

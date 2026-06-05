@@ -91,6 +91,13 @@
   <data name="AutoActivate_Disabled" xml:space="preserve"><value>⏹ 自動アクティブ化 無効</value></data>
   <data name="AutoActivateLabel_Format" xml:space="preserve"><value>ホームタイムラインの自動アクティブ化: {0}</value></data>
   <data name="Settings_ShowAutoActivateLabel" xml:space="preserve"><value>ツールバーに自動アクティブ化の状態を表示する</value></data>
+
+  <!-- External browser settings -->
+  <data name="Section_ExternalBrowser" xml:space="preserve"><value>外部ブラウザー</value></data>
+  <data name="Settings_ExternalBrowser" xml:space="preserve"><value>リンクを開くブラウザー</value></data>
+  <data name="Settings_EdgeProfile" xml:space="preserve"><value>Edge プロファイル</value></data>
+  <data name="Browser_System" xml:space="preserve"><value>システム既定</value></data>
+  <data name="Browser_EdgeNotFound" xml:space="preserve"><value>Edge が見つかりません</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>設定</value></data>
   <data name="Pane_Close_Tooltip" xml:space="preserve"><value>閉じる</value></data>
   <data name="Pane_Delete" xml:space="preserve"><value>このタイムラインを削除</value></data>

@@ -91,6 +91,13 @@
   <data name="AutoActivate_Disabled" xml:space="preserve"><value>⏹ Auto-Activate Off</value></data>
   <data name="AutoActivateLabel_Format" xml:space="preserve"><value>Home Timeline Auto-Activate: {0}</value></data>
   <data name="Settings_ShowAutoActivateLabel" xml:space="preserve"><value>Show auto-activate status in toolbar</value></data>
+
+  <!-- External browser settings -->
+  <data name="Section_ExternalBrowser" xml:space="preserve"><value>External Browser</value></data>
+  <data name="Settings_ExternalBrowser" xml:space="preserve"><value>Open links in</value></data>
+  <data name="Settings_EdgeProfile" xml:space="preserve"><value>Edge Profile</value></data>
+  <data name="Browser_System" xml:space="preserve"><value>System Default</value></data>
+  <data name="Browser_EdgeNotFound" xml:space="preserve"><value>Edge not found</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>Settings</value></data>
   <data name="Pane_Close_Tooltip" xml:space="preserve"><value>Close</value></data>
   <data name="Pane_Delete" xml:space="preserve"><value>Remove This Timeline</value></data>
