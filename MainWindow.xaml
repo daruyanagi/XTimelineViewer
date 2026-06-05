@@ -48,6 +48,9 @@
                     <Button.Flyout>
                         <MenuFlyout>
                             <MenuFlyoutSubItem x:Name="AddTimelineSubMenu">
+                                <MenuFlyoutSubItem.Icon>
+                                    <FontIcon Glyph="&#xE710;" FontFamily="Segoe Fluent Icons"/>
+                                </MenuFlyoutSubItem.Icon>
                                 <MenuFlyoutItem x:Name="AddHomeTimelineItem" Click="AddHomeTimelineItem_Click">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon x:Name="AddHomeIcon" FontFamily="Segoe Fluent Icons"/>
@@ -65,11 +68,23 @@
                                 </MenuFlyoutItem>
                             </MenuFlyoutSubItem>
                             <MenuFlyoutSeparator/>
-                            <MenuFlyoutItem x:Name="ManageProfilesMenuItem" Click="ManageProfilesMenuItem_Click"/>
+                            <MenuFlyoutItem x:Name="ManageProfilesMenuItem" Click="ManageProfilesMenuItem_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE716;" FontFamily="Segoe Fluent Icons"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
                             <MenuFlyoutSeparator/>
-                            <MenuFlyoutItem x:Name="AppSettingsMenuItem" Click="AppSettingsMenuItem_Click"/>
+                            <MenuFlyoutItem x:Name="AppSettingsMenuItem" Click="AppSettingsMenuItem_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE713;" FontFamily="Segoe Fluent Icons"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
                             <MenuFlyoutSeparator/>
-                            <MenuFlyoutItem x:Name="AboutMenuItem" Click="AboutMenuItem_Click"/>
+                            <MenuFlyoutItem x:Name="AboutMenuItem" Click="AboutMenuItem_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE946;" FontFamily="Segoe Fluent Icons"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>

@@ -26,19 +26,22 @@ namespace XTimelineViewer
     {
         // ── WebView2 init ─────────────────────────────────────────────────────
 
+        // グリフは Segoe Fluent Icons の私用領域(PUA)コードポイント。
+        // 生の PUA 文字を直書きするとエンコーディング事故で欠落するため (#122)、
+        // 必ず "\uXXXX" エスケープ表記で記述すること。
         private static string GetTimelineGlyph(string url)
         {
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return "";
             var p = uri.AbsolutePath;
-            if (p.StartsWith("/home"))                                return ""; // Home
-            if (p.StartsWith("/notifications"))                       return ""; // Bell
-            if (p.StartsWith("/search") || p.StartsWith("/explore")) return ""; // Search
+            if (p.StartsWith("/home"))                                return "\uE80F"; // Home
+            if (p.StartsWith("/notifications"))                       return "\uE7E7"; // Bell
+            if (p.StartsWith("/search") || p.StartsWith("/explore")) return "\uE71E"; // Search
             if (p == "/bookmarks" || p.StartsWith("/bookmarks/") ||
-                p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/")) return ""; // Bookmark
-            if (p.StartsWith("/i/lists/"))                            return ""; // BulletedList
-            if (p.StartsWith("/messages"))                            return ""; // Chat
-            if (System.Text.RegularExpressions.Regex.IsMatch(p, @"^/[^/]+$")) return ""; // Contact
-            return ""; // Globe
+                p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/")) return "\uE734"; // Bookmark
+            if (p.StartsWith("/i/lists/"))                            return "\uE71D"; // BulletedList
+            if (p.StartsWith("/messages"))                            return "\uE8BD"; // Chat
+            if (System.Text.RegularExpressions.Regex.IsMatch(p, @"^/[^/]+$")) return "\uE77B"; // Contact
+            return "\uE774"; // Globe
         }
 
         private static bool IsProfilePath(string p) =>
