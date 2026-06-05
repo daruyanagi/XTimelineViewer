@@ -250,16 +250,7 @@ namespace XTimelineViewer
             var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
             if (File.Exists(iconPath)) AppWindow.SetIcon(iconPath);
             Title = "XTimelineViewer";
-            PostLabel.Text       = R.Get("PostLabel.Text");
-            DropHintTitle.Text   = R.Get("DropHintTitle.Text");
-            DropHintSubtitle.Text = R.Get("DropHintSubtitle.Text");
-            ToolTipService.SetToolTip(PostBtn, R.Get("PostBtn_Tooltip"));
-            ToolTipService.SetToolTip(AppMenuBtn, R.Get("AppMenu_Tooltip"));
-            AutomationProperties.SetName(PostBtn,   R.Get("PostBtn_Tooltip"));
-            AutomationProperties.SetName(AppMenuBtn, R.Get("AppMenu_Tooltip"));
-            ManageProfilesMenuItem.Text = R.Get("Menu_ManageProfiles");
-            AppSettingsMenuItem.Text     = R.Get("Menu_Settings");
-            AboutMenuItem.Text       = R.Get("Menu_About");
+            RefreshUIText();
             Closed += async (s, e) =>
             {
                 _hardReloadUiTimer?.Stop();
@@ -277,6 +268,22 @@ namespace XTimelineViewer
             UpdateMenuUpdateBadge();
             _ = RestoreTimelinesAsync();
             _ = CheckForUpdatesInBackgroundAsync();
+        }
+
+        // ツールバー・メニューなど常駐 UI の静的テキストを現在の言語で再適用する。
+        // 起動時のほか、言語切り替え後（#117）にも呼ばれる。
+        private void RefreshUIText()
+        {
+            PostLabel.Text        = R.Get("PostLabel.Text");
+            DropHintTitle.Text    = R.Get("DropHintTitle.Text");
+            DropHintSubtitle.Text = R.Get("DropHintSubtitle.Text");
+            ToolTipService.SetToolTip(PostBtn,    R.Get("PostBtn_Tooltip"));
+            ToolTipService.SetToolTip(AppMenuBtn, R.Get("AppMenu_Tooltip"));
+            AutomationProperties.SetName(PostBtn,    R.Get("PostBtn_Tooltip"));
+            AutomationProperties.SetName(AppMenuBtn, R.Get("AppMenu_Tooltip"));
+            ManageProfilesMenuItem.Text = R.Get("Menu_ManageProfiles");
+            AppSettingsMenuItem.Text    = R.Get("Menu_Settings");
+            AboutMenuItem.Text          = R.Get("Menu_About");
         }
 
         private async Task<ContentDialogResult> ShowDialogAsync(ContentDialog dlg)

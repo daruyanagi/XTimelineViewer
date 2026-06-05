@@ -215,14 +215,11 @@ namespace XTimelineViewer
 
                 if (langChanged)
                 {
-                    var notifDlg = new ContentDialog
-                    {
-                        Content         = R.Get("RestartRequired"),
-                        CloseButtonText = R.Get("Button_Close"),
-                        XamlRoot        = Content.XamlRoot,
-                        RequestedTheme  = ((FrameworkElement)Content).ActualTheme
-                    };
-                    await ShowDialogAsync(notifDlg);
+                    // 再起動なしで即時反映する (#117)。
+                    // "system" の場合はシステム言語にフォールバックさせるため null を渡す。
+                    var locale = newLang == "system" ? null : newLang;
+                    R.Reload(locale);
+                    RefreshUIText();
                 }
             }
         }

@@ -184,13 +184,13 @@ Test-UI "言語を English に変更して保存できる" {
 }
 Start-Sleep -Milliseconds 800
 
-Test-UI "言語変更後に再起動通知ダイアログが表示される" {
-    winapp ui wait-for "CloseButton" -a $AppPid -t 3000
+# 再起動なしで即時反映される (#117)。再起動通知ダイアログは出ない。
+# PostBtn の AutomationProperties.Name が英語 "New Post" に変わることで検証する。
+Test-UI "言語変更が即座に UI に反映される（PostBtn → New Post）" {
+    $out = winapp ui get-property "PostBtn" -a $AppPid --property Name 2>&1
+    if (-not ($out -match "New Post")) { throw "英語に切り替わっていない。出力: $out" }
 }
-Test-UI "再起動通知を閉じられる" {
-    winapp ui invoke "CloseButton" -a $AppPid
-}
-Start-Sleep -Milliseconds 500
+winapp ui screenshot -a $AppPid -o "test-screenshots/06-lang-english.png" 2>$null
 
 Test-UI "言語をシステムに戻して保存できる" {
     winapp ui invoke "AppMenuBtn" -a $AppPid
@@ -199,19 +199,20 @@ Test-UI "言語をシステムに戻して保存できる" {
     Start-Sleep -Milliseconds 800
     winapp ui invoke "LanguageComboBox" -a $AppPid
     Start-Sleep -Milliseconds 400
-    $slug = Get-ComboItem -ComboId "LanguageComboBox" -ItemText "システム言語" -TargetPid $AppPid
-    if (-not $slug) { throw "システム言語 アイテムが見つからない" }
+    # この時点で UI は英語なので "System Language" でアイテムを探す
+    $slug = Get-ComboItem -ComboId "LanguageComboBox" -ItemText "System Language" -TargetPid $AppPid
+    if (-not $slug) { throw "System Language アイテムが見つからない" }
     winapp ui invoke $slug -a $AppPid
     Start-Sleep -Milliseconds 200
     winapp ui invoke "PrimaryButton" -a $AppPid
 }
 Start-Sleep -Milliseconds 800
 
-Test-UI "言語戻し後の再起動通知を閉じられる" {
-    winapp ui wait-for "CloseButton" -a $AppPid -t 3000
-    winapp ui invoke "CloseButton" -a $AppPid
+# システム言語（日本語環境）に戻り、PostBtn が "新規投稿" に即時で戻ることを検証する。
+Test-UI "言語が即座にシステム言語へ戻る（PostBtn → 新規投稿）" {
+    $out = winapp ui get-property "PostBtn" -a $AppPid --property Name 2>&1
+    if (-not ($out -match "新規投稿")) { throw "システム言語に戻っていない。出力: $out" }
 }
-Start-Sleep -Milliseconds 500
 
 # ── 最終スクリーンショット ─────────────────────────────────────────────────────
 winapp ui screenshot -a $AppPid -o "test-screenshots/99-final.png" 2>$null
