@@ -8,7 +8,9 @@ using System.IO;
 using System.Threading.Tasks;
 using Windows.Graphics;
 
-namespace XTimelineViewer
+using XTimelineViewer.Models;
+
+namespace XTimelineViewer.Views
 {
     public sealed partial class AddProfileWindow : Window
     {

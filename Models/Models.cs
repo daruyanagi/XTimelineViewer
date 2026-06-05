@@ -1,6 +1,6 @@
 using System;
 
-namespace XTimelineViewer
+namespace XTimelineViewer.Models
 {
     internal class TimelineConfig
     {
