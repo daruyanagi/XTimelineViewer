@@ -217,7 +217,8 @@ namespace XTimelineViewer.Views
                 for (int i = 0; i < edgeProfiles.Count; i++)
                 {
                     var p = edgeProfiles[i];
-                    profileDisplayNames.Add($"{p.DisplayName}  ({p.Directory})");
+                    var detail = p.UserName.Length > 0 ? p.UserName : p.Directory;
+                    profileDisplayNames.Add($"{p.DisplayName}  ({detail})");
                     if (p.Directory == _appSettings.EdgeProfileDirectory)
                         selectedProfileIdx = i;
                 }

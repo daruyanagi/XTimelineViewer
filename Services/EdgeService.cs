@@ -77,7 +77,14 @@ namespace XTimelineViewer.Services
                     {
                         displayName = name;
                     }
-                    result.Add(new EdgeProfile(dir, displayName));
+                    // サインイン済みアカウントのメールアドレス
+                    string userName = "";
+                    if (entry.Value.TryGetProperty("user_name", out var userNameProp) &&
+                        userNameProp.GetString() is { Length: > 0 } un)
+                    {
+                        userName = un;
+                    }
+                    result.Add(new EdgeProfile(dir, displayName, userName));
                 }
 
                 Debug.WriteLine($"[Edge] Enumerated {result.Count} profile(s)");
@@ -108,5 +115,8 @@ namespace XTimelineViewer.Services
     /// <summary>
     /// Edge プロファイル情報。
     /// </summary>
-    internal record EdgeProfile(string Directory, string DisplayName);
+    /// <param name="Directory">プロファイルのディレクトリ名（"Default", "Profile 1" など）</param>
+    /// <param name="DisplayName">表示名（"プロファイル 1" など）</param>
+    /// <param name="UserName">サインイン済みアカウントのメールアドレス（未サインインなら空文字）</param>
+    internal record EdgeProfile(string Directory, string DisplayName, string UserName);
 }

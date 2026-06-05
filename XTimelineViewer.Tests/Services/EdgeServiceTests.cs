@@ -71,17 +71,24 @@ public class EdgeServiceTests : IDisposable
     [Fact]
     public void EdgeProfile_RecordEquality()
     {
-        var a = new EdgeProfile("Default", "Profile 1");
-        var b = new EdgeProfile("Default", "Profile 1");
+        var a = new EdgeProfile("Default", "Profile 1", "user@example.com");
+        var b = new EdgeProfile("Default", "Profile 1", "user@example.com");
         Assert.Equal(a, b);
     }
 
     [Fact]
     public void EdgeProfile_RecordInequality()
     {
-        var a = new EdgeProfile("Default", "Profile 1");
-        var b = new EdgeProfile("Profile 1", "Profile 2");
+        var a = new EdgeProfile("Default", "Profile 1", "user@example.com");
+        var b = new EdgeProfile("Profile 1", "Profile 2", "other@example.com");
         Assert.NotEqual(a, b);
+    }
+
+    [Fact]
+    public void EdgeProfile_UserNameCanBeEmpty()
+    {
+        var p = new EdgeProfile("Profile 2", "プロファイル 3", "");
+        Assert.Equal("", p.UserName);
     }
 
     // ── AppSettings の新規プロパティ ───────────────────────────────────────────
