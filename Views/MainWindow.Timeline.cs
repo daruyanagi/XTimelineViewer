@@ -438,7 +438,11 @@ namespace XTimelineViewer.Views
                 var dlg = new ContentDialog
                 {
                     Title             = R.Get("Timeline_Settings_Title"),
-                    Content           = panel,
+                    Content           = new ScrollViewer
+                    {
+                        Content = panel,
+                        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    },
                     PrimaryButtonText = R.Get("Button_Apply"),
                     CloseButtonText   = R.Get("Button_Cancel"),
                     DefaultButton     = ContentDialogButton.Primary,
