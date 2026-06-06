@@ -148,6 +148,9 @@
   <data name="ExtSettings_Format" xml:space="preserve"><value>{0} の設定</value></data>
   <data name="ExtSettings_Homepage" xml:space="preserve"><value>ホームページを開く</value></data>
   <data name="ExtSettings_StoreLink" xml:space="preserve"><value>Chrome Web Store で開く</value></data>
+  <data name="ExtSettings_OpenSettings" xml:space="preserve"><value>設定を開く</value></data>
+  <data name="Extensions_Empty" xml:space="preserve"><value>拡張機能がインストールされていません</value></data>
+  <data name="Extensions_Empty_Description" xml:space="preserve"><value>"extensions" フォルダーに拡張機能を配置してください。</value></data>
 
   <!-- Update check -->
   <data name="CheckUpdate_Btn" xml:space="preserve"><value>更新を確認</value></data>

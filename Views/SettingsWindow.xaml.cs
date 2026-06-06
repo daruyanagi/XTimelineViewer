@@ -1,8 +1,10 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Windows.Graphics;
 using XTimelineViewer.Models;
 
@@ -25,6 +27,15 @@ namespace XTimelineViewer.Views
         internal event Action? SettingsChanged;
 
         internal void NotifySettingsChanged() => SettingsChanged?.Invoke();
+
+        /// <summary>ロード済み拡張機能の一覧。MainWindow が設定する。</summary>
+        internal List<ExtensionInfo> Extensions { get; set; } = [];
+
+        /// <summary>拡張機能の設定ダイアログを開くコールバック。MainWindow が提供する。</summary>
+        internal Func<ExtensionInfo, Microsoft.UI.Xaml.XamlRoot, Task>? OpenExtensionSettingsAsync { get; set; }
+
+        /// <summary>外部ブラウザー設定に従って URI を開くコールバック。MainWindow が提供する。</summary>
+        internal Func<Uri, Task>? LaunchUriAsync { get; set; }
 
         public SettingsWindow(IntPtr ownerHwnd, AppSettings settings, string settingsFolder)
         {

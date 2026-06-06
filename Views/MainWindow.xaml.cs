@@ -61,7 +61,7 @@ namespace XTimelineViewer.Views
             return newPath;
         }
 
-        private static string GetExtensionsDir()
+        internal static string GetExtensionsDir()
         {
             var sourceDir = Path.Combine(AppContext.BaseDirectory, "extensions");
             if (!PackageContext.IsPackaged) return sourceDir;
@@ -97,6 +97,7 @@ namespace XTimelineViewer.Views
         private readonly List<Action> _headerRefreshers = [];
         private readonly List<WebView2> _webViews = [];
         private bool _extensionsLoaded = false;
+        private readonly List<ExtensionInfo> _loadedExtensions = [];
         private readonly Dictionary<string, CoreWebView2Environment> _profileEnvs = [];
         private CoreWebView2Environment? _composeEnv;
         private List<ProfileConfig> _profiles = [];

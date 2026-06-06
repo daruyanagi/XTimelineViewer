@@ -236,24 +236,25 @@ namespace XTimelineViewer.Views
             }
         }
 
-        private void AddExtensionButton(CoreWebView2BrowserExtension ext, string extDir)
+        internal static ExtensionInfo ReadExtensionManifest(string extDir, string? extensionId = null, string? nameOverride = null)
         {
-            // マニフェストから名前、options_ui.page、アイコン、homepage_url を取得
-            string name          = ext.Name;
-            string? optPage      = null;
-            string? iconPath     = null;
-            string? homepageUrl  = null;
+            string name     = nameOverride ?? Path.GetFileName(extDir);
+            string? optPage     = null;
+            string? iconPath    = null;
+            string? homepageUrl = null;
             var manifestPath = Path.Combine(extDir, "manifest.json");
             if (File.Exists(manifestPath))
             {
                 using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
                 var root = doc.RootElement;
+                if (root.TryGetProperty("name", out var nameProp) && nameOverride is null)
+                    name = nameProp.GetString() ?? name;
                 if (root.TryGetProperty("options_ui", out var optUi) &&
                     optUi.TryGetProperty("page", out var page))
                     optPage = page.GetString();
                 if (root.TryGetProperty("icons", out var icons))
                 {
-                    foreach (var size in new[] { "16", "32", "48", "128" })
+                    foreach (var size in new[] { "48", "32", "128", "16" })
                     {
                         if (icons.TryGetProperty(size, out var iconProp))
                         {
@@ -268,22 +269,27 @@ namespace XTimelineViewer.Views
                 }
                 if (root.TryGetProperty("homepage_url", out var hp))
                     homepageUrl = hp.GetString();
-
-                // homepage_url がない場合、Chrome Web Store 拡張なら store URL を構成する
                 if (homepageUrl is null &&
                     root.TryGetProperty("update_url", out var updateUrl) &&
                     updateUrl.GetString()?.Contains("clients2.google.com") == true)
                 {
-                    // ext.Id は WebView2 内部 ID のため、フォルダー名（元の CWS ID）を使う
                     homepageUrl = $"https://chromewebstore.google.com/detail/{Path.GetFileName(extDir)}";
                 }
             }
-            if (optPage is null) return; // options_ui がない拡張は追加しない
+            return new ExtensionInfo(name, extDir, iconPath, optPage, homepageUrl, extensionId);
+        }
 
-            object btnContent = iconPath is not null
+        private void AddExtensionButton(CoreWebView2BrowserExtension ext, string extDir)
+        {
+            var info = ReadExtensionManifest(extDir, ext.Id, ext.Name);
+            _loadedExtensions.Add(info);
+
+            if (info.OptionsPage is null) return;
+
+            object btnContent = info.IconPath is not null
                 ? new Image
                 {
-                    Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(iconPath)),
+                    Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(info.IconPath)),
                     Width = 20, Height = 20
                 }
                 : (object)"🧩";
@@ -295,67 +301,72 @@ namespace XTimelineViewer.Views
                 Height  = 32,
                 Padding = new Thickness(0),
             };
-            ToolTipService.SetToolTip(btn, string.Format(R.Get("ExtSettings_Format"), name));
+            ToolTipService.SetToolTip(btn, string.Format(R.Get("ExtSettings_Format"), info.Name));
 
-            var optPageUrl = $"chrome-extension://{ext.Id}/{optPage}";
             btn.Click += async (_, _) =>
             {
-                var optWebView = new WebView2 { Width = 480, MinHeight = 200 };
-
-                Uri.TryCreate(homepageUrl, UriKind.Absolute, out var homepageUri);
-                var linkText = homepageUri?.Host.Contains("chromewebstore.google.com") == true
-                    ? R.Get("ExtSettings_StoreLink")
-                    : R.Get("ExtSettings_Homepage");
-
-                var dlg = new ContentDialog
-                {
-                    Title                = string.Format(R.Get("ExtSettings_Format"), name),
-                    Content              = optWebView,
-                    SecondaryButtonText  = homepageUri is not null ? linkText : null,
-                    CloseButtonText      = R.Get("Button_Close"),
-                    XamlRoot             = Content.XamlRoot
-                };
-
-                // SecondaryButton クリックでブラウザーを開き、ダイアログは閉じない
-                if (homepageUri is not null)
-                    dlg.SecondaryButtonClick += (s, e) =>
-                    {
-                        e.Cancel = true;
-                        _ = LaunchUriByEdgeProfileAsync(homepageUri);
-                    };
-
-                var env = await GetOrCreateProfileEnvAsync("default");
-                await optWebView.EnsureCoreWebView2Async(env);
-                var isDark = ((FrameworkElement)Content).ActualTheme == ElementTheme.Dark;
-                optWebView.CoreWebView2.Profile.PreferredColorScheme = isDark
-                    ? CoreWebView2PreferredColorScheme.Dark
-                    : CoreWebView2PreferredColorScheme.Light;
-                // 拡張機能ページが prefers-color-scheme 未対応の場合に備え、
-                // WebView2 背景色を合わせ、ページ読み込み後に CSS を注入する
-                if (isDark)
-                {
-                    optWebView.DefaultBackgroundColor = Windows.UI.Color.FromArgb(255, 32, 32, 32);
-                    optWebView.CoreWebView2.NavigationCompleted += async (s, e) =>
-                    {
-                        await optWebView.CoreWebView2.ExecuteScriptAsync("""
-                            if (!window.matchMedia('(prefers-color-scheme: dark)').matches ||
-                                getComputedStyle(document.body).backgroundColor === 'rgb(255, 255, 255)') {
-                                document.documentElement.style.cssText += 'background:#202020!important;color:#e0e0e0!important';
-                                document.body.style.cssText += 'background:#202020!important;color:#e0e0e0!important';
-                                document.querySelectorAll('input,select,textarea,button').forEach(el => {
-                                    el.style.cssText += 'background:#333!important;color:#e0e0e0!important;border-color:#555!important';
-                                });
-                            }
-                        """);
-                    };
-                }
-                optWebView.Source = new Uri(optPageUrl);
-                await ShowDialogAsync(dlg);
+                await ShowExtensionSettingsDialogAsync(info, Content.XamlRoot, LaunchUriByEdgeProfileAsync);
             };
 
             // 設定ボタン（末尾）の左隣に挿入
             int insertIdx = Math.Max(0, RightToolbar.Children.Count - 1);
             RightToolbar.Children.Insert(insertIdx, btn);
+        }
+
+        internal async Task ShowExtensionSettingsDialogAsync(
+            ExtensionInfo info, Microsoft.UI.Xaml.XamlRoot xamlRoot, Func<Uri, Task> launchUri)
+        {
+            if (info.OptionsPage is null || info.ExtensionId is null) return;
+
+            var optWebView = new WebView2 { Width = 480, MinHeight = 200 };
+
+            Uri.TryCreate(info.HomepageUrl, UriKind.Absolute, out var homepageUri);
+            var linkText = homepageUri?.Host.Contains("chromewebstore.google.com") == true
+                ? R.Get("ExtSettings_StoreLink")
+                : R.Get("ExtSettings_Homepage");
+
+            var dlg = new ContentDialog
+            {
+                Title                = string.Format(R.Get("ExtSettings_Format"), info.Name),
+                Content              = optWebView,
+                SecondaryButtonText  = homepageUri is not null ? linkText : null,
+                CloseButtonText      = R.Get("Button_Close"),
+                XamlRoot             = xamlRoot
+            };
+
+            if (homepageUri is not null)
+                dlg.SecondaryButtonClick += (s, e) =>
+                {
+                    e.Cancel = true;
+                    _ = launchUri(homepageUri);
+                };
+
+            var env = await GetOrCreateProfileEnvAsync("default");
+            await optWebView.EnsureCoreWebView2Async(env);
+            var isDark = xamlRoot.Content is FrameworkElement fe
+                && fe.ActualTheme == ElementTheme.Dark;
+            optWebView.CoreWebView2.Profile.PreferredColorScheme = isDark
+                ? CoreWebView2PreferredColorScheme.Dark
+                : CoreWebView2PreferredColorScheme.Light;
+            if (isDark)
+            {
+                optWebView.DefaultBackgroundColor = Windows.UI.Color.FromArgb(255, 32, 32, 32);
+                optWebView.CoreWebView2.NavigationCompleted += async (s, e) =>
+                {
+                    await optWebView.CoreWebView2.ExecuteScriptAsync("""
+                        if (!window.matchMedia('(prefers-color-scheme: dark)').matches ||
+                            getComputedStyle(document.body).backgroundColor === 'rgb(255, 255, 255)') {
+                            document.documentElement.style.cssText += 'background:#202020!important;color:#e0e0e0!important';
+                            document.body.style.cssText += 'background:#202020!important;color:#e0e0e0!important';
+                            document.querySelectorAll('input,select,textarea,button').forEach(el => {
+                                el.style.cssText += 'background:#333!important;color:#e0e0e0!important;border-color:#555!important';
+                            });
+                        }
+                    """);
+                };
+            }
+            optWebView.Source = new Uri($"chrome-extension://{info.ExtensionId}/{info.OptionsPage}");
+            await ShowDialogAsync(dlg);
         }
 
         private static readonly string LogFilePath = Path.Combine(
