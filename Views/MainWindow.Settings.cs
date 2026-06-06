@@ -64,6 +64,12 @@ namespace XTimelineViewer.Views
             var settingsFolder = Path.GetDirectoryName(SettingsFilePath)!;
             var settingsWin = new SettingsWindow(ownerHwnd, _appSettings, settingsFolder);
 
+            // 拡張機能情報とコールバックを設定
+            settingsWin.Extensions = _loadedExtensions;
+            settingsWin.OpenExtensionSettingsAsync = (info, xamlRoot) =>
+                ShowExtensionSettingsDialogAsync(info, xamlRoot, LaunchUriByEdgeProfileAsync);
+            settingsWin.LaunchUriAsync = LaunchUriByEdgeProfileAsync;
+
             // 親ウィンドウのテーマを引き継ぐ
             var theme = ((FrameworkElement)Content).RequestedTheme;
             settingsWin.ApplyTheme(theme);
