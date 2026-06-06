@@ -1,0 +1,18 @@
+<Page
+    x:Class="XTimelineViewer.Views.Settings.AboutPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls">
+
+    <ScrollViewer Padding="24,16">
+        <StackPanel Spacing="4" MaxWidth="700" HorizontalAlignment="Left">
+            <TextBlock x:Name="PageTitle"
+                       Style="{StaticResource TitleTextBlockStyle}"
+                       Margin="0,0,0,16"/>
+
+            <TextBlock x:Name="PlaceholderText"
+                       Opacity="0.6"
+                       FontSize="13"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>
