@@ -1,23 +1,10 @@
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Text;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
-using System.Net.Http;
-using System.Net.NetworkInformation;
-using System.Reflection;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.IO;
-using System.Runtime.InteropServices;
-using Microsoft.Web.WebView2.Core;
-using Windows.ApplicationModel.DataTransfer;
-using Windows.Graphics;
-using Windows.Storage;
 using Windows.UI;
 
 using XTimelineViewer.Models;
@@ -27,57 +14,7 @@ namespace XTimelineViewer.Views
     public sealed partial class MainWindow : Window
     {
         private void ManageProfilesMenuItem_Click(object _, RoutedEventArgs __)
-        {
-            var ownerHwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            var win = new ManageProfilesWindow(_profiles, ProfileBadgeColors, ownerHwnd,
-                profileId => _configs.Count(c => c.ProfileId == profileId));
-            var childTheme = ((FrameworkElement)Content).RequestedTheme;
-            ((FrameworkElement)win.Content).RequestedTheme = childTheme;
-            ApplyTitleBarTheme(win, childTheme);
-            win.ProfilesChanged += (__, args) =>
-            {
-                foreach (var change in args.Changes)
-                {
-                    var p = _profiles.FirstOrDefault(p => p.Id == change.ProfileId);
-                    if (p == null) continue;
-                    p.Name = change.NewName;
-                    p.BadgeColorIndex = change.NewColorIndex;
-                    p.BadgeText = change.NewBadgeText;
-                }
-                SaveProfiles();
-                RefreshAllProfileBadges();
-            };
-            win.ProfileCreated += (__, profile) =>
-            {
-                SaveProfiles();
-                RefreshAllProfileBadges();
-                Debug.WriteLine($"[Profile] Saved to profiles.json: Id={profile.Id}, Name={profile.Name}");
-            };
-            win.ProfileDeleteRequested += async (__, profileId) =>
-            {
-                RemoveTimelinesForProfile(profileId);
-                _profileEnvs.Remove(profileId);
-                var profile = _profiles.FirstOrDefault(p => p.Id == profileId);
-                if (profile != null) _profiles.Remove(profile);
-                if (_profiles.Count == 0)
-                    _profiles.Add(new ProfileConfig { Id = "default", Name = "Default" });
-                SaveProfiles();
-                try
-                {
-                    var folder = Path.Combine(GetProfilesDataDir(), profileId);
-                    if (Directory.Exists(folder))
-                        Directory.Delete(folder, recursive: true);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[Profile] Failed to delete profile folder: {ex.Message}");
-                }
-                await SaveTimelinesAsync();
-                RefreshAllProfileBadges();
-                Debug.WriteLine($"[Profile] Deleted: {profileId}");
-            };
-            win.Activate();
-        }
+            => OpenSettingsWindow("Profiles");
 
         private void RefreshAllProfileBadges()
         {

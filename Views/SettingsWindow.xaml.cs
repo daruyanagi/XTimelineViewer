@@ -3,9 +3,11 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Windows.Graphics;
+using Windows.UI;
 using XTimelineViewer.Models;
 
 namespace XTimelineViewer.Views
@@ -36,6 +38,24 @@ namespace XTimelineViewer.Views
 
         /// <summary>外部ブラウザー設定に従って URI を開くコールバック。MainWindow が提供する。</summary>
         internal Func<Uri, Task>? LaunchUriAsync { get; set; }
+
+        /// <summary>プロファイル一覧。MainWindow が設定する。</summary>
+        internal List<ProfileConfig> Profiles { get; set; } = [];
+
+        /// <summary>バッジ色パレット。MainWindow が設定する。</summary>
+        internal Color[] BadgeColors { get; set; } = [];
+
+        /// <summary>プロファイル変更後の保存コールバック。</summary>
+        internal Action? ProfilesModified { get; set; }
+
+        /// <summary>プロファイル削除コールバック。</summary>
+        internal Func<string, Task>? DeleteProfileAsync { get; set; }
+
+        /// <summary>プロファイル作成コールバック。</summary>
+        internal Action<ProfileConfig>? OnProfileCreated { get; set; }
+
+        /// <summary>指定プロファイルが使用しているタイムライン数を返す。</summary>
+        internal Func<string, int>? GetTimelineCount { get; set; }
 
         public SettingsWindow(IntPtr ownerHwnd, AppSettings settings, string settingsFolder)
         {
@@ -78,6 +98,26 @@ namespace XTimelineViewer.Views
             NavExtensions.Content  = R.Get("Nav_Extensions");
             NavProfiles.Content    = R.Get("Nav_Profiles");
             NavAbout.Content       = R.Get("Nav_About");
+        }
+
+        /// <summary>指定タグのナビゲーション項目を選択する。</summary>
+        internal void SelectPage(string tag)
+        {
+            foreach (var item in NavView.MenuItems.OfType<NavigationViewItem>())
+            {
+                if (item.Tag?.ToString() == tag)
+                {
+                    NavView.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+        /// <summary>設定ウィンドウの有効/無効を切り替える（子ウィンドウのモーダル化用）。</summary>
+        internal void SetEnabled(bool enabled)
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            EnableWindow(hwnd, enabled);
         }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)

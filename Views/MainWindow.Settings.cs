@@ -59,6 +59,9 @@ namespace XTimelineViewer.Views
         }
 
         private void OpenSettingsWindow_Click(object _, RoutedEventArgs __)
+            => OpenSettingsWindow();
+
+        private void OpenSettingsWindow(string initialPage = "General")
         {
             var ownerHwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             var settingsFolder = Path.GetDirectoryName(SettingsFilePath)!;
@@ -69,6 +72,35 @@ namespace XTimelineViewer.Views
             settingsWin.OpenExtensionSettingsAsync = (info, xamlRoot) =>
                 ShowExtensionSettingsDialogAsync(info, xamlRoot, LaunchUriByEdgeProfileAsync);
             settingsWin.LaunchUriAsync = LaunchUriByEdgeProfileAsync;
+
+            // プロファイル情報とコールバックを設定
+            settingsWin.Profiles = _profiles;
+            settingsWin.BadgeColors = ProfileBadgeColors;
+            settingsWin.GetTimelineCount = profileId => _configs.Count(c => c.ProfileId == profileId);
+            settingsWin.ProfilesModified = () => { SaveProfiles(); RefreshAllProfileBadges(); };
+            settingsWin.DeleteProfileAsync = async profileId =>
+            {
+                RemoveTimelinesForProfile(profileId);
+                _profileEnvs.Remove(profileId);
+                var profile = _profiles.FirstOrDefault(p => p.Id == profileId);
+                if (profile != null) _profiles.Remove(profile);
+                if (_profiles.Count == 0)
+                    _profiles.Add(new ProfileConfig { Id = "default", Name = "Default" });
+                SaveProfiles();
+                try
+                {
+                    var folder = Path.Combine(GetProfilesDataDir(), profileId);
+                    if (Directory.Exists(folder))
+                        Directory.Delete(folder, recursive: true);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[Profile] Failed to delete profile folder: {ex.Message}");
+                }
+                await SaveTimelinesAsync();
+                RefreshAllProfileBadges();
+            };
+            settingsWin.OnProfileCreated = _ => { SaveProfiles(); RefreshAllProfileBadges(); };
 
             // 親ウィンドウのテーマを引き継ぐ
             var theme = ((FrameworkElement)Content).RequestedTheme;
@@ -94,6 +126,10 @@ namespace XTimelineViewer.Views
                 RefreshUIText();
                 settingsWin.RefreshNavText();
             };
+
+            // 初期ページを選択
+            if (initialPage != "General")
+                settingsWin.SelectPage(initialPage);
 
             settingsWin.Activate();
         }

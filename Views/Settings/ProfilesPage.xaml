@@ -5,14 +5,25 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls">
 
     <ScrollViewer Padding="24,16">
-        <StackPanel Spacing="4">
+        <StackPanel x:Name="RootPanel" Spacing="4">
             <TextBlock x:Name="PageTitle"
                        Style="{StaticResource TitleTextBlockStyle}"
                        Margin="0,0,0,16"/>
 
-            <TextBlock x:Name="PlaceholderText"
-                       Opacity="0.6"
-                       FontSize="13"/>
+            <!-- プロファイルカードはコードビハインドで動的に追加 -->
+
+            <Button x:Name="AddProfileBtn"
+                    Click="AddProfileBtn_Click"
+                    HorizontalAlignment="Left"
+                    Margin="0,12,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <FontIcon Glyph="&#xE710;"
+                              FontFamily="Segoe Fluent Icons"
+                              FontSize="12"
+                              VerticalAlignment="Center"/>
+                    <TextBlock x:Name="AddProfileLabel" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
         </StackPanel>
     </ScrollViewer>
 </Page>
