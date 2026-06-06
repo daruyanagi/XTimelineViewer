@@ -5,14 +5,12 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls">
 
     <ScrollViewer Padding="24,16">
-        <StackPanel Spacing="4">
+        <StackPanel x:Name="RootPanel" Spacing="4">
             <TextBlock x:Name="PageTitle"
                        Style="{StaticResource TitleTextBlockStyle}"
                        Margin="0,0,0,16"/>
 
-            <TextBlock x:Name="PlaceholderText"
-                       Opacity="0.6"
-                       FontSize="13"/>
+            <!-- アプリ情報・更新・リンク等はコードビハインドで動的に追加 -->
         </StackPanel>
     </ScrollViewer>
 </Page>
