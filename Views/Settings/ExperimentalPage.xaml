@@ -10,9 +10,78 @@
                        Style="{StaticResource TitleTextBlockStyle}"
                        Margin="0,0,0,16"/>
 
-            <TextBlock x:Name="PlaceholderText"
-                       Opacity="0.6"
-                       FontSize="13"/>
+            <!-- Open Composer in Separate Profile (Deprecated) -->
+            <controls:SettingsCard x:Name="SeparateComposeCard" IsEnabled="False">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE8A7;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="SeparateComposeToggle" IsOn="False" IsEnabled="False"/>
+            </controls:SettingsCard>
+
+            <!-- Open Composer in External Browser -->
+            <controls:SettingsCard x:Name="OpenComposerCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE70F;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="OpenComposerToggle"
+                              Toggled="OpenComposerToggle_Toggled"/>
+            </controls:SettingsCard>
+
+            <!-- Open Timestamp Links in External Browser -->
+            <controls:SettingsCard x:Name="OpenTimestampCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE71B;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="OpenTimestampToggle"
+                              Toggled="OpenTimestampToggle_Toggled"/>
+            </controls:SettingsCard>
+
+            <!-- Auto-Activate Home Timeline -->
+            <controls:SettingsCard x:Name="AutoActivateCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE787;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <NumberBox x:Name="AutoActivateBox"
+                           Minimum="0" Maximum="60"
+                           SmallChange="1" LargeChange="5"
+                           SpinButtonPlacementMode="Inline"
+                           Width="160"
+                           ValueChanged="AutoActivateBox_ValueChanged"/>
+            </controls:SettingsCard>
+
+            <!-- Show Auto-Activate Status in Toolbar -->
+            <controls:SettingsCard x:Name="ShowAutoActivateLabelCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE7B3;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="ShowAutoActivateLabelToggle"
+                              Toggled="ShowAutoActivateLabelToggle_Toggled"/>
+            </controls:SettingsCard>
+
+            <!-- External Browser Section Header -->
+            <TextBlock x:Name="ExternalBrowserHeader"
+                       Style="{StaticResource BodyStrongTextBlockStyle}"
+                       Margin="0,20,0,4"/>
+
+            <!-- Browser Selection -->
+            <controls:SettingsCard x:Name="BrowserCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE774;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ComboBox x:Name="BrowserCombo"
+                          MinWidth="200"
+                          SelectionChanged="BrowserCombo_SelectionChanged"/>
+            </controls:SettingsCard>
+
+            <!-- Edge Profile -->
+            <controls:SettingsCard x:Name="EdgeProfileCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE716;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ComboBox x:Name="EdgeProfileCombo"
+                          MinWidth="200"
+                          SelectionChanged="EdgeProfileCombo_SelectionChanged"/>
+            </controls:SettingsCard>
         </StackPanel>
     </ScrollViewer>
 </Page>

@@ -56,9 +56,16 @@
   <data name="Section_Experimental" xml:space="preserve"><value>試験機能</value></data>
   <data name="Section_About" xml:space="preserve"><value>バージョン情報</value></data>
   <data name="Settings_SeparateCompose" xml:space="preserve"><value>投稿画面を別プロファイルで開く（廃止予定）</value></data>
+  <data name="Settings_SeparateCompose_Description" xml:space="preserve"><value>この機能は廃止予定です</value></data>
   <data name="Settings_OpenComposerInBrowser" xml:space="preserve"><value>新規投稿を外部ブラウザーで開く</value></data>
+  <data name="Settings_OpenComposerInBrowser_Description" xml:space="preserve"><value>内蔵のコンポーザーの代わりに外部ブラウザーで新規投稿を開きます</value></data>
   <data name="Settings_OpenTimestampInBrowser" xml:space="preserve"><value>タイムスタンプリンクを外部ブラウザーで開く</value></data>
+  <data name="Settings_OpenTimestampInBrowser_Description" xml:space="preserve"><value>タイムライン内で移動せず、外部ブラウザーでタイムスタンプリンクを開きます</value></data>
   <data name="Settings_AutoActivate" xml:space="preserve"><value>ホームタイムラインを定期的にアクティブ化（分、0 で無効）</value></data>
+  <data name="Settings_AutoActivate_Description" xml:space="preserve"><value>定期的にホームタイムラインを前面に表示します</value></data>
+  <data name="Settings_ShowAutoActivateLabel_Description" xml:space="preserve"><value>ツールバーに自動アクティブ化のカウントダウンタイマーを表示します</value></data>
+  <data name="Settings_ExternalBrowser_Description" xml:space="preserve"><value>外部リンクを開くブラウザーを選択します</value></data>
+  <data name="Settings_EdgeProfile_Description" xml:space="preserve"><value>リンクを開く際に使用する Edge プロファイルを選択します</value></data>
 
   <!-- Language selector items -->
   <data name="Language_System" xml:space="preserve"><value>システム言語</value></data>
