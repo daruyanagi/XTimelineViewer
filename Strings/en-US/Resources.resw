@@ -129,6 +129,10 @@
   <data name="Profile_DeleteConfirmTitle" xml:space="preserve"><value>Delete Profile</value></data>
   <data name="Profile_DeleteConfirmBody" xml:space="preserve"><value>{0} timeline(s) using this profile will also be removed.</value></data>
   <data name="Profile_DeleteConfirm" xml:space="preserve"><value>Delete</value></data>
+  <data name="Profiles_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Profiles_BadgeColor" xml:space="preserve"><value>Badge Color</value></data>
+  <data name="Profiles_BadgeText" xml:space="preserve"><value>Badge Text</value></data>
+  <data name="Profiles_DefaultDescription" xml:space="preserve"><value>Default profile</value></data>
 
   <!-- Error dialogs -->
   <data name="ExtLoadError_Title" xml:space="preserve"><value>Failed to Load Extensions</value></data>
