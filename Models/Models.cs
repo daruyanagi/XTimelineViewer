@@ -22,7 +22,7 @@ namespace XTimelineViewer.Models
         public string? BadgeText      { get; set; }
     }
 
-    internal class AppSettings
+    public class AppSettings
     {
         public bool    SeparateComposeEnv    { get; set; } = false;
         public bool    OpenComposerInBrowser { get; set; } = false;

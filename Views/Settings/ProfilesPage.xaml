@@ -5,7 +5,7 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls">
 
     <ScrollViewer Padding="24,16">
-        <StackPanel Spacing="4" MaxWidth="700" HorizontalAlignment="Left">
+        <StackPanel Spacing="4">
             <TextBlock x:Name="PageTitle"
                        Style="{StaticResource TitleTextBlockStyle}"
                        Margin="0,0,0,16"/>

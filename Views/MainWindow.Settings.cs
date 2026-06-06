@@ -61,11 +61,25 @@ namespace XTimelineViewer.Views
         private void OpenSettingsWindow_Click(object _, RoutedEventArgs __)
         {
             var ownerHwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            var settingsWin = new SettingsWindow(ownerHwnd);
+            var settingsFolder = Path.GetDirectoryName(SettingsFilePath)!;
+            var settingsWin = new SettingsWindow(ownerHwnd, _appSettings, settingsFolder);
 
             // 親ウィンドウのテーマを引き継ぐ
             var theme = ((FrameworkElement)Content).RequestedTheme;
             settingsWin.ApplyTheme(theme);
+
+            // 設定変更を即時反映
+            settingsWin.SettingsChanged += () =>
+            {
+                SaveSettings();
+                ApplySavedTheme();
+
+                // 言語変更の即時反映
+                var locale = _appSettings.Language == "system" ? null : _appSettings.Language;
+                R.Reload(locale);
+                RefreshUIText();
+                settingsWin.RefreshNavText();
+            };
 
             settingsWin.Activate();
         }
