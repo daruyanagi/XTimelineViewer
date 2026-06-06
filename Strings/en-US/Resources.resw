@@ -98,6 +98,14 @@
   <data name="Settings_EdgeProfile" xml:space="preserve"><value>Edge Profile</value></data>
   <data name="Browser_System" xml:space="preserve"><value>System Default</value></data>
   <data name="Browser_EdgeNotFound" xml:space="preserve"><value>Edge not found</value></data>
+
+  <!-- Settings window navigation -->
+  <data name="Nav_General" xml:space="preserve"><value>General</value></data>
+  <data name="Nav_Experimental" xml:space="preserve"><value>Experimental</value></data>
+  <data name="Nav_Extensions" xml:space="preserve"><value>Extensions</value></data>
+  <data name="Nav_Profiles" xml:space="preserve"><value>Profiles</value></data>
+  <data name="Nav_About" xml:space="preserve"><value>About</value></data>
+  <data name="Settings_Placeholder" xml:space="preserve"><value>This page will be implemented in a future update.</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>Settings</value></data>
   <data name="Pane_Close_Tooltip" xml:space="preserve"><value>Close</value></data>
   <data name="Pane_Delete" xml:space="preserve"><value>Remove This Timeline</value></data>

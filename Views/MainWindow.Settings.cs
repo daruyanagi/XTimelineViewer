@@ -58,6 +58,18 @@ namespace XTimelineViewer.Views
                 _profiles.Select(p => p.Id));
         }
 
+        private void OpenSettingsWindow_Click(object _, RoutedEventArgs __)
+        {
+            var ownerHwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            var settingsWin = new SettingsWindow(ownerHwnd);
+
+            // 親ウィンドウのテーマを引き継ぐ
+            var theme = ((FrameworkElement)Content).RequestedTheme;
+            settingsWin.ApplyTheme(theme);
+
+            settingsWin.Activate();
+        }
+
         private async void AppSettingsMenuItem_Click(object _, RoutedEventArgs __)
         {
             var themeCombo = new ComboBox

@@ -74,7 +74,7 @@
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
                             <MenuFlyoutSeparator/>
-                            <MenuFlyoutItem x:Name="AppSettingsMenuItem" Click="AppSettingsMenuItem_Click">
+                            <MenuFlyoutItem x:Name="AppSettingsMenuItem" Click="OpenSettingsWindow_Click">
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE713;" FontFamily="Segoe Fluent Icons"/>
                                 </MenuFlyoutItem.Icon>

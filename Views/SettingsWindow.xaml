@@ -1,0 +1,46 @@
+<Window
+    x:Class="XTimelineViewer.Views.SettingsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Settings">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <NavigationView x:Name="NavView"
+                        IsBackButtonVisible="Collapsed"
+                        IsSettingsVisible="False"
+                        PaneDisplayMode="Left"
+                        OpenPaneLength="200"
+                        SelectionChanged="NavView_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="NavGeneral" Tag="General">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE790;" FontFamily="Segoe Fluent Icons"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="NavExperimental" Tag="Experimental">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE9A1;" FontFamily="Segoe Fluent Icons"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="NavExtensions" Tag="Extensions">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xEA86;" FontFamily="Segoe Fluent Icons"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="NavProfiles" Tag="Profiles">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE716;" FontFamily="Segoe Fluent Icons"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem x:Name="NavAbout" Tag="About">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE946;" FontFamily="Segoe Fluent Icons"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
+            <Frame x:Name="ContentFrame"/>
+        </NavigationView>
+    </Grid>
+</Window>
