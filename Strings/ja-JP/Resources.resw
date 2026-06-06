@@ -16,8 +16,7 @@
   <!-- App menu items -->
   <data name="Menu_NewProfile" xml:space="preserve"><value>新規プロファイルの作成</value></data>
   <data name="Menu_Settings" xml:space="preserve"><value>設定</value></data>
-  <data name="Menu_ManageProfiles" xml:space="preserve"><value>プロファイルを管理（試験機能）</value></data>
-  <data name="Menu_About" xml:space="preserve"><value>XTimelineViewer について</value></data>
+  <data name="Menu_Theme" xml:space="preserve"><value>テーマ</value></data>
 
   <!-- Add timeline menu -->
   <data name="Menu_AddTimeline" xml:space="preserve"><value>タイムラインを追加</value></data>

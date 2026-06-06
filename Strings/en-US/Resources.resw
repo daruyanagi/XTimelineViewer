@@ -16,8 +16,7 @@
   <!-- App menu items -->
   <data name="Menu_NewProfile" xml:space="preserve"><value>New Profile</value></data>
   <data name="Menu_Settings" xml:space="preserve"><value>Settings</value></data>
-  <data name="Menu_ManageProfiles" xml:space="preserve"><value>Manage Profiles (Experimental)</value></data>
-  <data name="Menu_About" xml:space="preserve"><value>About XTimelineViewer</value></data>
+  <data name="Menu_Theme" xml:space="preserve"><value>Theme</value></data>
 
   <!-- Add timeline menu -->
   <data name="Menu_AddTimeline" xml:space="preserve"><value>Add Timeline</value></data>
