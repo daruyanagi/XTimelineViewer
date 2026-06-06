@@ -10,9 +10,33 @@
                        Style="{StaticResource TitleTextBlockStyle}"
                        Margin="0,0,0,16"/>
 
-            <TextBlock x:Name="PlaceholderText"
-                       Opacity="0.6"
-                       FontSize="13"/>
+            <!-- Theme -->
+            <controls:SettingsCard x:Name="ThemeCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE771;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ComboBox x:Name="ThemeCombo"
+                          MinWidth="160"
+                          SelectionChanged="ThemeCombo_SelectionChanged"/>
+            </controls:SettingsCard>
+
+            <!-- Language -->
+            <controls:SettingsCard x:Name="LanguageCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE8C1;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ComboBox x:Name="LanguageCombo"
+                          MinWidth="160"
+                          SelectionChanged="LanguageCombo_SelectionChanged"/>
+            </controls:SettingsCard>
+
+            <!-- Export Settings Folder -->
+            <controls:SettingsCard x:Name="ExportFolderCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE838;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <Button x:Name="OpenFolderBtn" Click="OpenFolderBtn_Click"/>
+            </controls:SettingsCard>
         </StackPanel>
     </ScrollViewer>
 </Page>

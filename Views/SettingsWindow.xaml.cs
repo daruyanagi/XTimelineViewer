@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using Windows.Graphics;
+using XTimelineViewer.Models;
 
 namespace XTimelineViewer.Views
 {
@@ -14,9 +15,22 @@ namespace XTimelineViewer.Views
 
         private readonly IntPtr _ownerHwnd;
 
-        public SettingsWindow(IntPtr ownerHwnd)
+        /// <summary>親ウィンドウから渡されたアプリ設定。ページが直接読み書きする。</summary>
+        internal AppSettings Settings { get; }
+
+        /// <summary>設定ファイルが格納されているフォルダーパス。</summary>
+        internal string SettingsFolder { get; }
+
+        /// <summary>設定が変更されたときに発火する。MainWindow が購読して保存・適用する。</summary>
+        internal event Action? SettingsChanged;
+
+        internal void NotifySettingsChanged() => SettingsChanged?.Invoke();
+
+        public SettingsWindow(IntPtr ownerHwnd, AppSettings settings, string settingsFolder)
         {
             _ownerHwnd = ownerHwnd;
+            Settings = settings;
+            SettingsFolder = settingsFolder;
             this.InitializeComponent();
 
             // ウィンドウサイズ・アイコン設定
@@ -44,9 +58,10 @@ namespace XTimelineViewer.Views
             MainWindow.ApplyTitleBarTheme(this, theme);
         }
 
-        private void RefreshNavText()
+        /// <summary>ナビゲーション項目と各ページのテキストを再設定する。</summary>
+        internal void RefreshNavText()
         {
-            Title                = R.Get("AppSettings_Title");
+            Title                  = R.Get("AppSettings_Title");
             NavGeneral.Content     = R.Get("Nav_General");
             NavExperimental.Content = R.Get("Nav_Experimental");
             NavExtensions.Content  = R.Get("Nav_Extensions");
@@ -70,7 +85,7 @@ namespace XTimelineViewer.Views
             };
 
             if (pageType is not null)
-                ContentFrame.Navigate(pageType);
+                ContentFrame.Navigate(pageType, this);
         }
     }
 }

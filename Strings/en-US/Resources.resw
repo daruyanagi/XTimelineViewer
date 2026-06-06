@@ -51,6 +51,8 @@
   <data name="Settings_Theme" xml:space="preserve"><value>Theme</value></data>
   <data name="Settings_Language" xml:space="preserve"><value>Language</value></data>
   <data name="Settings_ExportFolder" xml:space="preserve"><value>Export Settings</value></data>
+  <data name="Settings_Theme_Description" xml:space="preserve"><value>Change the app's appearance</value></data>
+  <data name="Settings_Language_Description" xml:space="preserve"><value>Change the display language</value></data>
   <data name="Section_Experimental" xml:space="preserve"><value>Experimental Features</value></data>
   <data name="Section_About" xml:space="preserve"><value>About</value></data>
   <data name="Settings_SeparateCompose" xml:space="preserve"><value>Open Composer in Separate Profile (Deprecated)</value></data>
