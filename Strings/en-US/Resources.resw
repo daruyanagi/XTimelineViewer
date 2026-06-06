@@ -56,9 +56,16 @@
   <data name="Section_Experimental" xml:space="preserve"><value>Experimental Features</value></data>
   <data name="Section_About" xml:space="preserve"><value>About</value></data>
   <data name="Settings_SeparateCompose" xml:space="preserve"><value>Open Composer in Separate Profile (Deprecated)</value></data>
+  <data name="Settings_SeparateCompose_Description" xml:space="preserve"><value>This feature has been deprecated</value></data>
   <data name="Settings_OpenComposerInBrowser" xml:space="preserve"><value>Open Composer in External Browser</value></data>
+  <data name="Settings_OpenComposerInBrowser_Description" xml:space="preserve"><value>Open new posts in an external browser instead of the built-in composer</value></data>
   <data name="Settings_OpenTimestampInBrowser" xml:space="preserve"><value>Open Timestamp Links in External Browser</value></data>
+  <data name="Settings_OpenTimestampInBrowser_Description" xml:space="preserve"><value>Open timestamp links in an external browser instead of navigating in the timeline</value></data>
   <data name="Settings_AutoActivate" xml:space="preserve"><value>Auto-activate Home Timeline (min, 0 to disable)</value></data>
+  <data name="Settings_AutoActivate_Description" xml:space="preserve"><value>Periodically bring the Home timeline to the foreground</value></data>
+  <data name="Settings_ShowAutoActivateLabel_Description" xml:space="preserve"><value>Show the auto-activate countdown timer in the toolbar</value></data>
+  <data name="Settings_ExternalBrowser_Description" xml:space="preserve"><value>Choose which browser to use for opening external links</value></data>
+  <data name="Settings_EdgeProfile_Description" xml:space="preserve"><value>Select the Edge profile to use when opening links</value></data>
 
   <!-- Language selector items -->
   <data name="Language_System" xml:space="preserve"><value>System Language</value></data>

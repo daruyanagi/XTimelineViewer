@@ -73,6 +73,14 @@ namespace XTimelineViewer.Views
             {
                 SaveSettings();
                 ApplySavedTheme();
+                ApplyAutoActivateTimer();
+
+                // WebView のタイムスタンプ設定を即時反映
+                var tsFlag = _appSettings.OpenTimestampInBrowser ? "true" : "false";
+                foreach (var wv in _webViews)
+                    if (wv.CoreWebView2 is not null)
+                        _ = wv.CoreWebView2.ExecuteScriptAsync(
+                            $"window._xtvOpenTimestampInBrowser = {tsFlag};");
 
                 // 言語変更の即時反映
                 var locale = _appSettings.Language == "system" ? null : _appSettings.Language;
