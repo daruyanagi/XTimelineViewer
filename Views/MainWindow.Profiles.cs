@@ -13,9 +13,6 @@ namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
     {
-        private void ManageProfilesMenuItem_Click(object _, RoutedEventArgs __)
-            => OpenSettingsWindow("Profiles");
-
         private void RefreshAllProfileBadges()
         {
             for (int i = 0; i < _configs.Count && i < TimelinePanel.Children.Count; i++)

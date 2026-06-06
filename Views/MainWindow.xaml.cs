@@ -271,9 +271,12 @@ namespace XTimelineViewer.Views
             ToolTipService.SetToolTip(AppMenuBtn, R.Get("AppMenu_Tooltip"));
             AutomationProperties.SetName(PostBtn,    R.Get("PostBtn_Tooltip"));
             AutomationProperties.SetName(AppMenuBtn, R.Get("AppMenu_Tooltip"));
-            ManageProfilesMenuItem.Text = R.Get("Menu_ManageProfiles");
-            AppSettingsMenuItem.Text    = R.Get("Menu_Settings");
-            AboutMenuItem.Text          = R.Get("Menu_About");
+            ThemeSubMenu.Text       = R.Get("Menu_Theme");
+            ThemeSystemItem.Text    = R.Get("Theme_System");
+            ThemeLightItem.Text     = R.Get("Theme_Light");
+            ThemeDarkItem.Text      = R.Get("Theme_Dark");
+            UpdateThemeRadioState();
+            AppSettingsMenuItem.Text = R.Get("Menu_Settings");
 
             AddTimelineSubMenu.Text           = R.Get("Menu_AddTimeline");
             AddHomeTimelineItem.Text          = R.Get("Timeline_Home");

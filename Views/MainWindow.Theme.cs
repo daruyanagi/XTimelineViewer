@@ -1,26 +1,8 @@
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Net.Http;
-using System.Net.NetworkInformation;
-using System.Reflection;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.IO;
-using System.Runtime.InteropServices;
 using Microsoft.Web.WebView2.Core;
-using Windows.ApplicationModel.DataTransfer;
-using Windows.Graphics;
-using Windows.Storage;
-using Windows.UI;
-
-using XTimelineViewer.Models;
+using System;
+using System.Runtime.InteropServices;
 
 namespace XTimelineViewer.Views
 {
@@ -52,6 +34,23 @@ namespace XTimelineViewer.Views
             ((FrameworkElement)Content).RequestedTheme = theme;
             ApplyTitleBarTheme(this, theme);
             ApplyThemeToWebViews();
+        }
+
+        private void ThemeItem_Click(object sender, RoutedEventArgs _)
+        {
+            if (sender is RadioMenuFlyoutItem item && item.Tag is string theme)
+            {
+                _appSettings.Theme = theme;
+                SaveSettings();
+                ApplySavedTheme();
+            }
+        }
+
+        private void UpdateThemeRadioState()
+        {
+            ThemeSystemItem.IsChecked = _appSettings.Theme is null or "Default";
+            ThemeLightItem.IsChecked  = _appSettings.Theme == "Light";
+            ThemeDarkItem.IsChecked   = _appSettings.Theme == "Dark";
         }
 
         private void ApplyThemeToWebViews()

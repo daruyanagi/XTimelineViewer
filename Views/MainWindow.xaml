@@ -68,21 +68,18 @@
                                 </MenuFlyoutItem>
                             </MenuFlyoutSubItem>
                             <MenuFlyoutSeparator/>
-                            <MenuFlyoutItem x:Name="ManageProfilesMenuItem" Click="ManageProfilesMenuItem_Click">
-                                <MenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xE716;" FontFamily="Segoe Fluent Icons"/>
-                                </MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
+                            <MenuFlyoutSubItem x:Name="ThemeSubMenu">
+                                <MenuFlyoutSubItem.Icon>
+                                    <FontIcon Glyph="&#xE771;" FontFamily="Segoe Fluent Icons"/>
+                                </MenuFlyoutSubItem.Icon>
+                                <RadioMenuFlyoutItem x:Name="ThemeSystemItem" GroupName="Theme" Click="ThemeItem_Click" Tag="Default"/>
+                                <RadioMenuFlyoutItem x:Name="ThemeLightItem" GroupName="Theme" Click="ThemeItem_Click" Tag="Light"/>
+                                <RadioMenuFlyoutItem x:Name="ThemeDarkItem" GroupName="Theme" Click="ThemeItem_Click" Tag="Dark"/>
+                            </MenuFlyoutSubItem>
                             <MenuFlyoutSeparator/>
                             <MenuFlyoutItem x:Name="AppSettingsMenuItem" Click="OpenSettingsWindow_Click">
                                 <MenuFlyoutItem.Icon>
                                     <FontIcon Glyph="&#xE713;" FontFamily="Segoe Fluent Icons"/>
-                                </MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutSeparator/>
-                            <MenuFlyoutItem x:Name="AboutMenuItem" Click="AboutMenuItem_Click">
-                                <MenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xE946;" FontFamily="Segoe Fluent Icons"/>
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
                         </MenuFlyout>
