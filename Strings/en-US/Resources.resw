@@ -175,5 +175,5 @@
   <data name="About_Repository" xml:space="preserve"><value>GitHub Repository</value></data>
   <data name="About_Acknowledgements" xml:space="preserve"><value>Acknowledgements</value></data>
   <data name="About_License" xml:space="preserve"><value>License</value></data>
-  <data name="About_Components" xml:space="preserve"><value>Components</value></data>
+  <data name="About_Components" xml:space="preserve"><value>Components Used</value></data>
 </root>

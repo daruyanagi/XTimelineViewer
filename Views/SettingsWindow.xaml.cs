@@ -57,6 +57,27 @@ namespace XTimelineViewer.Views
         /// <summary>指定プロファイルが使用しているタイムライン数を返す。</summary>
         internal Func<string, int>? GetTimelineCount { get; set; }
 
+        /// <summary>WebView2 ランタイムバージョン文字列。MainWindow が設定する。</summary>
+        internal string EdgeVersion { get; set; } = "";
+
+        /// <summary>winget が利用可能かどうか（unpackaged のみ意味がある）。</summary>
+        internal bool HasWinget { get; set; }
+
+        /// <summary>最新リリース情報を取得するコールバック。</summary>
+        internal Func<Task<(Version version, string tag, string releaseUrl)>>? FetchLatestReleaseAsync { get; set; }
+
+        /// <summary>バージョン比較で更新が利用可能かを判定するコールバック。</summary>
+        internal Func<Version, Version, bool>? CheckIsUpdateAvailable { get; set; }
+
+        /// <summary>設定のみ保存する（テーマ適用等はしない）コールバック。</summary>
+        internal Action? SaveSettingsOnly { get; set; }
+
+        /// <summary>メニューの更新バッジを更新するコールバック。</summary>
+        internal Action? UpdateMenuBadge { get; set; }
+
+        /// <summary>アプリを終了して winget でアップデートを開始するコールバック。</summary>
+        internal Action? ExitAndRunWingetUpdate { get; set; }
+
         public SettingsWindow(IntPtr ownerHwnd, AppSettings settings, string settingsFolder)
         {
             _ownerHwnd = ownerHwnd;

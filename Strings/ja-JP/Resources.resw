@@ -175,5 +175,5 @@
   <data name="About_Repository" xml:space="preserve"><value>GitHub リポジトリ</value></data>
   <data name="About_Acknowledgements" xml:space="preserve"><value>謝辞</value></data>
   <data name="About_License" xml:space="preserve"><value>ライセンス</value></data>
-  <data name="About_Components" xml:space="preserve"><value>コンポーネント</value></data>
+  <data name="About_Components" xml:space="preserve"><value>利用しているコンポーネント</value></data>
 </root>

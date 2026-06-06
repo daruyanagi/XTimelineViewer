@@ -102,6 +102,34 @@ namespace XTimelineViewer.Views
             };
             settingsWin.OnProfileCreated = _ => { SaveProfiles(); RefreshAllProfileBadges(); };
 
+            // About ページ情報とコールバックを設定
+            string edgeVer;
+            try
+            {
+                edgeVer = CoreWebView2Environment.GetAvailableBrowserVersionString();
+            }
+            catch
+            {
+                edgeVer = _profileEnvs.Values.FirstOrDefault()?.BrowserVersionString
+                          ?? R.Get("Version_Unknown");
+            }
+            settingsWin.EdgeVersion = edgeVer;
+            settingsWin.HasWinget = !PackageContext.IsPackaged && FindWinget() is not null;
+            settingsWin.FetchLatestReleaseAsync = FetchLatestReleaseAsync;
+            settingsWin.CheckIsUpdateAvailable = IsUpdateAvailable;
+            settingsWin.SaveSettingsOnly = SaveSettings;
+            settingsWin.UpdateMenuBadge = UpdateMenuUpdateBadge;
+            settingsWin.ExitAndRunWingetUpdate = () =>
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName        = "cmd.exe",
+                    Arguments       = "/c timeout /t 2 /nobreak > nul && winget upgrade daruyanagi.XTimelineViewer",
+                    UseShellExecute = true,
+                });
+                Application.Current.Exit();
+            };
+
             // 親ウィンドウのテーマを引き継ぐ
             var theme = ((FrameworkElement)Content).RequestedTheme;
             settingsWin.ApplyTheme(theme);
@@ -358,248 +386,7 @@ namespace XTimelineViewer.Views
             }
         }
 
-        private async void AboutMenuItem_Click(object _, RoutedEventArgs __)
-        {
-            var currentVersion = Assembly.GetExecutingAssembly().GetName().Version!;
-            var versionStr     = currentVersion.ToString(3);
-
-            var edgeChannel = R.Get("EdgeChannel_Runtime");
-            string edgeVersion;
-            try
-            {
-                edgeVersion = CoreWebView2Environment.GetAvailableBrowserVersionString();
-            }
-            catch
-            {
-                edgeVersion = _profileEnvs.Values.FirstOrDefault()?.BrowserVersionString
-                              ?? R.Get("Version_Unknown");
-            }
-            var versionInfoText = $"XTimelineViewer v{versionStr}\r\n{edgeChannel} {edgeVersion}";
-
-            var issueBody = Uri.EscapeDataString(
-                $"- {R.Get("IssueLabel_AppVersion")}: v{versionStr}\n" +
-                $"- {R.Get("IssueLabel_EdgeVersion")}: {edgeChannel} {edgeVersion}\n" +
-                $"- {R.Get("IssueLabel_Symptoms")}:\n");
-            var issueUrl    = $"https://github.com/daruyanagi/XTimelineViewer/issues/new?labels=bug&title=&body={issueBody}";
-            var repoUrl     = "https://github.com/daruyanagi/XTimelineViewer";
-            var fallbackUrl = repoUrl + "/releases/latest";
-
-            // ── Header ────────────────────────────────────────────────────────
-            var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "StoreLogo.png");
-
-            var textStack = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
-            textStack.Children.Add(new TextBlock
-            {
-                Text       = "XTimelineViewer",
-                FontSize   = 20,
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            });
-            textStack.Children.Add(new TextBlock { Text = $"v{versionStr}", FontSize = 13, Opacity = 0.7 });
-            textStack.Children.Add(new TextBlock { Text = R.Get("About_Copyright"), FontSize = 12, Opacity = 0.6 });
-
-            var titleRow = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Spacing     = 12,
-                Margin      = new Thickness(0, 0, 0, 8),
-            };
-            if (File.Exists(iconPath))
-                titleRow.Children.Add(new Microsoft.UI.Xaml.Controls.Image
-                {
-                    Source            = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(iconPath)),
-                    Width             = 48,
-                    Height            = 48,
-                    VerticalAlignment = VerticalAlignment.Top,
-                });
-            titleRow.Children.Add(textStack);
-
-            var copyBtn = new Button
-            {
-                Content = new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    Spacing     = 6,
-                    Children    =
-                    {
-                        new FontIcon { Glyph = "", FontFamily = new FontFamily("Segoe Fluent Icons"), FontSize = 14 },
-                        new TextBlock { Text = R.Get("Button_Copy") },
-                    }
-                },
-                Margin = new Thickness(0, 4, 8, 0),
-            };
-            copyBtn.Click += (_, _) =>
-            {
-                var dp = new DataPackage();
-                dp.SetText(versionInfoText);
-                Clipboard.SetContent(dp);
-            };
-
-            // ── Update check ─────────────────────────────────────────────────
-            string? latestReleaseUrl = null;
-
-            var statusText = new TextBlock { FontSize = 13, Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed };
-
-            bool hasWinget = !PackageContext.IsPackaged && FindWinget() is not null;
-            var updateBtnLabel = PackageContext.IsPackaged
-                ? R.Get("CheckUpdate_Download_Store")
-                : hasWinget
-                    ? R.Get("CheckUpdate_Download_Winget")
-                    : R.Get("CheckUpdate_Download_GitHub");
-            var updateBtn = new Button { Content = updateBtnLabel, Margin = new Thickness(0, 4, 0, 0), Visibility = Visibility.Collapsed };
-
-            // キャッシュがあれば初期表示
-            if (_appSettings.CachedLatestVersion is { } cached
-                && Version.TryParse(cached.TrimStart('v'), out var cachedVersion)
-                && IsUpdateAvailable(currentVersion, cachedVersion))
-            {
-                latestReleaseUrl = $"{repoUrl}/releases/tag/{cached}";
-                statusText.Text       = string.Format(R.Get("CheckUpdate_Available"), cached);
-                statusText.Visibility = Visibility.Visible;
-                updateBtn.Visibility  = Visibility.Visible;
-            }
-
-            var checkBtn = new Button { Content = R.Get("CheckUpdate_Btn"), Margin = new Thickness(0, 4, 0, 0) };
-            checkBtn.Click += async (_, _) =>
-            {
-                checkBtn.IsEnabled    = false;
-                statusText.Text       = R.Get("CheckUpdate_Checking");
-                statusText.Visibility = Visibility.Visible;
-                updateBtn.Visibility  = Visibility.Collapsed;
-                try
-                {
-                    var (latest, tag, freshUrl) = await FetchLatestReleaseAsync();
-                    latestReleaseUrl = freshUrl;
-                    _appSettings.LastUpdateCheck = DateTime.UtcNow.ToString("O");
-                    if (IsUpdateAvailable(currentVersion, latest))
-                    {
-                        _appSettings.CachedLatestVersion = tag;
-                        statusText.Text      = string.Format(R.Get("CheckUpdate_Available"), tag);
-                        updateBtn.Visibility = Visibility.Visible;
-                    }
-                    else
-                    {
-                        _appSettings.CachedLatestVersion = null;
-                        statusText.Text = R.Get("CheckUpdate_Latest");
-                    }
-                    SaveSettings();
-                    UpdateMenuUpdateBadge();
-                }
-                catch
-                {
-                    statusText.Text = R.Get("CheckUpdate_Error");
-                }
-                finally
-                {
-                    checkBtn.IsEnabled = true;
-                }
-            };
-
-            ContentDialog dlg = null!;
-
-            updateBtn.Click += async (_, _) =>
-            {
-                var url = latestReleaseUrl ?? fallbackUrl;
-                if (PackageContext.IsPackaged)
-                {
-                    // ms-windows-store:// は LaunchUriByEdgeProfileAsync 内でシステム既定にフォールバックする
-                    await LaunchUriByEdgeProfileAsync(new Uri("ms-windows-store://pdp/?ProductId=9P308HB5BLJ1"));
-                }
-                else if (FindWinget() is not null)
-                {
-                    dlg.Hide();
-                    await SelfUpdateViaWingetAsync(url);
-                }
-                else
-                {
-                    await LaunchUriByEdgeProfileAsync(new Uri(url));
-                }
-            };
-
-            var updateRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-            updateRow.Children.Add(copyBtn);
-            updateRow.Children.Add(checkBtn);
-
-            var header = new StackPanel { Spacing = 0, Margin = new Thickness(0, 0, 0, 4) };
-            header.Children.Add(titleRow);
-            header.Children.Add(updateRow);
-            header.Children.Add(statusText);
-            header.Children.Add(updateBtn);
-
-            // ── Section helper ────────────────────────────────────────────────
-            static StackPanel MakeSection(string title)
-            {
-                var s = new StackPanel { Spacing = 4, Margin = new Thickness(0, 12, 0, 0) };
-                s.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 0, 0, 8) });
-                s.Children.Add(new TextBlock
-                {
-                    Text       = title,
-                    FontSize   = 12,
-                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                    Opacity    = 0.8,
-                    Margin     = new Thickness(0, 0, 0, 4),
-                });
-                return s;
-            }
-
-            HyperlinkButton MakeLink(string text, string url) => new HyperlinkButton
-            {
-                NavigateUri = new Uri(url),
-                Padding     = new Thickness(0),
-                Content     = new StackPanel
-                {
-                    Orientation       = Orientation.Horizontal,
-                    Spacing           = 4,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    Children          =
-                    {
-                        new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center },
-                        new FontIcon
-                        {
-                            Glyph             = "",
-                            FontFamily        = new FontFamily("Segoe Fluent Icons"),
-                            FontSize          = 10,
-                            Opacity           = 0.6,
-                            VerticalAlignment = VerticalAlignment.Center,
-                        },
-                    }
-                },
-            };
-
-            var linksSection = MakeSection(R.Get("About_Links"));
-            linksSection.Children.Add(MakeLink(R.Get("About_Repository"), repoUrl));
-            linksSection.Children.Add(MakeLink(R.Get("Button_ReportIssue"), issueUrl));
-
-            var acksSection = MakeSection(R.Get("About_Acknowledgements"));
-            acksSection.Children.Add(MakeLink("TwitterTimelineLoader",
-                "https://chromewebstore.google.com/detail/twittertimelineloader/ipmgjpmedafkmmadinmeoannpofakpbh"));
-
-            var licenseSection = MakeSection(R.Get("About_License"));
-            licenseSection.Children.Add(new TextBlock { Text = "MIT License", IsTextSelectionEnabled = true, FontSize = 13 });
-
-            var componentsSection = MakeSection(R.Get("About_Components"));
-            componentsSection.Children.Add(new TextBlock
-            {
-                Text                   = $"{edgeChannel}  {edgeVersion}",
-                IsTextSelectionEnabled = true,
-                FontSize               = 13,
-                Opacity                = 0.8,
-            });
-
-            var panel = new StackPanel { MinWidth = 320 };
-            panel.Children.Add(header);
-            panel.Children.Add(linksSection);
-            panel.Children.Add(acksSection);
-            panel.Children.Add(licenseSection);
-            panel.Children.Add(componentsSection);
-
-            dlg = new ContentDialog
-            {
-                Title           = R.Get("About_Title"),
-                Content         = panel,
-                CloseButtonText = R.Get("Button_Close"),
-                XamlRoot        = Content.XamlRoot,
-            };
-            await ShowDialogAsync(dlg);
-        }
+        private void AboutMenuItem_Click(object _, RoutedEventArgs __)
+            => OpenSettingsWindow("About");
     }
 }

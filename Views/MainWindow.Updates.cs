@@ -1,26 +1,13 @@
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Automation;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.IO;
-using System.Runtime.InteropServices;
-using Microsoft.Web.WebView2.Core;
-using Windows.ApplicationModel.DataTransfer;
-using Windows.Graphics;
-using Windows.Storage;
-using Windows.UI;
-
-using XTimelineViewer.Models;
 
 namespace XTimelineViewer.Views
 {
@@ -88,39 +75,6 @@ namespace XTimelineViewer.Views
                 ?.Split(';', StringSplitOptions.RemoveEmptyEntries)
                 .Select(d => Path.Combine(d, "winget.exe"))
                 .FirstOrDefault(File.Exists);
-        }
-
-        private async Task SelfUpdateViaWingetAsync(string releaseUrl)
-        {
-            var confirmDlg = new ContentDialog
-            {
-                Title             = R.Get("CheckUpdate_WingetTitle"),
-                Content           = new TextBlock
-                {
-                    Text         = R.Get("CheckUpdate_WingetBody"),
-                    TextWrapping = TextWrapping.Wrap,
-                },
-                PrimaryButtonText = R.Get("CheckUpdate_WingetConfirm"),
-                CloseButtonText   = R.Get("Button_Cancel"),
-                XamlRoot          = Content.XamlRoot,
-            };
-
-            if (await ShowDialogAsync(confirmDlg) != ContentDialogResult.Primary) return;
-
-            var winget = FindWinget();
-            if (winget is null)
-            {
-                await LaunchUriByEdgeProfileAsync(new Uri(releaseUrl));
-                return;
-            }
-
-            Process.Start(new ProcessStartInfo
-            {
-                FileName        = "cmd.exe",
-                Arguments       = "/c timeout /t 2 /nobreak > nul && winget upgrade daruyanagi.XTimelineViewer",
-                UseShellExecute = true,
-            });
-            Application.Current.Exit();
         }
     }
 }
