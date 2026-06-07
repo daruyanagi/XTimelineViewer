@@ -217,6 +217,16 @@ namespace XTimelineViewer.Views
                 "", userDataFolder, options);
             _profileEnvs[profileId] = env;
             Debug.WriteLine($"[Profile] Env created: profileId={profileId}, UserDataFolder={env.UserDataFolder}");
+
+            // default の実データフォルダパスを記録しておく。
+            // userDataFolder="" のときランタイムが決めた exe 相対パスになるため、
+            // 初期化（#86）時に正確な削除対象を知るために保存する。
+            if (profileId == "default" &&
+                _appSettings.DefaultProfileDataPath != env.UserDataFolder)
+            {
+                _appSettings.DefaultProfileDataPath = env.UserDataFolder;
+                SaveSettings();
+            }
             return env;
         }
 

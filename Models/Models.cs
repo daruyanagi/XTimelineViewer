@@ -44,5 +44,7 @@ namespace XTimelineViewer.Models
         public bool    ShowAutoActivateLabel { get; set; } = false;
         public string  ExternalBrowser       { get; set; } = "system";  // "system" | "edge"
         public string  EdgeProfileDirectory  { get; set; } = "";        // "Default" | "Profile 1" など
+        public bool    ResetDefaultProfilePending { get; set; } = false; // 次回起動時に default を初期化 (#86)
+        public string? DefaultProfileDataPath     { get; set; } = null;  // default の実 WebView2 データパス (#86)
     }
 }

@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using XTimelineViewer.Models;
+using XTimelineViewer.Services;
 using XTimelineViewer.Views;
 
 namespace XTimelineViewer
@@ -59,6 +61,10 @@ namespace XTimelineViewer
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
+            // WebView2 が未初期化のうちに default プロファイルの初期化保留を処理する (#86)。
+            // 実行中はブラウザプロセスがフォルダをロックするため、起動直後のここで削除する。
+            ResetDefaultProfileIfPending();
+
             var lang = ReadLanguageSetting();
 
             if (lang != null && PackageContext.IsPackaged)
@@ -69,16 +75,45 @@ namespace XTimelineViewer
             _window.Activate();
         }
 
+        private static string GetSettingsFilePath() =>
+            PackageContext.IsPackaged
+                ? Path.Combine(Windows.Storage.ApplicationData.Current.LocalFolder.Path, "settings.json")
+                : Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "XTimelineViewer", "settings.json");
+
+        // 初期化保留フラグが立っていれば、default の WebView2 データフォルダを削除する (#86)。
+        private static void ResetDefaultProfileIfPending()
+        {
+            try
+            {
+                var settingsPath = GetSettingsFilePath();
+                if (!File.Exists(settingsPath)) return;
+
+                var settings = SettingsService.LoadSettings(settingsPath);
+                if (!settings.ResetDefaultProfilePending) return;
+
+                var dataPath = settings.DefaultProfileDataPath;
+                if (!string.IsNullOrEmpty(dataPath) && Directory.Exists(dataPath))
+                {
+                    Directory.Delete(dataPath, recursive: true);
+                    Debug.WriteLine($"[App] Default profile data deleted: {dataPath}");
+                }
+
+                settings.ResetDefaultProfilePending = false;
+                SettingsService.SaveSettings(settingsPath, settings);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[App] ResetDefaultProfileIfPending FAILED: {ex.Message}");
+            }
+        }
+
         private static string? ReadLanguageSetting()
         {
             try
             {
-                var settingsPath = PackageContext.IsPackaged
-                    ? Path.Combine(Windows.Storage.ApplicationData.Current.LocalFolder.Path, "settings.json")
-                    : Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                        "XTimelineViewer", "settings.json");
-
+                var settingsPath = GetSettingsFilePath();
                 if (!File.Exists(settingsPath)) return null;
 
                 using var doc = JsonDocument.Parse(File.ReadAllText(settingsPath));

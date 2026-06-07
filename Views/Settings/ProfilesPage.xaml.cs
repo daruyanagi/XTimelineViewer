@@ -149,12 +149,47 @@ namespace XTimelineViewer.Views.Settings
             // ── アクションボタン（初期化/削除）──
             if (profile.Id == "default")
             {
-                var resetBtn = new Button
+                // 初期化は重大な処理のため、フラグ方式で再起動まで実削除を遅延させ、
+                // それまで取り消せるようにする (#86)。
+                bool pending = _parent?.Settings.ResetDefaultProfilePending ?? false;
+                if (pending)
                 {
-                    Content   = R.Get("Profile_Reset"),
-                    IsEnabled = false,
-                };
-                expander.Content = resetBtn;
+                    expander.Description = R.Get("Profile_ResetPendingInfo");
+                    var cancelBtn = new Button { Content = R.Get("Profile_ResetCancel") };
+                    cancelBtn.Click += (_, _) =>
+                    {
+                        if (_parent is null) return;
+                        _parent.Settings.ResetDefaultProfilePending = false;
+                        _parent.SaveSettingsOnly?.Invoke();
+                        PopulateUI();
+                    };
+                    expander.Content = cancelBtn;
+                }
+                else
+                {
+                    var resetBtn = new Button { Content = R.Get("Profile_Reset") };
+                    resetBtn.Click += async (_, _) =>
+                    {
+                        var dlg = new ContentDialog
+                        {
+                            Title             = R.Get("Profile_ResetConfirmTitle"),
+                            Content           = R.Get("Profile_ResetConfirmBody"),
+                            PrimaryButtonText = R.Get("Profile_ResetConfirm"),
+                            CloseButtonText   = R.Get("Button_Cancel"),
+                            DefaultButton     = ContentDialogButton.Close,
+                            XamlRoot          = XamlRoot,
+                            RequestedTheme    = ((FrameworkElement)_parent!.Content).ActualTheme,
+                        };
+                        if (await dlg.ShowAsync() == ContentDialogResult.Primary)
+                        {
+                            if (_parent is null) return;
+                            _parent.Settings.ResetDefaultProfilePending = true;
+                            _parent.SaveSettingsOnly?.Invoke();
+                            PopulateUI();
+                        }
+                    };
+                    expander.Content = resetBtn;
+                }
             }
             else
             {
