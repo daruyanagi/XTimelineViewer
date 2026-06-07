@@ -21,8 +21,40 @@ namespace XTimelineViewer
 
         public App()
         {
-            SetProcessDpiAwarenessContext(-4);
+            try
+            {
+                SetProcessDpiAwarenessContext(-4);
+            }
+            catch (Exception ex)
+            {
+                // ヘッドレス VM など DPI API が利用できない環境でもクラッシュしない
+                Debug.WriteLine($"[App] SetProcessDpiAwarenessContext failed: {ex.Message}");
+            }
             this.InitializeComponent();
+
+            // UI スレッドの未処理例外でプロセスが即死するのを防ぐ。
+            // winget バリデーション VM など特殊環境でのサイレントクラッシュを診断しやすくする。
+            this.UnhandledException += (sender, e) =>
+            {
+                Debug.WriteLine($"[App] UnhandledException: {e.Exception}");
+                LogUnhandledException(e.Exception);
+                e.Handled = true;
+            };
+        }
+
+        private static void LogUnhandledException(Exception ex)
+        {
+            try
+            {
+                var dir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "XTimelineViewer");
+                Directory.CreateDirectory(dir);
+                File.AppendAllText(
+                    Path.Combine(dir, "error.log"),
+                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] UnhandledException\n{ex}\n\n");
+            }
+            catch { /* ログ書き込み失敗は無視 */ }
         }
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
