@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - 'v*'
+  # winget (release.yml) を巻き込まず Store 提出だけを単独で回すための手動トリガー。
+  # 既存タグを指定して実行する: gh workflow run store.yml -f tag=v1.4.3
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'バージョンタグ (例: v1.4.3)'
+        required: true
 
 # microsoft-store-apppublisher など一部 action は Node.js 20 ベースのため、
 # Node.js 24 を明示的に強制して deprecation を回避する。
@@ -16,7 +23,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      # 手動実行時は指定タグのコードを、タグ push 時はそのタグ ref を取得する。
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -26,9 +36,11 @@ jobs:
       - name: Extract version from tag
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"          # v1.2.0 → 1.2.0.0
+          # 手動実行時は入力の tag を、タグ push 時は github.ref_name を使う
+          $tag = "${{ github.event.inputs.tag || github.ref_name }}"   # v1.2.0 → 1.2.0.0
           $ver = $tag.TrimStart('v') + '.0'
           echo "MSIX_VERSION=$ver" >> $env:GITHUB_ENV
+          Write-Host "Target tag: $tag (MSIX version: $ver)"
 
       - name: Update manifest version
         shell: pwsh
