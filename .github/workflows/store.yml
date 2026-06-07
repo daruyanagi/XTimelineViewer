@@ -1,0 +1,177 @@
+name: Publish to Microsoft Store
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# microsoft-store-apppublisher など一部 action は Node.js 20 ベースのため、
+# Node.js 24 を明示的に強制して deprecation を回避する。
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  STORE_APP_ID: '9P308HB5BLJ1'
+
+jobs:
+  publish:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Extract version from tag
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"          # v1.2.0 → 1.2.0.0
+          $ver = $tag.TrimStart('v') + '.0'
+          echo "MSIX_VERSION=$ver" >> $env:GITHUB_ENV
+
+      - name: Update manifest version
+        shell: pwsh
+        run: |
+          $manifest = "Package.appxmanifest"
+          # XML 宣言の version="1.0" を壊さないよう Identity 要素に限定して置換
+          $content = Get-Content -Path $manifest -Raw
+          $content = $content -replace '(<Identity[^>]*Version=")[^"]*(")', "`${1}$env:MSIX_VERSION`$2"
+          [System.IO.File]::WriteAllText((Resolve-Path $manifest).Path, $content, [System.Text.Encoding]::UTF8)
+          $saved = Get-Content -Path $manifest -Raw
+          if ($saved -match 'Identity[^>]*Version="([\d.]+)"') {
+            Write-Host "Verified on disk: Identity.Version = $($Matches[1])"
+            if ($Matches[1] -ne $env:MSIX_VERSION) {
+              Write-Error "Manifest update failed! Got $($Matches[1]), expected $env:MSIX_VERSION"
+              exit 1
+            }
+          }
+
+      - name: Restore packages
+        run: dotnet restore XTimelineViewer.csproj
+
+      # MSIX ビルドタスク (Microsoft.Build.Msix.dll) は System.Security.Permissions.dll を
+      # 隣に要求するため、restore 後にパッケージキャッシュへコピーしておく。
+      - name: Fix System.Security.Permissions for Windows App SDK build tasks
+        shell: pwsh
+        run: |
+          $pkg = (dotnet nuget locals global-packages --list) -replace "global-packages:\s*", "" |
+                 Where-Object { $_ -ne "" } | Select-Object -First 1
+          $ssp = "$pkg\system.security.permissions\8.0.0\lib\net8.0\System.Security.Permissions.dll"
+          if (-not (Test-Path $ssp)) { Write-Error "Not found: $ssp"; exit 1 }
+          $count = 0
+          Get-ChildItem "$pkg\microsoft.windowsappsdk" -Recurse -Filter "Microsoft.Build.Msix.dll" |
+            ForEach-Object { Copy-Item $ssp $_.DirectoryName -Force; $script:count++ }
+          if ($count -eq 0) { Write-Error "Microsoft.Build.Msix.dll not found"; exit 1 }
+          Write-Host "Copied to $count location(s)"
+
+      # 各アーキを個別に署名なし .msix としてビルドする。
+      # AppxBundlePlatforms による単一プロジェクトのマルチアーキバンドルは
+      # WinUI 3 single-project では機能しないため、makeappx で後から束ねる (#150)。
+      - name: Build x64 MSIX (unsigned)
+        shell: pwsh
+        run: |
+          dotnet publish XTimelineViewer.csproj `
+            -c Release -r win-x64 -p:Platform=x64 `
+            -p:AppxPackageDir="$PWD\AppPackages\\" `
+            -p:UapAppxPackageBuildMode=SideloadOnly `
+            -p:AppxBundle=Never `
+            -p:AppxPackageSigningEnabled=false `
+            -p:GenerateAppxPackageOnBuild=true `
+            -p:AppxPackageVersion=$env:MSIX_VERSION
+
+      - name: Build arm64 MSIX (unsigned)
+        shell: pwsh
+        run: |
+          dotnet publish XTimelineViewer.csproj `
+            -c Release -r win-arm64 -p:Platform=arm64 -p:PlatformTarget=arm64 `
+            -p:AppxPackageDir="$PWD\AppPackages\\" `
+            -p:UapAppxPackageBuildMode=SideloadOnly `
+            -p:AppxBundle=Never `
+            -p:AppxPackageSigningEnabled=false `
+            -p:GenerateAppxPackageOnBuild=true `
+            -p:AppxPackageVersion=$env:MSIX_VERSION
+
+      # 各アーキの .msix を 1 つの .msixbundle に束ね、それを .msixupload に内包する。
+      # 旧実装は個別 .msix を直接 Compress-Archive して Store 前処理で破棄されていた (#150)。
+      - name: Create MSIX bundle and .msixupload
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path .\bundle_src | Out-Null
+          $msixFiles = Get-ChildItem -Recurse -Filter "*.msix" .\AppPackages |
+            Where-Object { $_.Name -match "_(x64|arm64)\.msix$" }
+          if ($msixFiles.Count -lt 2) {
+            Write-Error "Expected 2 architecture packages (x64/arm64), found $($msixFiles.Count)."
+            $msixFiles | ForEach-Object { Write-Host $_.FullName }
+            exit 1
+          }
+          $msixFiles | ForEach-Object {
+            Write-Host "bundling: $($_.Name)"
+            Copy-Item $_.FullName .\bundle_src\ -Force
+          }
+
+          $makeappx = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\makeappx.exe" |
+                      Sort-Object FullName | Select-Object -Last 1
+          if (-not $makeappx) { Write-Error "makeappx.exe not found"; exit 1 }
+
+          $bundlePath = "$PWD\XTimelineViewer_$env:MSIX_VERSION.msixbundle"
+          & $makeappx.FullName bundle /d .\bundle_src /p $bundlePath /o
+          if ($LASTEXITCODE -ne 0) { Write-Error "makeappx bundle failed"; exit 1 }
+
+          # .msixupload は正規バンドルを内包した zip。Store はこの形式を期待する。
+          $uploadPath = "$PWD\XTimelineViewer_$env:MSIX_VERSION.msixupload"
+          Compress-Archive -Path $bundlePath -DestinationPath $uploadPath -Force
+          echo "MSIXUPLOAD_PATH=$uploadPath" >> $env:GITHUB_ENV
+          Write-Host "Created: $uploadPath"
+
+      # バンドル内に期待バージョンが含まれるか検証する。
+      - name: Verify bundle version
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $found = $false
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($env:MSIXUPLOAD_PATH)
+          try {
+            foreach ($entry in $zip.Entries) {
+              Write-Host "  entry: $($entry.Name)"
+              if ($entry.Name -match [regex]::Escape($env:MSIX_VERSION)) { $found = $true }
+            }
+          } finally { $zip.Dispose() }
+          if (-not $found) {
+            Write-Error "VERSION MISMATCH! .msixupload に $env:MSIX_VERSION を含むバンドルがありません。"
+            exit 1
+          }
+          Write-Host "✅ Bundle contains version $env:MSIX_VERSION"
+
+      - name: Setup Microsoft Store Developer CLI
+        uses: microsoft/microsoft-store-apppublisher@v1.1
+
+      - name: Configure msstore-cli
+        run: >
+          msstore reconfigure
+          --tenantId "${{ secrets.AZURE_TENANT_ID }}"
+          --clientId "${{ secrets.AZURE_CLIENT_ID }}"
+          --clientSecret "${{ secrets.AZURE_CLIENT_SECRET }}"
+          --sellerId "${{ secrets.PARTNER_CENTER_SELLER_ID }}"
+
+      - name: Delete any pending submission
+        run: msstore submission delete "${{ env.STORE_APP_ID }}" --no-confirm
+        continue-on-error: true
+
+      # -i にはディレクトリではなく .msixupload ファイルそのものを渡す (#150)。
+      - name: Publish to Microsoft Store
+        run: msstore publish . -i "${{ env.MSIXUPLOAD_PATH }}" -id "${{ env.STORE_APP_ID }}"
+
+      # publish の戻り値が成功でも、Store のサーバー側前処理でパッケージが
+      # サイレント破棄されることがある（旧実装の症状）。最終提出に期待バージョンが
+      # 残っているか検証し、無ければ CI を fail させる (#150)。
+      - name: Verify submitted package version
+        shell: pwsh
+        run: |
+          $output = msstore submission get "${{ env.STORE_APP_ID }}" | Out-String
+          Write-Host $output
+          if ($output -notmatch [regex]::Escape($env:MSIX_VERSION)) {
+            Write-Error "提出パッケージに期待バージョン $env:MSIX_VERSION が含まれていません。Store 側で破棄された可能性があります。"
+            exit 1
+          }
+          Write-Host "✅ 提出パッケージにバージョン $env:MSIX_VERSION を確認"
