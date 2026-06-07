@@ -131,9 +131,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { Write-Error "makeappx bundle failed"; exit 1 }
 
           # .msixupload は正規バンドルを内包した zip。Store はこの形式を期待する。
-          $uploadPath = "$PWD\XTimelineViewer_$env:MSIX_VERSION.msixupload"
+          # msstore-cli の -i/--inputDirectory はディレクトリを取るため、
+          # .msixupload は専用ディレクトリに 1 つだけ置く（CLI が候補を一意に選べるように）。
+          $uploadDir = "$PWD\store_upload"
+          New-Item -ItemType Directory -Force -Path $uploadDir | Out-Null
+          $uploadPath = "$uploadDir\XTimelineViewer_$env:MSIX_VERSION.msixupload"
           Compress-Archive -Path $bundlePath -DestinationPath $uploadPath -Force
           echo "MSIXUPLOAD_PATH=$uploadPath" >> $env:GITHUB_ENV
+          echo "MSIXUPLOAD_DIR=$uploadDir" >> $env:GITHUB_ENV
           Write-Host "Created: $uploadPath"
 
       # バンドル内に期待バージョンが含まれるか検証する。
@@ -170,9 +175,10 @@ jobs:
         run: msstore submission delete "${{ env.STORE_APP_ID }}" --no-confirm
         continue-on-error: true
 
-      # -i にはディレクトリではなく .msixupload ファイルそのものを渡す (#150)。
+      # msstore-cli (apppublisher@v1.1 同梱版) の -i/--inputDirectory は
+      # .msixupload を含むディレクトリを取る。専用ディレクトリには .msixupload が 1 つだけ (#150)。
       - name: Publish to Microsoft Store
-        run: msstore publish . -i "${{ env.MSIXUPLOAD_PATH }}" -id "${{ env.STORE_APP_ID }}"
+        run: msstore publish . -i "${{ env.MSIXUPLOAD_DIR }}" -id "${{ env.STORE_APP_ID }}"
 
       # publish の戻り値が成功でも、Store のサーバー側前処理でパッケージが
       # サイレント破棄されることがある（旧実装の症状）。最終提出に期待バージョンが
