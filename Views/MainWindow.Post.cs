@@ -96,8 +96,9 @@ namespace XTimelineViewer.Views
         /// <summary>投稿に使用するプロファイル ID を決定する。</summary>
         private string ResolveComposeProfileId()
         {
-            // 前回使用したプロファイルが存在すればそれを使う
+            // 前回使用したプロファイルが存在し、default でなければそれを使う
             if (_appSettings.LastUsedProfileId is { } last &&
+                last != "default" &&
                 _profiles.Any(p => p.Id == last))
                 return last;
 
@@ -118,9 +119,11 @@ namespace XTimelineViewer.Views
             };
 
             int selectedIndex = 0;
+            int comboIdx = 0;
             for (int i = 0; i < _profiles.Count; i++)
             {
                 var profile = _profiles[i];
+                if (profile.Id == "default") continue;
                 var color = GetProfileColor(profile, profile.Id);
                 var item = new ComboBoxItem
                 {
@@ -148,7 +151,8 @@ namespace XTimelineViewer.Views
                     },
                 };
                 combo.Items.Add(item);
-                if (profile.Id == selectedProfileId) selectedIndex = i;
+                if (profile.Id == selectedProfileId) selectedIndex = comboIdx;
+                comboIdx++;
             }
 
             combo.SelectedIndex = selectedIndex;

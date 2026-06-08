@@ -83,7 +83,7 @@
 
   <!-- Timeline pane settings dialog -->
   <data name="Timeline_Settings_Title" xml:space="preserve"><value>Settings</value></data>
-  <data name="Timeline_Profile" xml:space="preserve"><value>Profile (Experimental)</value></data>
+  <data name="Timeline_Profile" xml:space="preserve"><value>Profile</value></data>
   <data name="Timeline_Width" xml:space="preserve"><value>Timeline Width (px)</value></data>
   <data name="Timeline_Sidebar" xml:space="preserve"><value>X Sidebar</value></data>
   <data name="Timeline_Compose" xml:space="preserve"><value>Compose Area</value></data>
@@ -131,7 +131,7 @@
   <data name="Profiles_Name" xml:space="preserve"><value>Name</value></data>
   <data name="Profiles_BadgeColor" xml:space="preserve"><value>Badge Color</value></data>
   <data name="Profiles_BadgeText" xml:space="preserve"><value>Badge Text</value></data>
-  <data name="Profiles_DefaultDescription" xml:space="preserve"><value>Default profile</value></data>
+  <data name="Profiles_DefaultDescription" xml:space="preserve"><value>Internal profile used by the application</value></data>
 
   <!-- Onboarding (#4) -->
   <data name="Onboarding_WelcomeTitle" xml:space="preserve"><value>Welcome to XTimelineViewer</value></data>

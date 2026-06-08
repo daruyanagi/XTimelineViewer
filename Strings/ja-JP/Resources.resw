@@ -83,7 +83,7 @@
 
   <!-- Timeline pane settings dialog -->
   <data name="Timeline_Settings_Title" xml:space="preserve"><value>設定</value></data>
-  <data name="Timeline_Profile" xml:space="preserve"><value>プロファイル（試験機能）</value></data>
+  <data name="Timeline_Profile" xml:space="preserve"><value>プロファイル</value></data>
   <data name="Timeline_Width" xml:space="preserve"><value>タイムラインの幅（px）</value></data>
   <data name="Timeline_Sidebar" xml:space="preserve"><value>X のサイドバー</value></data>
   <data name="Timeline_Compose" xml:space="preserve"><value>投稿画面</value></data>
@@ -131,7 +131,7 @@
   <data name="Profiles_Name" xml:space="preserve"><value>名前</value></data>
   <data name="Profiles_BadgeColor" xml:space="preserve"><value>バッジの色</value></data>
   <data name="Profiles_BadgeText" xml:space="preserve"><value>バッジテキスト</value></data>
-  <data name="Profiles_DefaultDescription" xml:space="preserve"><value>既定のプロファイル</value></data>
+  <data name="Profiles_DefaultDescription" xml:space="preserve"><value>アプリケーションが利用する内部プロファイルです</value></data>
 
   <!-- Onboarding (#4) -->
   <data name="Onboarding_WelcomeTitle" xml:space="preserve"><value>XTimelineViewer へようこそ</value></data>
