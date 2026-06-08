@@ -44,5 +44,6 @@ namespace XTimelineViewer.Models
         public bool    ShowAutoActivateLabel { get; set; } = false;
         public string  ExternalBrowser       { get; set; } = "system";  // "system" | "edge"
         public string  EdgeProfileDirectory  { get; set; } = "";        // "Default" | "Profile 1" など
+        public string? LastUsedProfileId     { get; set; } = null;      // 投稿画面で最後に使ったプロファイル
     }
 }
