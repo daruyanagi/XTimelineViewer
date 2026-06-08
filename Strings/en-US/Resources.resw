@@ -54,8 +54,6 @@
   <data name="Settings_Language_Description" xml:space="preserve"><value>Change the display language</value></data>
   <data name="Section_Experimental" xml:space="preserve"><value>Experimental Features</value></data>
   <data name="Section_About" xml:space="preserve"><value>About</value></data>
-  <data name="Settings_SeparateCompose" xml:space="preserve"><value>Open Composer in Separate Profile (Deprecated)</value></data>
-  <data name="Settings_SeparateCompose_Description" xml:space="preserve"><value>This feature has been deprecated</value></data>
   <data name="Settings_OpenComposerInBrowser" xml:space="preserve"><value>Open Composer in External Browser</value></data>
   <data name="Settings_OpenComposerInBrowser_Description" xml:space="preserve"><value>Open new posts in an external browser instead of the built-in composer</value></data>
   <data name="Settings_OpenTimestampInBrowser" xml:space="preserve"><value>Open Timestamp Links in External Browser</value></data>

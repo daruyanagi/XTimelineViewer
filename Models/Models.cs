@@ -33,7 +33,6 @@ namespace XTimelineViewer.Models
 
     public class AppSettings
     {
-        public bool    SeparateComposeEnv    { get; set; } = false;
         public bool    OpenComposerInBrowser { get; set; } = false;
         public bool    OpenTimestampInBrowser{ get; set; } = false;
         public string  Theme                 { get; set; } = "Default"; // "Light" | "Dark" | "Default"

@@ -34,10 +34,6 @@ namespace XTimelineViewer.Views.Settings
 
             PageTitle.Text = R.Get("Nav_Experimental");
 
-            // Separate Compose (Deprecated)
-            SeparateComposeCard.Header      = R.Get("Settings_SeparateCompose");
-            SeparateComposeCard.Description = R.Get("Settings_SeparateCompose_Description");
-
             // Open Composer in Browser
             OpenComposerCard.Header      = R.Get("Settings_OpenComposerInBrowser");
             OpenComposerCard.Description = R.Get("Settings_OpenComposerInBrowser_Description");
