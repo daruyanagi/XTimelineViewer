@@ -60,7 +60,8 @@ namespace XTimelineViewer.Views.Settings
             {
                 Header      = ext.Name,
                 Description = Path.GetFileName(ext.DirectoryPath),
-                IsClickEnabled = ext.OptionsPage is not null && ext.ExtensionId is not null,
+                // 右端のリンクアイコンと「設定を開く」ボタンの機能が重複していたため、
+                // 明示的なボタンを残してカード自体のクリック化は廃止
             };
 
             if (ext.IconPath is not null)
@@ -78,21 +79,6 @@ namespace XTimelineViewer.Views.Settings
                 {
                     Glyph      = "",
                     FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons")
-                };
-            }
-
-            if (card.IsClickEnabled)
-            {
-                card.ActionIcon = new FontIcon
-                {
-                    Glyph      = "",
-                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons"),
-                    FontSize   = 14,
-                };
-                card.Click += async (_, _) =>
-                {
-                    if (_parent?.OpenExtensionSettingsAsync is not null && XamlRoot is not null)
-                        await _parent.OpenExtensionSettingsAsync(ext, XamlRoot);
                 };
             }
 
