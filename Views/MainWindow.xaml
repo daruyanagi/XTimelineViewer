@@ -47,6 +47,11 @@
                     <FontIcon Glyph="&#xE700;" FontFamily="Segoe Fluent Icons" FontSize="14"/>
                     <Button.Flyout>
                         <MenuFlyout>
+                            <MenuFlyoutItem x:Name="NewProfileMenuItem" Click="NewProfileMenuItem_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE8FA;" FontFamily="Segoe Fluent Icons"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
                             <MenuFlyoutSubItem x:Name="AddTimelineSubMenu">
                                 <MenuFlyoutSubItem.Icon>
                                     <FontIcon Glyph="&#xE710;" FontFamily="Segoe Fluent Icons"/>

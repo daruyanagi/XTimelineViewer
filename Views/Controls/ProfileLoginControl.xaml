@@ -1,0 +1,39 @@
+<UserControl
+    x:Class="XTimelineViewer.Views.Controls.ProfileLoginControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <!-- Phase 1: Login -->
+        <Grid x:Name="LoginPhase">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock x:Name="LoginHintText"
+                       Grid.Row="0"
+                       Margin="16,12"
+                       FontSize="14"
+                       Opacity="0.7"/>
+            <WebView2 x:Name="LoginWebView"
+                      Grid.Row="1"
+                      xmlns="using:Microsoft.UI.Xaml.Controls"/>
+        </Grid>
+
+        <!-- Phase 2: Confirm -->
+        <StackPanel x:Name="ConfirmPhase"
+                    Visibility="Collapsed"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="16"
+                    Padding="32">
+            <TextBlock x:Name="DetectedText"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Center"/>
+            <TextBox x:Name="ProfileNameBox"
+                     Width="280"
+                     HorizontalAlignment="Center"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

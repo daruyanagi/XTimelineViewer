@@ -134,13 +134,6 @@ namespace XTimelineViewer.Views
             }
         }
 
-        /// <summary>設定ウィンドウの有効/無効を切り替える（子ウィンドウのモーダル化用）。</summary>
-        internal void SetEnabled(bool enabled)
-        {
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            EnableWindow(hwnd, enabled);
-        }
-
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
             if (args.SelectedItem is not NavigationViewItem item) return;

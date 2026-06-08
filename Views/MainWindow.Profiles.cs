@@ -122,5 +122,16 @@ namespace XTimelineViewer.Views
                 }
             };
         }
+
+        // メニューから新規プロファイル作成ウィンドウをモーダルで開く (#157)
+        private void NewProfileMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            AddProfileWindow.ShowModal(this, profile =>
+            {
+                _profiles.Add(profile);
+                SaveProfiles();
+                RefreshAllProfileBadges();
+            });
+        }
     }
 }
