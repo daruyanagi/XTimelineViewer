@@ -47,8 +47,9 @@ namespace XTimelineViewer.Views.Settings
         private CommunityToolkit.WinUI.Controls.SettingsExpander BuildProfileCard(
             ProfileConfig profile, Color[] colors)
         {
+            // string.GetHashCode() の非決定性により起動ごとに色が変わる問題を回避 (#160)
             var colorIdx = profile.BadgeColorIndex
-                ?? (Math.Abs(profile.Id.GetHashCode()) % Math.Max(colors.Length, 1));
+                ?? MainWindow.StableIndex(profile.Id, Math.Max(colors.Length, 1));
             if (colorIdx < 0 || colorIdx >= colors.Length) colorIdx = 0;
 
             var badgeColor = colors.Length > 0 ? colors[colorIdx] : Color.FromArgb(255, 128, 128, 128);

@@ -82,11 +82,22 @@ namespace XTimelineViewer.Views
             Color.FromArgb(255,  63,  81, 181),  // indigo
         ];
 
-        private static Color GetProfileColor(string profileId)
+        // string.GetHashCode() は .NET (Core) ではプロセスごとにランダム化されるため、
+        // 起動のたびに同じ profileId が別の色になる問題があった (#160)。
+        // FNV-1a 風の決定的ハッシュで安定したインデックスを返す。
+        internal static int StableIndex(string s, int modulo)
         {
-            var hash = Math.Abs(profileId.GetHashCode());
-            return ProfileBadgeColors[hash % ProfileBadgeColors.Length];
+            if (modulo <= 0) return 0;
+            unchecked
+            {
+                int hash = 17;
+                foreach (char c in s) hash = hash * 31 + c;
+                return (int)((uint)hash % (uint)modulo);
+            }
         }
+
+        private static Color GetProfileColor(string profileId)
+            => ProfileBadgeColors[StableIndex(profileId, ProfileBadgeColors.Length)];
 
         private Color GetProfileColor(ProfileConfig? profile, string profileId)
         {
