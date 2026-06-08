@@ -41,5 +41,21 @@ namespace XTimelineViewer.ViewModels
         /// <summary>空状態ヒントの Visibility。タイムラインがなければ Visible。</summary>
         public Visibility DropHintBorderVisibility
             => HasTimelines ? Visibility.Collapsed : Visibility.Visible;
+
+        // ── 名前付きプロファイルの有無 ──────────────────────────────────────────────
+
+        private bool _hasNamedProfiles;
+
+        /// <summary>名前付きプロファイルが1件以上存在するとき true。投稿ボタンの有効/無効に使う。</summary>
+        public bool HasNamedProfiles
+        {
+            get => _hasNamedProfiles;
+            set
+            {
+                if (_hasNamedProfiles == value) return;
+                _hasNamedProfiles = value;
+                NotifyPropertyChanged();
+            }
+        }
     }
 }

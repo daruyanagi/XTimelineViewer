@@ -249,7 +249,7 @@ namespace XTimelineViewer.Views
             ApplySavedTheme();
             ApplyAutoActivateTimer();
             UpdateMenuUpdateBadge();
-            _ = RestoreTimelinesAsync();
+            _ = InitializeAsync();
             _ = CheckForUpdatesInBackgroundAsync();
         }
 

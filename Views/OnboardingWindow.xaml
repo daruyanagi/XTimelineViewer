@@ -1,0 +1,71 @@
+<Window
+    x:Class="XTimelineViewer.Views.OnboardingWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:XTimelineViewer.Views.Controls"
+    Title="Onboarding">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Step 1: Welcome -->
+        <StackPanel x:Name="WelcomeStep" Grid.Row="0"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="16"
+                    Padding="48">
+            <FontIcon Glyph="&#xE80F;" FontFamily="Segoe Fluent Icons"
+                      FontSize="48" HorizontalAlignment="Center"
+                      Foreground="{ThemeResource AccentFillColorDefaultBrush}"/>
+            <TextBlock x:Name="WelcomeTitle"
+                       FontSize="24" FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" TextAlignment="Center"/>
+            <TextBlock x:Name="WelcomeBody"
+                       FontSize="14" Opacity="0.8"
+                       HorizontalAlignment="Center"
+                       MaxWidth="380"
+                       TextWrapping="Wrap" TextAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Step 2: Login (ProfileLoginControl) -->
+        <controls:ProfileLoginControl x:Name="LoginControl" Grid.Row="0"
+                                       Visibility="Collapsed"/>
+
+        <!-- Step 3: Complete -->
+        <StackPanel x:Name="CompleteStep" Grid.Row="0"
+                    Visibility="Collapsed"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="16"
+                    Padding="48">
+            <FontIcon Glyph="&#xE73E;" FontFamily="Segoe Fluent Icons"
+                      FontSize="48" HorizontalAlignment="Center"
+                      Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
+            <TextBlock x:Name="CompleteTitle"
+                       FontSize="24" FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" TextAlignment="Center"/>
+            <TextBlock x:Name="CompleteBody"
+                       FontSize="14" Opacity="0.8"
+                       HorizontalAlignment="Center"
+                       MaxWidth="380"
+                       TextWrapping="Wrap" TextAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Footer -->
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="8"
+                    Padding="16,12">
+            <Button x:Name="SkipBtn" Click="SkipBtn_Click"/>
+            <Button x:Name="PrimaryBtn"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Click="PrimaryBtn_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
