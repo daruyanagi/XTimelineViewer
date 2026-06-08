@@ -2,6 +2,7 @@
     x:Class="XTimelineViewer.Views.AddProfileWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:XTimelineViewer.Views.Controls"
     Title="Add Profile">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="0">
@@ -10,38 +11,8 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Phase 1: Login -->
-        <Grid x:Name="LoginPhase" Grid.Row="0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <TextBlock x:Name="LoginHintText"
-                       Grid.Row="0"
-                       Margin="16,12"
-                       FontSize="14"
-                       Opacity="0.7"/>
-            <WebView2 x:Name="LoginWebView"
-                      Grid.Row="1"
-                      xmlns="using:Microsoft.UI.Xaml.Controls"/>
-        </Grid>
-
-        <!-- Phase 2: Confirm -->
-        <StackPanel x:Name="ConfirmPhase"
-                    Grid.Row="0"
-                    Visibility="Collapsed"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center"
-                    Spacing="16"
-                    Padding="32">
-            <TextBlock x:Name="DetectedText"
-                       FontSize="16"
-                       FontWeight="SemiBold"
-                       HorizontalAlignment="Center"/>
-            <TextBox x:Name="ProfileNameBox"
-                     Width="280"
-                     HorizontalAlignment="Center"/>
-        </StackPanel>
+        <!-- ログイン～プロファイル作成フロー（#157 で共通化） -->
+        <controls:ProfileLoginControl x:Name="LoginControl" Grid.Row="0"/>
 
         <!-- Footer -->
         <StackPanel Grid.Row="1"

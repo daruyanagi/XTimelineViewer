@@ -194,15 +194,8 @@ namespace XTimelineViewer.Views
             })();
             """;
 
-        private static string GetProfilesDataDir()
-        {
-            if (PackageContext.IsPackaged)
-                return Path.Combine(
-                    Windows.Storage.ApplicationData.Current.LocalFolder.Path, "profiles");
-            return Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "XTimelineViewer", "profiles");
-        }
+        // プロファイルデータの保存先は ProfileService に共通化済み (#157)
+        private static string GetProfilesDataDir() => ProfileService.GetProfilesDataDir();
 
         private async Task<CoreWebView2Environment> GetOrCreateProfileEnvAsync(string profileId)
         {
@@ -278,6 +271,7 @@ namespace XTimelineViewer.Views
             UpdateThemeRadioState();
             AppSettingsMenuItem.Text = R.Get("Menu_Settings");
 
+            NewProfileMenuItem.Text           = R.Get("Menu_NewProfile");
             AddTimelineSubMenu.Text           = R.Get("Menu_AddTimeline");
             AddHomeTimelineItem.Text          = R.Get("Timeline_Home");
             AddNotificationsTimelineItem.Text = R.Get("Timeline_Notifications");

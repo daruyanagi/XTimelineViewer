@@ -190,23 +190,13 @@ namespace XTimelineViewer.Views.Settings
         {
             if (_parent is null) return;
 
-            var win = new AddProfileWindow();
-            var childTheme = ((FrameworkElement)_parent.Content).ActualTheme;
-            ((FrameworkElement)win.Content).RequestedTheme = childTheme;
-            MainWindow.ApplyTitleBarTheme(win, childTheme);
-
-            // AddProfileWindow を SettingsWindow に対してモーダル化
-            _parent.SetEnabled(false);
-            win.Closed += (_, _) => _parent.SetEnabled(true);
-
-            win.ProfileCreated += (_, profile) =>
+            // モーダル化・テーマ適用は ShowModal に集約済み (#157)
+            AddProfileWindow.ShowModal(_parent, profile =>
             {
                 _parent.Profiles.Add(profile);
                 _parent.OnProfileCreated?.Invoke(profile);
                 PopulateUI();
-            };
-
-            win.Activate();
+            });
         }
     }
 }
