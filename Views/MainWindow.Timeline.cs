@@ -403,7 +403,7 @@ namespace XTimelineViewer.Views
                 };
 
                 var profileBox = new ComboBox { MinWidth = 200 };
-                foreach (var p in _profiles)
+                foreach (var p in _profiles.Where(p => p.Id != "default"))
                     profileBox.Items.Add(new ComboBoxItem { Content = p.Name, Tag = p.Id });
                 profileBox.SelectedItem = profileBox.Items
                     .OfType<ComboBoxItem>()

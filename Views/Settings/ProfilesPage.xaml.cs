@@ -39,8 +39,11 @@ namespace XTimelineViewer.Views.Settings
 
             for (int idx = 0; idx < profiles.Count; idx++)
             {
-                var card = BuildProfileCard(profiles[idx], colors);
-                RootPanel.Children.Insert(RootPanel.Children.Count - 1, card);
+                var profile = profiles[idx];
+                var element = profile.Id == "default"
+                    ? (UIElement)BuildDefaultCard()
+                    : BuildProfileCard(profile, colors);
+                RootPanel.Children.Insert(RootPanel.Children.Count - 1, element);
             }
         }
 
@@ -147,44 +150,49 @@ namespace XTimelineViewer.Views.Settings
             expander.Items.Add(colorCard);
             expander.Items.Add(badgeTextCard);
 
-            // ── アクションボタン（初期化/削除）──
-            if (profile.Id == "default")
+            // ── 削除ボタン ──
+            var deleteBtn = new Button { Content = R.Get("Profile_Delete") };
+            var capturedProfile = profile;
+            deleteBtn.Click += async (_, _) =>
             {
-                var resetBtn = new Button
+                var count = _parent?.GetTimelineCount?.Invoke(capturedProfile.Id) ?? 0;
+                var dlg = new ContentDialog
                 {
-                    Content   = R.Get("Profile_Reset"),
-                    IsEnabled = false,
+                    Title             = R.Get("Profile_DeleteConfirmTitle"),
+                    Content           = string.Format(R.Get("Profile_DeleteConfirmBody"), count),
+                    PrimaryButtonText = R.Get("Profile_DeleteConfirm"),
+                    CloseButtonText   = R.Get("Button_Cancel"),
+                    DefaultButton     = ContentDialogButton.Close,
+                    XamlRoot          = XamlRoot,
+                    RequestedTheme    = ((FrameworkElement)_parent!.Content).ActualTheme,
                 };
-                expander.Content = resetBtn;
-            }
-            else
-            {
-                var deleteBtn = new Button { Content = R.Get("Profile_Delete") };
-                var capturedProfile = profile;
-                deleteBtn.Click += async (_, _) =>
+                if (await dlg.ShowAsync() == ContentDialogResult.Primary)
                 {
-                    var count = _parent?.GetTimelineCount?.Invoke(capturedProfile.Id) ?? 0;
-                    var dlg = new ContentDialog
-                    {
-                        Title             = R.Get("Profile_DeleteConfirmTitle"),
-                        Content           = string.Format(R.Get("Profile_DeleteConfirmBody"), count),
-                        PrimaryButtonText = R.Get("Profile_DeleteConfirm"),
-                        CloseButtonText   = R.Get("Button_Cancel"),
-                        DefaultButton     = ContentDialogButton.Close,
-                        XamlRoot          = XamlRoot,
-                        RequestedTheme    = ((FrameworkElement)_parent!.Content).ActualTheme,
-                    };
-                    if (await dlg.ShowAsync() == ContentDialogResult.Primary)
-                    {
-                        if (_parent?.DeleteProfileAsync is not null)
-                            await _parent.DeleteProfileAsync(capturedProfile.Id);
-                        PopulateUI();
-                    }
-                };
-                expander.Content = deleteBtn;
-            }
+                    if (_parent?.DeleteProfileAsync is not null)
+                        await _parent.DeleteProfileAsync(capturedProfile.Id);
+                    PopulateUI();
+                }
+            };
+            expander.Content = deleteBtn;
 
             return expander;
+        }
+
+        /// <summary>default プロファイル用の簡素なカード（展開なし・編集不可）。</summary>
+        private CommunityToolkit.WinUI.Controls.SettingsCard BuildDefaultCard()
+        {
+            return new CommunityToolkit.WinUI.Controls.SettingsCard
+            {
+                Header      = "Default",
+                Description = R.Get("Profiles_DefaultDescription"),
+                HeaderIcon  = new FontIcon
+                {
+                    Glyph      = "",
+                    FontFamily = new FontFamily("Segoe Fluent Icons"),
+                    Opacity    = 0.5,
+                },
+                IsEnabled = false,
+            };
         }
 
         private void AddProfileBtn_Click(object sender, RoutedEventArgs e)
