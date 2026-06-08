@@ -22,13 +22,11 @@ namespace XTimelineViewer.Services
             try
             {
                 var json = File.ReadAllText(filePath);
-                var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new();
-                settings.SeparateComposeEnv = false; // 廃止予定: 強制無効化 (#17)
-                return settings;
+                return JsonSerializer.Deserialize<AppSettings>(json) ?? new();
             }
             catch
             {
-                return new() { SeparateComposeEnv = false };
+                return new();
             }
         }
 

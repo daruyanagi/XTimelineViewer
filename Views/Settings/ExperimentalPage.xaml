@@ -10,14 +10,6 @@
                        Style="{StaticResource TitleTextBlockStyle}"
                        Margin="0,0,0,16"/>
 
-            <!-- Open Composer in Separate Profile (Deprecated) -->
-            <controls:SettingsCard x:Name="SeparateComposeCard" IsEnabled="False">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE8A7;" FontFamily="Segoe Fluent Icons"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ToggleSwitch x:Name="SeparateComposeToggle" IsOn="False" IsEnabled="False"/>
-            </controls:SettingsCard>
-
             <!-- Open Composer in External Browser -->
             <controls:SettingsCard x:Name="OpenComposerCard">
                 <controls:SettingsCard.HeaderIcon>

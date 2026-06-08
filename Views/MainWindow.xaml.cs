@@ -99,7 +99,6 @@ namespace XTimelineViewer.Views
         private bool _extensionsLoaded = false;
         private readonly List<ExtensionInfo> _loadedExtensions = [];
         private readonly Dictionary<string, CoreWebView2Environment> _profileEnvs = [];
-        private CoreWebView2Environment? _composeEnv;
         private List<ProfileConfig> _profiles = [];
         private readonly Dictionary<WebView2, Grid>            _webViewToPane  = [];
         private readonly Dictionary<Grid, Action>              _paneToSetFocus = [];
@@ -211,19 +210,6 @@ namespace XTimelineViewer.Views
             _profileEnvs[profileId] = env;
             Debug.WriteLine($"[Profile] Env created: profileId={profileId}, UserDataFolder={env.UserDataFolder}");
             return env;
-        }
-
-        private static readonly string ComposeUserDataFolder = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "XTimelineViewer", "compose-profile");
-
-        private async Task<CoreWebView2Environment> GetOrCreateComposeEnvAsync()
-        {
-            if (_composeEnv is not null) return _composeEnv;
-            var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = false };
-            _composeEnv = await CoreWebView2Environment.CreateWithOptionsAsync(
-                "", userDataFolder: ComposeUserDataFolder, options);
-            return _composeEnv;
         }
 
         public MainWindow()

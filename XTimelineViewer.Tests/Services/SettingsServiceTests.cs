@@ -50,15 +50,6 @@ public class SettingsServiceTests : IDisposable
         Assert.Equal("Default", s.Theme);
     }
 
-    [Fact]
-    public void LoadSettings_AlwaysDisablesSeparateComposeEnv()
-    {
-        File.WriteAllText(At("settings.json"), """{"SeparateComposeEnv":true}""");
-
-        var s = SettingsService.LoadSettings(At("settings.json"));
-        Assert.False(s.SeparateComposeEnv); // 廃止予定: 強制無効化 (#17)
-    }
-
     // ── SaveSettings / Round-trip ─────────────────────────────────────────────
 
     [Fact]
