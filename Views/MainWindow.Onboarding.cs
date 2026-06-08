@@ -25,20 +25,28 @@ namespace XTimelineViewer.Views
                 if (((FrameworkElement)Content).IsLoaded) tcs.TrySetResult();
                 await tcs.Task;
 
-                OnboardingWindow.ShowModal(this, profile =>
-                {
-                    _profiles.Add(profile);
-                    SaveProfiles();
-                    RefreshAllProfileBadges();
-                    UpdateHasNamedProfiles();
-
-                    // ホームタイムラインを自動追加
-                    AddTimeline(new TimelineConfig
+                ProfileConfig? createdProfile = null;
+                OnboardingWindow.ShowModal(this,
+                    onCreated: profile =>
                     {
-                        Url       = HomeTimelineUrl,
-                        ProfileId = profile.Id,
+                        createdProfile = profile;
+                        _profiles.Add(profile);
+                        SaveProfiles();
+                        RefreshAllProfileBadges();
+                        UpdateHasNamedProfiles();
+                    },
+                    onClosed: () =>
+                    {
+                        // ウィンドウが閉じて WebView2 env が解放された後にタイムラインを追加
+                        if (createdProfile is not null)
+                        {
+                            AddTimeline(new TimelineConfig
+                            {
+                                Url       = HomeTimelineUrl,
+                                ProfileId = createdProfile.Id,
+                            });
+                        }
                     });
-                });
             }
         }
 

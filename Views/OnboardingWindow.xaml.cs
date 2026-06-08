@@ -39,16 +39,17 @@ namespace XTimelineViewer.Views
 
         /// <summary>
         /// owner に対してモーダルでオンボーディングを開く。
-        /// プロファイル作成完了時に onCreated が呼ばれる。
-        /// スキップ時は onCreated は呼ばれない。
+        /// onCreated: プロファイル作成時（ウィンドウはまだ開いている）。プロファイル保存等に使う。
+        /// onClosed: ウィンドウが閉じた後。WebView2 env が解放されるため、タイムライン追加はここで行う。
         /// </summary>
-        public static void ShowModal(Window owner, Action<ProfileConfig> onCreated)
+        public static void ShowModal(Window owner, Action<ProfileConfig> onCreated, Action? onClosed = null)
         {
             var win = new OnboardingWindow();
             var theme = ((FrameworkElement)owner.Content).ActualTheme;
             ((FrameworkElement)win.Content).RequestedTheme = theme;
             MainWindow.ApplyTitleBarTheme(win, theme);
             win.ProfileCreated += (_, profile) => onCreated(profile);
+            win.Closed += (_, _) => onClosed?.Invoke();
             WindowModal.RunModal(owner, win);
         }
 
@@ -104,6 +105,9 @@ namespace XTimelineViewer.Views
         {
             _currentStep = Step.Complete;
 
+            // WebView2 env を解放し、ウィンドウを閉じた後に MainWindow が
+            // 同じプロファイルの env を新規作成できるようにする
+            LoginControl.CloseWebView();
             LoginControl.Visibility  = Visibility.Collapsed;
             CompleteStep.Visibility  = Visibility.Visible;
 
