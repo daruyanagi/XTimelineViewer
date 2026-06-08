@@ -133,6 +133,9 @@
   <data name="Profiles_BadgeText" xml:space="preserve"><value>バッジテキスト</value></data>
   <data name="Profiles_DefaultDescription" xml:space="preserve"><value>既定のプロファイル</value></data>
 
+  <!-- Compose profile selector -->
+  <data name="Compose_Profile" xml:space="preserve"><value>投稿アカウント</value></data>
+
   <!-- Error dialogs -->
   <data name="ExtLoadError_Title" xml:space="preserve"><value>拡張機能の読み込みに失敗しました</value></data>
   <data name="WebViewInitError_Title" xml:space="preserve"><value>WebView2 の初期化に失敗しました</value></data>

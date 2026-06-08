@@ -133,6 +133,9 @@
   <data name="Profiles_BadgeText" xml:space="preserve"><value>Badge Text</value></data>
   <data name="Profiles_DefaultDescription" xml:space="preserve"><value>Default profile</value></data>
 
+  <!-- Compose profile selector -->
+  <data name="Compose_Profile" xml:space="preserve"><value>Post as</value></data>
+
   <!-- Error dialogs -->
   <data name="ExtLoadError_Title" xml:space="preserve"><value>Failed to Load Extensions</value></data>
   <data name="WebViewInitError_Title" xml:space="preserve"><value>Failed to Initialize WebView2</value></data>
