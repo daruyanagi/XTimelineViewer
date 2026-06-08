@@ -116,22 +116,7 @@ namespace XTimelineViewer.Views.Settings
                 buttonsPanel.Children.Add(settingsBtn);
             }
 
-            if (ext.HomepageUrl is not null && Uri.TryCreate(ext.HomepageUrl, UriKind.Absolute, out var homepageUri))
-            {
-                var isStore = homepageUri.Host.Contains("chromewebstore.google.com");
-                var linkBtn = new HyperlinkButton
-                {
-                    Content = isStore ? R.Get("ExtSettings_StoreLink") : R.Get("ExtSettings_Homepage"),
-                };
-                linkBtn.Click += async (_, _) =>
-                {
-                    if (_parent?.LaunchUriAsync is not null)
-                        await _parent.LaunchUriAsync(homepageUri);
-                    else
-                        await Windows.System.Launcher.LaunchUriAsync(homepageUri);
-                };
-                buttonsPanel.Children.Add(linkBtn);
-            }
+            // 拡張機能カードのリンクボタン（Chrome Web Store 等）は場所をとるため削除
 
             if (buttonsPanel.Children.Count > 0)
                 card.Content = buttonsPanel;
