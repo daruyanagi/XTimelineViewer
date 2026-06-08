@@ -133,6 +133,16 @@
   <data name="Profiles_BadgeText" xml:space="preserve"><value>Badge Text</value></data>
   <data name="Profiles_DefaultDescription" xml:space="preserve"><value>Default profile</value></data>
 
+  <!-- Onboarding (#4) -->
+  <data name="Onboarding_WelcomeTitle" xml:space="preserve"><value>Welcome to XTimelineViewer</value></data>
+  <data name="Onboarding_WelcomeBody" xml:space="preserve"><value>Display multiple X timelines side by side. Let's start by signing in to your X account and creating a profile.</value></data>
+  <data name="Onboarding_LoginTitle" xml:space="preserve"><value>Sign in to X</value></data>
+  <data name="Onboarding_StartBtn" xml:space="preserve"><value>Get Started</value></data>
+  <data name="Onboarding_DoneBtn" xml:space="preserve"><value>Done</value></data>
+  <data name="Onboarding_CompleteTitle" xml:space="preserve"><value>You're all set!</value></data>
+  <data name="Onboarding_CompleteBody" xml:space="preserve"><value>Added {0}'s Home timeline. You can add more timelines and profiles from the menu.</value></data>
+  <data name="Button_Skip" xml:space="preserve"><value>Skip and exit</value></data>
+
   <!-- Compose profile selector -->
   <data name="Compose_Profile" xml:space="preserve"><value>Post as</value></data>
 

@@ -85,8 +85,9 @@ namespace XTimelineViewer.Views
                 }
                 await SaveTimelinesAsync();
                 RefreshAllProfileBadges();
+                UpdateHasNamedProfiles();
             };
-            settingsWin.OnProfileCreated = _ => { SaveProfiles(); RefreshAllProfileBadges(); };
+            settingsWin.OnProfileCreated = _ => { SaveProfiles(); RefreshAllProfileBadges(); UpdateHasNamedProfiles(); };
 
             // About ページ情報とコールバックを設定
             string edgeVer;

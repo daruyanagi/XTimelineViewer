@@ -142,6 +142,7 @@ namespace XTimelineViewer.Views
                 _profiles.Add(profile);
                 SaveProfiles();
                 RefreshAllProfileBadges();
+                UpdateHasNamedProfiles();
             });
         }
     }

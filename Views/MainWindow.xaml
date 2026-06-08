@@ -23,6 +23,7 @@
                     Padding="12,0"
                     FontSize="14"
                     Style="{StaticResource AccentButtonStyle}"
+                    IsEnabled="{x:Bind ViewModel.HasNamedProfiles, Mode=OneWay}"
                     Click="PostBtn_Click">
                 <Button.KeyboardAccelerators>
                     <KeyboardAccelerator Key="N" Modifiers="Control"/>

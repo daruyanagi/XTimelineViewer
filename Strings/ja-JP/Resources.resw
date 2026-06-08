@@ -133,6 +133,16 @@
   <data name="Profiles_BadgeText" xml:space="preserve"><value>バッジテキスト</value></data>
   <data name="Profiles_DefaultDescription" xml:space="preserve"><value>既定のプロファイル</value></data>
 
+  <!-- Onboarding (#4) -->
+  <data name="Onboarding_WelcomeTitle" xml:space="preserve"><value>XTimelineViewer へようこそ</value></data>
+  <data name="Onboarding_WelcomeBody" xml:space="preserve"><value>X のタイムラインを並べて表示するアプリです。まず X アカウントにログインしてプロファイルを作成しましょう。</value></data>
+  <data name="Onboarding_LoginTitle" xml:space="preserve"><value>X にサインイン</value></data>
+  <data name="Onboarding_StartBtn" xml:space="preserve"><value>始める</value></data>
+  <data name="Onboarding_DoneBtn" xml:space="preserve"><value>完了</value></data>
+  <data name="Onboarding_CompleteTitle" xml:space="preserve"><value>準備完了！</value></data>
+  <data name="Onboarding_CompleteBody" xml:space="preserve"><value>{0} のホームタイムラインを追加しました。メニューからタイムラインやプロファイルを追加できます。</value></data>
+  <data name="Button_Skip" xml:space="preserve"><value>スキップしてアプリを終了</value></data>
+
   <!-- Compose profile selector -->
   <data name="Compose_Profile" xml:space="preserve"><value>投稿アカウント</value></data>
 
