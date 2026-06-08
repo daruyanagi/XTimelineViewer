@@ -121,6 +121,13 @@ namespace XTimelineViewer.Views
 
         private void AddTimeline(TimelineConfig cfg)
         {
+            // ProfileId が未指定または default の場合、最初の名前付きプロファイルを割り当てる
+            if (cfg.ProfileId == "default")
+            {
+                var named = _profiles.FirstOrDefault(p => p.Id != "default");
+                if (named is not null) cfg.ProfileId = named.Id;
+            }
+
             _configs.Add(cfg);
             _ = SaveTimelinesAsync();
 
