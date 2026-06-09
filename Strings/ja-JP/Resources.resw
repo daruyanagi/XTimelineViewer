@@ -68,7 +68,7 @@
   <data name="Language_System" xml:space="preserve"><value>システム言語</value></data>
   <data name="Language_JA" xml:space="preserve"><value>日本語</value></data>
   <data name="Language_EN" xml:space="preserve"><value>English</value></data>
-  <data name="RestartRequired" xml:space="preserve"><value>言語を変更しました。次回起動時に反映されます。</value></data>
+
 
   <!-- Common buttons -->
   <data name="Button_Save" xml:space="preserve"><value>保存</value></data>
