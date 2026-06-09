@@ -54,10 +54,49 @@
                        HorizontalAlignment="Center"
                        MaxWidth="380"
                        TextWrapping="Wrap" TextAlignment="Center"/>
-            <local:TimelineDefaultsControl x:Name="DefaultsControl"
-                                            Visibility="Collapsed"
-                                            HorizontalAlignment="Center"
-                                            Margin="0,8,0,0"/>
+            <!-- Timeline Defaults (inline) -->
+            <StackPanel x:Name="DefaultsPanel"
+                        Visibility="Collapsed"
+                        HorizontalAlignment="Center"
+                        Margin="0,8,0,0"
+                        Spacing="16">
+                <TextBlock x:Name="DefaultsHintText"
+                           FontSize="12" Opacity="0.6"
+                           Visibility="Collapsed"
+                           TextWrapping="Wrap"/>
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock x:Name="SidebarLabel" Grid.Row="0" Grid.Column="0"
+                               VerticalAlignment="Center" HorizontalAlignment="Left"
+                               TextWrapping="Wrap"/>
+                    <ToggleSwitch x:Name="SidebarToggle" Grid.Row="0" Grid.Column="1"
+                                  Toggled="SidebarToggle_Toggled"
+                                  MinWidth="0" Margin="0,4"/>
+
+                    <TextBlock x:Name="ComposeLabel" Grid.Row="1" Grid.Column="0"
+                               VerticalAlignment="Center" HorizontalAlignment="Left"
+                               TextWrapping="Wrap"/>
+                    <ToggleSwitch x:Name="ComposeToggle" Grid.Row="1" Grid.Column="1"
+                                  Toggled="ComposeToggle_Toggled"
+                                  MinWidth="0" Margin="0,4"/>
+
+                    <TextBlock x:Name="ListHeaderLabel" Grid.Row="2" Grid.Column="0"
+                               VerticalAlignment="Center" HorizontalAlignment="Left"
+                               TextWrapping="Wrap"/>
+                    <ToggleSwitch x:Name="ListHeaderToggle" Grid.Row="2" Grid.Column="1"
+                                  Toggled="ListHeaderToggle_Toggled"
+                                  MinWidth="0" Margin="0,4"/>
+                </Grid>
+            </StackPanel>
         </StackPanel>
 
         <!-- Footer -->

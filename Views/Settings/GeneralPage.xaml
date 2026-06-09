@@ -2,8 +2,7 @@
     x:Class="XTimelineViewer.Views.Settings.GeneralPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:local="using:XTimelineViewer.Views.Controls">
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls">
 
     <ScrollViewer Padding="24,16">
         <StackPanel Spacing="4">
@@ -45,8 +44,20 @@
                     <FontIcon Glyph="&#xE80A;" FontFamily="Segoe Fluent Icons"/>
                 </controls:SettingsExpander.HeaderIcon>
                 <controls:SettingsExpander.Items>
-                    <controls:SettingsCard>
-                        <local:TimelineDefaultsControl x:Name="DefaultsControl"/>
+                    <controls:SettingsCard x:Name="SidebarCard">
+                        <ToggleSwitch x:Name="SidebarToggle"
+                                      Toggled="SidebarToggle_Toggled"
+                                      MinWidth="0"/>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Name="ComposeCard">
+                        <ToggleSwitch x:Name="ComposeToggle"
+                                      Toggled="ComposeToggle_Toggled"
+                                      MinWidth="0"/>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Name="ListHeaderCard">
+                        <ToggleSwitch x:Name="ListHeaderToggle"
+                                      Toggled="ListHeaderToggle_Toggled"
+                                      MinWidth="0"/>
                     </controls:SettingsCard>
                 </controls:SettingsExpander.Items>
             </controls:SettingsExpander>

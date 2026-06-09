@@ -120,13 +120,50 @@ namespace XTimelineViewer.Views
             // タイムラインの既定表示オプション
             if (_appSettings is not null)
             {
-                DefaultsControl.Initialize(_appSettings, showHint: true);
-                DefaultsControl.Visibility = Visibility.Visible;
+                var s = _appSettings;
+
+                SidebarLabel.Text          = R.Get("Settings_DefaultSidebar");
+                SidebarToggle.OnContent    = R.Get("Toggle_Show");
+                SidebarToggle.OffContent   = R.Get("Toggle_Hide");
+                SidebarToggle.IsOn         = !s.DefaultHideSidebar;
+
+                ComposeLabel.Text          = R.Get("Settings_DefaultCompose");
+                ComposeToggle.OnContent    = R.Get("Toggle_Show");
+                ComposeToggle.OffContent   = R.Get("Toggle_Hide");
+                ComposeToggle.IsOn         = !s.DefaultHideCompose;
+
+                ListHeaderLabel.Text       = R.Get("Settings_DefaultListHeader");
+                ListHeaderToggle.OnContent = R.Get("Toggle_Show");
+                ListHeaderToggle.OffContent= R.Get("Toggle_Hide");
+                ListHeaderToggle.IsOn      = !s.DefaultHideListHeader;
+
+                DefaultsHintText.Text       = R.Get("Onboarding_DefaultsHint");
+                DefaultsHintText.Visibility = Visibility.Visible;
+
+                DefaultsPanel.Visibility = Visibility.Visible;
             }
 
             PrimaryBtn.Content   = R.Get("Button_Close");
             PrimaryBtn.IsEnabled = true;
             SkipBtn.Visibility   = Visibility.Collapsed;
+        }
+
+        private void SidebarToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_appSettings is null) return;
+            _appSettings.DefaultHideSidebar = !SidebarToggle.IsOn;
+        }
+
+        private void ComposeToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_appSettings is null) return;
+            _appSettings.DefaultHideCompose = !ComposeToggle.IsOn;
+        }
+
+        private void ListHeaderToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_appSettings is null) return;
+            _appSettings.DefaultHideListHeader = !ListHeaderToggle.IsOn;
         }
     }
 }
