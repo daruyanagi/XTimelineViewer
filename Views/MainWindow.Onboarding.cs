@@ -26,7 +26,7 @@ namespace XTimelineViewer.Views
                 await tcs.Task;
 
                 ProfileConfig? createdProfile = null;
-                OnboardingWindow.ShowModal(this,
+                OnboardingWindow.ShowModal(this, _appSettings,
                     onCreated: profile =>
                     {
                         createdProfile = profile;
@@ -40,12 +40,12 @@ namespace XTimelineViewer.Views
                         // ウィンドウが閉じて WebView2 env が解放された後にタイムラインを追加
                         if (createdProfile is not null)
                         {
-                            AddTimeline(new TimelineConfig
-                            {
-                                Url       = HomeTimelineUrl,
-                                ProfileId = createdProfile.Id,
-                            });
+                            var cfg = CreateDefaultConfig(HomeTimelineUrl);
+                            cfg.ProfileId = createdProfile.Id;
+                            AddTimeline(cfg);
                         }
+                        // オンボーディングで変更した既定値を永続化
+                        SaveSettings();
                     });
             }
         }

@@ -78,7 +78,7 @@ namespace XTimelineViewer.Views
                     {
                         var url = await ParseUrlShortcutAsync(file);
                         if (url is not null && IsXUrl(url))
-                            AddTimeline(new TimelineConfig { Url = url });
+                            AddTimeline(CreateDefaultConfig(url));
                     }
                 }
             }
@@ -109,13 +109,27 @@ namespace XTimelineViewer.Views
         internal const string BookmarksTimelineUrl     = "https://x.com/i/bookmarks";
 
         private void AddHomeTimelineItem_Click(object _, RoutedEventArgs __)
-            => AddTimeline(new TimelineConfig { Url = HomeTimelineUrl });
+            => AddTimeline(CreateDefaultConfig(HomeTimelineUrl));
 
         private void AddNotificationsTimelineItem_Click(object _, RoutedEventArgs __)
-            => AddTimeline(new TimelineConfig { Url = NotificationsTimelineUrl });
+            => AddTimeline(CreateDefaultConfig(NotificationsTimelineUrl));
 
         private void AddBookmarksTimelineItem_Click(object _, RoutedEventArgs __)
-            => AddTimeline(new TimelineConfig { Url = BookmarksTimelineUrl });
+            => AddTimeline(CreateDefaultConfig(BookmarksTimelineUrl));
+
+        // ── CreateDefaultConfig ───────────────────────────────────────────────
+
+        /// <summary>
+        /// AppSettings の既定値を適用した新規 TimelineConfig を生成する。
+        /// 復元時（RestoreTimelinesAsync）は保存済み値をそのまま使うため、このヘルパーを経由しない。
+        /// </summary>
+        private TimelineConfig CreateDefaultConfig(string url) => new()
+        {
+            Url            = url,
+            HideSidebar    = _appSettings.DefaultHideSidebar,
+            HideCompose    = _appSettings.DefaultHideCompose,
+            HideListHeader = _appSettings.DefaultHideListHeader,
+        };
 
         // ── AddTimeline ───────────────────────────────────────────────────────
 

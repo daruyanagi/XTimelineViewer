@@ -66,6 +66,29 @@ namespace XTimelineViewer.Views.Settings
             ExportFolderCard.Description = _parent?.SettingsFolder ?? "";
             OpenFolderBtn.Content        = R.Get("Button_OpenFolder");
 
+            // Timeline Defaults
+            DefaultTimelineExpander.Header      = R.Get("Settings_DefaultTimeline");
+            DefaultTimelineExpander.Description = R.Get("Settings_DefaultTimeline_Description");
+            if (_parent is not null)
+            {
+                var s = _parent.Settings;
+
+                SidebarCard.Header       = R.Get("Settings_DefaultSidebar");
+                SidebarToggle.OnContent  = R.Get("Toggle_Show");
+                SidebarToggle.OffContent = R.Get("Toggle_Hide");
+                SidebarToggle.IsOn       = !s.DefaultHideSidebar;
+
+                ComposeCard.Header       = R.Get("Settings_DefaultCompose");
+                ComposeToggle.OnContent  = R.Get("Toggle_Show");
+                ComposeToggle.OffContent = R.Get("Toggle_Hide");
+                ComposeToggle.IsOn       = !s.DefaultHideCompose;
+
+                ListHeaderCard.Header       = R.Get("Settings_DefaultListHeader");
+                ListHeaderToggle.OnContent  = R.Get("Toggle_Show");
+                ListHeaderToggle.OffContent = R.Get("Toggle_Hide");
+                ListHeaderToggle.IsOn       = !s.DefaultHideListHeader;
+            }
+
             _isInitializing = false;
         }
 
@@ -102,6 +125,27 @@ namespace XTimelineViewer.Views.Settings
             var folder = _parent.SettingsFolder;
             Directory.CreateDirectory(folder);
             await Windows.System.Launcher.LaunchFolderPathAsync(folder);
+        }
+
+        private void SidebarToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing || _parent is null) return;
+            _parent.Settings.DefaultHideSidebar = !SidebarToggle.IsOn;
+            _parent.NotifySettingsChanged();
+        }
+
+        private void ComposeToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing || _parent is null) return;
+            _parent.Settings.DefaultHideCompose = !ComposeToggle.IsOn;
+            _parent.NotifySettingsChanged();
+        }
+
+        private void ListHeaderToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing || _parent is null) return;
+            _parent.Settings.DefaultHideListHeader = !ListHeaderToggle.IsOn;
+            _parent.NotifySettingsChanged();
         }
     }
 }

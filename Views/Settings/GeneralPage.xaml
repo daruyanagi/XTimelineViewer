@@ -37,6 +37,30 @@
                 </controls:SettingsCard.HeaderIcon>
                 <Button x:Name="OpenFolderBtn" Click="OpenFolderBtn_Click"/>
             </controls:SettingsCard>
+
+            <!-- Timeline Defaults -->
+            <controls:SettingsExpander x:Name="DefaultTimelineExpander">
+                <controls:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE80A;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsExpander.HeaderIcon>
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard x:Name="SidebarCard">
+                        <ToggleSwitch x:Name="SidebarToggle"
+                                      Toggled="SidebarToggle_Toggled"
+                                      MinWidth="0"/>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Name="ComposeCard">
+                        <ToggleSwitch x:Name="ComposeToggle"
+                                      Toggled="ComposeToggle_Toggled"
+                                      MinWidth="0"/>
+                    </controls:SettingsCard>
+                    <controls:SettingsCard x:Name="ListHeaderCard">
+                        <ToggleSwitch x:Name="ListHeaderToggle"
+                                      Toggled="ListHeaderToggle_Toggled"
+                                      MinWidth="0"/>
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
         </StackPanel>
     </ScrollViewer>
 </Page>

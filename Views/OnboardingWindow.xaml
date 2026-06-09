@@ -2,7 +2,7 @@
     x:Class="XTimelineViewer.Views.OnboardingWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:XTimelineViewer.Views.Controls"
+    xmlns:local="using:XTimelineViewer.Views.Controls"
     Title="Onboarding">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="0">
@@ -32,8 +32,8 @@
         </StackPanel>
 
         <!-- Step 2: Login (ProfileLoginControl) -->
-        <controls:ProfileLoginControl x:Name="LoginControl" Grid.Row="0"
-                                       Visibility="Collapsed"/>
+        <local:ProfileLoginControl x:Name="LoginControl" Grid.Row="0"
+                                    Visibility="Collapsed"/>
 
         <!-- Step 3: Complete -->
         <StackPanel x:Name="CompleteStep" Grid.Row="0"
@@ -54,6 +54,49 @@
                        HorizontalAlignment="Center"
                        MaxWidth="380"
                        TextWrapping="Wrap" TextAlignment="Center"/>
+            <!-- Timeline Defaults (inline) -->
+            <StackPanel x:Name="DefaultsPanel"
+                        Visibility="Collapsed"
+                        HorizontalAlignment="Center"
+                        Margin="0,8,0,0"
+                        Spacing="16">
+                <TextBlock x:Name="DefaultsHintText"
+                           FontSize="12" Opacity="0.6"
+                           Visibility="Collapsed"
+                           TextWrapping="Wrap"/>
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock x:Name="SidebarLabel" Grid.Row="0" Grid.Column="0"
+                               VerticalAlignment="Center" HorizontalAlignment="Left"
+                               TextWrapping="Wrap"/>
+                    <ToggleSwitch x:Name="SidebarToggle" Grid.Row="0" Grid.Column="1"
+                                  Toggled="SidebarToggle_Toggled"
+                                  MinWidth="0" Margin="0,4"/>
+
+                    <TextBlock x:Name="ComposeLabel" Grid.Row="1" Grid.Column="0"
+                               VerticalAlignment="Center" HorizontalAlignment="Left"
+                               TextWrapping="Wrap"/>
+                    <ToggleSwitch x:Name="ComposeToggle" Grid.Row="1" Grid.Column="1"
+                                  Toggled="ComposeToggle_Toggled"
+                                  MinWidth="0" Margin="0,4"/>
+
+                    <TextBlock x:Name="ListHeaderLabel" Grid.Row="2" Grid.Column="0"
+                               VerticalAlignment="Center" HorizontalAlignment="Left"
+                               TextWrapping="Wrap"/>
+                    <ToggleSwitch x:Name="ListHeaderToggle" Grid.Row="2" Grid.Column="1"
+                                  Toggled="ListHeaderToggle_Toggled"
+                                  MinWidth="0" Margin="0,4"/>
+                </Grid>
+            </StackPanel>
         </StackPanel>
 
         <!-- Footer -->

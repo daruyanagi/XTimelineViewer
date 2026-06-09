@@ -177,6 +177,14 @@
   <data name="CheckUpdate_WingetBody" xml:space="preserve"><value>The app will close and update via winget. Please restart the app manually after the update completes.</value></data>
   <data name="CheckUpdate_WingetConfirm" xml:space="preserve"><value>Exit and Update</value></data>
 
+  <!-- Timeline defaults -->
+  <data name="Settings_DefaultTimeline" xml:space="preserve"><value>Timeline Defaults</value></data>
+  <data name="Settings_DefaultTimeline_Description" xml:space="preserve"><value>Display options applied to new timelines</value></data>
+  <data name="Settings_DefaultSidebar" xml:space="preserve"><value>Sidebar</value></data>
+  <data name="Settings_DefaultCompose" xml:space="preserve"><value>Compose Area</value></data>
+  <data name="Settings_DefaultListHeader" xml:space="preserve"><value>Notifications / Search / Bookmarks / List Header</value></data>
+  <data name="Onboarding_DefaultsHint" xml:space="preserve"><value>You can change these later in Settings</value></data>
+
   <!-- About dialog sections -->
   <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>
   <data name="About_Links" xml:space="preserve"><value>Links</value></data>

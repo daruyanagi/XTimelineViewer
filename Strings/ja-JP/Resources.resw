@@ -177,6 +177,14 @@
   <data name="CheckUpdate_WingetBody" xml:space="preserve"><value>アプリを終了して winget でアップデートします。完了後、アプリを手動で再起動してください。</value></data>
   <data name="CheckUpdate_WingetConfirm" xml:space="preserve"><value>終了して更新</value></data>
 
+  <!-- Timeline defaults -->
+  <data name="Settings_DefaultTimeline" xml:space="preserve"><value>タイムラインの既定値</value></data>
+  <data name="Settings_DefaultTimeline_Description" xml:space="preserve"><value>新しいタイムラインに適用される表示設定</value></data>
+  <data name="Settings_DefaultSidebar" xml:space="preserve"><value>サイドバー</value></data>
+  <data name="Settings_DefaultCompose" xml:space="preserve"><value>投稿画面</value></data>
+  <data name="Settings_DefaultListHeader" xml:space="preserve"><value>通知・検索・ブックマーク・リストのヘッダー</value></data>
+  <data name="Onboarding_DefaultsHint" xml:space="preserve"><value>これらの設定は後から変更できます</value></data>
+
   <!-- About dialog sections -->
   <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>
   <data name="About_Links" xml:space="preserve"><value>リンク</value></data>

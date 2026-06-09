@@ -16,6 +16,7 @@ namespace XTimelineViewer.Views
     {
         private enum Step { Welcome, Login, Complete }
         private Step _currentStep = Step.Welcome;
+        private AppSettings? _appSettings;
         private event EventHandler<ProfileConfig>? ProfileCreated;
 
         private OnboardingWindow()
@@ -42,9 +43,10 @@ namespace XTimelineViewer.Views
         /// onCreated: プロファイル作成時（ウィンドウはまだ開いている）。プロファイル保存等に使う。
         /// onClosed: ウィンドウが閉じた後。WebView2 env が解放されるため、タイムライン追加はここで行う。
         /// </summary>
-        public static void ShowModal(Window owner, Action<ProfileConfig> onCreated, Action? onClosed = null)
+        public static void ShowModal(Window owner, AppSettings appSettings, Action<ProfileConfig> onCreated, Action? onClosed = null)
         {
             var win = new OnboardingWindow();
+            win._appSettings = appSettings;
             var theme = ((FrameworkElement)owner.Content).ActualTheme;
             ((FrameworkElement)win.Content).RequestedTheme = theme;
             MainWindow.ApplyTitleBarTheme(win, theme);
@@ -115,9 +117,53 @@ namespace XTimelineViewer.Views
             CompleteTitle.Text = R.Get("Onboarding_CompleteTitle");
             CompleteBody.Text  = string.Format(R.Get("Onboarding_CompleteBody"), profileName);
 
+            // タイムラインの既定表示オプション
+            if (_appSettings is not null)
+            {
+                var s = _appSettings;
+
+                SidebarLabel.Text          = R.Get("Settings_DefaultSidebar");
+                SidebarToggle.OnContent    = R.Get("Toggle_Show");
+                SidebarToggle.OffContent   = R.Get("Toggle_Hide");
+                SidebarToggle.IsOn         = !s.DefaultHideSidebar;
+
+                ComposeLabel.Text          = R.Get("Settings_DefaultCompose");
+                ComposeToggle.OnContent    = R.Get("Toggle_Show");
+                ComposeToggle.OffContent   = R.Get("Toggle_Hide");
+                ComposeToggle.IsOn         = !s.DefaultHideCompose;
+
+                ListHeaderLabel.Text       = R.Get("Settings_DefaultListHeader");
+                ListHeaderToggle.OnContent = R.Get("Toggle_Show");
+                ListHeaderToggle.OffContent= R.Get("Toggle_Hide");
+                ListHeaderToggle.IsOn      = !s.DefaultHideListHeader;
+
+                DefaultsHintText.Text       = R.Get("Onboarding_DefaultsHint");
+                DefaultsHintText.Visibility = Visibility.Visible;
+
+                DefaultsPanel.Visibility = Visibility.Visible;
+            }
+
             PrimaryBtn.Content   = R.Get("Button_Close");
             PrimaryBtn.IsEnabled = true;
             SkipBtn.Visibility   = Visibility.Collapsed;
+        }
+
+        private void SidebarToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_appSettings is null) return;
+            _appSettings.DefaultHideSidebar = !SidebarToggle.IsOn;
+        }
+
+        private void ComposeToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_appSettings is null) return;
+            _appSettings.DefaultHideCompose = !ComposeToggle.IsOn;
+        }
+
+        private void ListHeaderToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_appSettings is null) return;
+            _appSettings.DefaultHideListHeader = !ListHeaderToggle.IsOn;
         }
     }
 }
