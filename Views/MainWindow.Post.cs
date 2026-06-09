@@ -204,6 +204,19 @@ namespace XTimelineViewer.Views
                     dlg.Hide();
             };
 
+            // SPA 遷移では NavigationStarting が発火しないため、
+            // 投稿 API のレスポンスを監視して自動で閉じる (#180)
+            webView.CoreWebView2.WebResourceResponseReceived += (s, args) =>
+            {
+                if (!composerReady) return;
+                var uri = args.Request.Uri;
+                if (uri.Contains("/CreateTweet", StringComparison.OrdinalIgnoreCase) &&
+                    args.Response.StatusCode >= 200 && args.Response.StatusCode < 300)
+                {
+                    dlg.DispatcherQueue.TryEnqueue(() => dlg.Hide());
+                }
+            };
+
             webView.Source = new Uri("https://x.com/compose/post");
         }
 
