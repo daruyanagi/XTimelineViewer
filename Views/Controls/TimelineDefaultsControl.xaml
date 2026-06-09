@@ -1,0 +1,15 @@
+<UserControl
+    x:Class="XTimelineViewer.Views.Controls.TimelineDefaultsControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <StackPanel Spacing="12">
+        <TextBlock x:Name="HintText"
+                   FontSize="12" Opacity="0.6"
+                   Visibility="Collapsed"
+                   TextWrapping="Wrap"/>
+        <ToggleSwitch x:Name="SidebarToggle" Toggled="SidebarToggle_Toggled"/>
+        <ToggleSwitch x:Name="ComposeToggle" Toggled="ComposeToggle_Toggled"/>
+        <ToggleSwitch x:Name="ListHeaderToggle" Toggled="ListHeaderToggle_Toggled"/>
+    </StackPanel>
+</UserControl>

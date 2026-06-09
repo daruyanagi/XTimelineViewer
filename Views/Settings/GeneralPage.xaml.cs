@@ -66,6 +66,15 @@ namespace XTimelineViewer.Views.Settings
             ExportFolderCard.Description = _parent?.SettingsFolder ?? "";
             OpenFolderBtn.Content        = R.Get("Button_OpenFolder");
 
+            // Timeline Defaults
+            DefaultTimelineExpander.Header      = R.Get("Settings_DefaultTimeline");
+            DefaultTimelineExpander.Description = R.Get("Settings_DefaultTimeline_Description");
+            if (_parent is not null)
+            {
+                DefaultsControl.Initialize(_parent.Settings);
+                DefaultsControl.Changed += () => _parent.NotifySettingsChanged();
+            }
+
             _isInitializing = false;
         }
 

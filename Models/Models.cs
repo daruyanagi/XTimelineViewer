@@ -39,6 +39,9 @@ namespace XTimelineViewer.Models
         public int     AutoActivateMinutes   { get; set; } = 0;
         public string  Language              { get; set; } = "system";  // "system" | "ja-JP" | "en-US"
         public string? CachedLatestVersion   { get; set; } = null;      // "v1.4.0" など
+        public bool    DefaultHideSidebar   { get; set; } = false;     // 新規タイムラインの既定値
+        public bool    DefaultHideCompose   { get; set; } = true;      // 新規タイムラインの既定値
+        public bool    DefaultHideListHeader{ get; set; } = false;     // 新規タイムラインの既定値
         public bool    ShowAutoActivateLabel { get; set; } = false;
         public string  ExternalBrowser       { get; set; } = "system";  // "system" | "edge"
         public string  EdgeProfileDirectory  { get; set; } = "";        // "Default" | "Profile 1" など

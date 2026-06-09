@@ -2,7 +2,7 @@
     x:Class="XTimelineViewer.Views.OnboardingWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:XTimelineViewer.Views.Controls"
+    xmlns:local="using:XTimelineViewer.Views.Controls"
     Title="Onboarding">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="0">
@@ -32,8 +32,8 @@
         </StackPanel>
 
         <!-- Step 2: Login (ProfileLoginControl) -->
-        <controls:ProfileLoginControl x:Name="LoginControl" Grid.Row="0"
-                                       Visibility="Collapsed"/>
+        <local:ProfileLoginControl x:Name="LoginControl" Grid.Row="0"
+                                    Visibility="Collapsed"/>
 
         <!-- Step 3: Complete -->
         <StackPanel x:Name="CompleteStep" Grid.Row="0"
@@ -54,6 +54,10 @@
                        HorizontalAlignment="Center"
                        MaxWidth="380"
                        TextWrapping="Wrap" TextAlignment="Center"/>
+            <local:TimelineDefaultsControl x:Name="DefaultsControl"
+                                            Visibility="Collapsed"
+                                            HorizontalAlignment="Center"
+                                            Margin="0,8,0,0"/>
         </StackPanel>
 
         <!-- Footer -->

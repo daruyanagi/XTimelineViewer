@@ -16,6 +16,7 @@ namespace XTimelineViewer.Views
     {
         private enum Step { Welcome, Login, Complete }
         private Step _currentStep = Step.Welcome;
+        private AppSettings? _appSettings;
         private event EventHandler<ProfileConfig>? ProfileCreated;
 
         private OnboardingWindow()
@@ -42,9 +43,10 @@ namespace XTimelineViewer.Views
         /// onCreated: プロファイル作成時（ウィンドウはまだ開いている）。プロファイル保存等に使う。
         /// onClosed: ウィンドウが閉じた後。WebView2 env が解放されるため、タイムライン追加はここで行う。
         /// </summary>
-        public static void ShowModal(Window owner, Action<ProfileConfig> onCreated, Action? onClosed = null)
+        public static void ShowModal(Window owner, AppSettings appSettings, Action<ProfileConfig> onCreated, Action? onClosed = null)
         {
             var win = new OnboardingWindow();
+            win._appSettings = appSettings;
             var theme = ((FrameworkElement)owner.Content).ActualTheme;
             ((FrameworkElement)win.Content).RequestedTheme = theme;
             MainWindow.ApplyTitleBarTheme(win, theme);
@@ -114,6 +116,13 @@ namespace XTimelineViewer.Views
             Title = R.Get("Onboarding_CompleteTitle");
             CompleteTitle.Text = R.Get("Onboarding_CompleteTitle");
             CompleteBody.Text  = string.Format(R.Get("Onboarding_CompleteBody"), profileName);
+
+            // タイムラインの既定表示オプション
+            if (_appSettings is not null)
+            {
+                DefaultsControl.Initialize(_appSettings, showHint: true);
+                DefaultsControl.Visibility = Visibility.Visible;
+            }
 
             PrimaryBtn.Content   = R.Get("Button_Close");
             PrimaryBtn.IsEnabled = true;
