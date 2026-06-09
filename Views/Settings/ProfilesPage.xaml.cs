@@ -150,8 +150,13 @@ namespace XTimelineViewer.Views.Settings
             expander.Items.Add(colorCard);
             expander.Items.Add(badgeTextCard);
 
-            // ── 削除ボタン ──
-            var deleteBtn = new Button { Content = R.Get("Profile_Delete") };
+            // ── 削除ボタン（Expander 内の末尾に配置 #178） ──
+            var deleteBtn = new Button
+            {
+                Content             = R.Get("Profile_Delete"),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Foreground          = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"],
+            };
             var capturedProfile = profile;
             deleteBtn.Click += async (_, _) =>
             {
@@ -173,7 +178,12 @@ namespace XTimelineViewer.Views.Settings
                     PopulateUI();
                 }
             };
-            expander.Content = deleteBtn;
+            var deleteCard = new CommunityToolkit.WinUI.Controls.SettingsCard
+            {
+                Content                    = deleteBtn,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            };
+            expander.Items.Add(deleteCard);
 
             return expander;
         }
