@@ -17,9 +17,9 @@
                         <FontIcon Glyph="&#xE790;" FontFamily="Segoe Fluent Icons"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="NavExperimental" Tag="Experimental">
+                <NavigationViewItem x:Name="NavProfiles" Tag="Profiles">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE9A1;" FontFamily="Segoe Fluent Icons"/>
+                        <FontIcon Glyph="&#xE716;" FontFamily="Segoe Fluent Icons"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="NavExtensions" Tag="Extensions">
@@ -27,9 +27,9 @@
                         <FontIcon Glyph="&#xEA86;" FontFamily="Segoe Fluent Icons"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="NavProfiles" Tag="Profiles">
+                <NavigationViewItem x:Name="NavExperimental" Tag="Experimental">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE716;" FontFamily="Segoe Fluent Icons"/>
+                        <FontIcon Glyph="&#xE9A1;" FontFamily="Segoe Fluent Icons"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
