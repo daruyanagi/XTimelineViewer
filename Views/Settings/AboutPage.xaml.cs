@@ -134,7 +134,10 @@ namespace XTimelineViewer.Views.Settings
         {
             if (_parent is null) return;
 
-            string? latestReleaseUrl = null;
+            // MSIX 版は Store の自動更新に任せる / winget がなければ更新チェック不要
+            bool hasWinget = _parent.HasWinget;
+            if (PackageContext.IsPackaged || !hasWinget) return;
+
             var settings = _parent.Settings;
 
             var statusText = new TextBlock
@@ -144,15 +147,9 @@ namespace XTimelineViewer.Views.Settings
                 Visibility = Visibility.Collapsed,
             };
 
-            bool hasWinget = _parent.HasWinget;
-            var updateBtnLabel = PackageContext.IsPackaged
-                ? R.Get("CheckUpdate_Download_Store")
-                : hasWinget
-                    ? R.Get("CheckUpdate_Download_Winget")
-                    : R.Get("CheckUpdate_Download_GitHub");
             var updateBtn = new Button
             {
-                Content    = updateBtnLabel,
+                Content    = R.Get("CheckUpdate_Download_Winget"),
                 Margin     = new Thickness(0, 4, 0, 0),
                 Visibility = Visibility.Collapsed,
             };
@@ -160,9 +157,8 @@ namespace XTimelineViewer.Views.Settings
             // キャッシュがあれば初期表示
             if (settings.CachedLatestVersion is { } cached
                 && Version.TryParse(cached.TrimStart('v'), out var cachedVersion)
-                && (_parent.CheckIsUpdateAvailable?.Invoke(currentVersion, cachedVersion) ?? false))
+                && cachedVersion > currentVersion)
             {
-                latestReleaseUrl      = $"{repoUrl}/releases/tag/{cached}";
                 statusText.Text       = string.Format(R.Get("CheckUpdate_Available"), cached);
                 statusText.Visibility = Visibility.Visible;
                 updateBtn.Visibility  = Visibility.Visible;
@@ -177,12 +173,11 @@ namespace XTimelineViewer.Views.Settings
                 updateBtn.Visibility  = Visibility.Collapsed;
                 try
                 {
-                    if (_parent.FetchLatestReleaseAsync is null) return;
-                    var (latest, tag, freshUrl) = await _parent.FetchLatestReleaseAsync();
-                    latestReleaseUrl = freshUrl;
-                    settings.LastUpdateCheck = DateTime.UtcNow.ToString("O");
-                    if (_parent.CheckIsUpdateAvailable?.Invoke(currentVersion, latest) ?? false)
+                    if (_parent.FetchWingetLatestVersionAsync is null) return;
+                    var latest = await _parent.FetchWingetLatestVersionAsync();
+                    if (latest is not null && latest > currentVersion)
                     {
+                        var tag = $"v{latest.ToString(3)}";
                         settings.CachedLatestVersion = tag;
                         statusText.Text      = string.Format(R.Get("CheckUpdate_Available"), tag);
                         updateBtn.Visibility = Visibility.Visible;
@@ -207,35 +202,21 @@ namespace XTimelineViewer.Views.Settings
 
             updateBtn.Click += async (_, _) =>
             {
-                var url = latestReleaseUrl ?? fallbackUrl;
-                if (PackageContext.IsPackaged)
+                var confirmDlg = new ContentDialog
                 {
-                    if (_parent.LaunchUriAsync is not null)
-                        await _parent.LaunchUriAsync(new Uri("ms-windows-store://pdp/?ProductId=9P308HB5BLJ1"));
-                }
-                else if (hasWinget)
-                {
-                    var confirmDlg = new ContentDialog
+                    Title             = R.Get("CheckUpdate_WingetTitle"),
+                    Content           = new TextBlock
                     {
-                        Title             = R.Get("CheckUpdate_WingetTitle"),
-                        Content           = new TextBlock
-                        {
-                            Text         = R.Get("CheckUpdate_WingetBody"),
-                            TextWrapping = TextWrapping.Wrap,
-                        },
-                        PrimaryButtonText = R.Get("CheckUpdate_WingetConfirm"),
-                        CloseButtonText   = R.Get("Button_Cancel"),
-                        XamlRoot          = XamlRoot,
-                        RequestedTheme    = ((FrameworkElement)_parent.Content).ActualTheme,
-                    };
-                    if (await confirmDlg.ShowAsync() != ContentDialogResult.Primary) return;
-                    _parent.ExitAndRunWingetUpdate?.Invoke();
-                }
-                else
-                {
-                    if (_parent.LaunchUriAsync is not null)
-                        await _parent.LaunchUriAsync(new Uri(url));
-                }
+                        Text         = R.Get("CheckUpdate_WingetBody"),
+                        TextWrapping = TextWrapping.Wrap,
+                    },
+                    PrimaryButtonText = R.Get("CheckUpdate_WingetConfirm"),
+                    CloseButtonText   = R.Get("Button_Cancel"),
+                    XamlRoot          = XamlRoot,
+                    RequestedTheme    = ((FrameworkElement)_parent.Content).ActualTheme,
+                };
+                if (await confirmDlg.ShowAsync() != ContentDialogResult.Primary) return;
+                _parent.ExitAndRunWingetUpdate?.Invoke();
             };
 
             var updateCard = new CommunityToolkit.WinUI.Controls.SettingsCard

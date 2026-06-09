@@ -102,8 +102,7 @@ namespace XTimelineViewer.Views
             }
             settingsWin.EdgeVersion = edgeVer;
             settingsWin.HasWinget = !PackageContext.IsPackaged && FindWinget() is not null;
-            settingsWin.FetchLatestReleaseAsync = FetchLatestReleaseAsync;
-            settingsWin.CheckIsUpdateAvailable = IsUpdateAvailable;
+            settingsWin.FetchWingetLatestVersionAsync = FetchWingetLatestVersionAsync;
             settingsWin.SaveSettingsOnly = SaveSettings;
             settingsWin.UpdateMenuBadge = UpdateMenuUpdateBadge;
             settingsWin.ExitAndRunWingetUpdate = () =>

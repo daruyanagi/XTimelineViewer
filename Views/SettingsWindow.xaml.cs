@@ -63,11 +63,8 @@ namespace XTimelineViewer.Views
         /// <summary>winget が利用可能かどうか（unpackaged のみ意味がある）。</summary>
         internal bool HasWinget { get; set; }
 
-        /// <summary>最新リリース情報を取得するコールバック。</summary>
-        internal Func<Task<(Version version, string tag, string releaseUrl)>>? FetchLatestReleaseAsync { get; set; }
-
-        /// <summary>バージョン比較で更新が利用可能かを判定するコールバック。</summary>
-        internal Func<Version, Version, bool>? CheckIsUpdateAvailable { get; set; }
+        /// <summary>winget から最新バージョンを取得するコールバック。</summary>
+        internal Func<Task<Version?>>? FetchWingetLatestVersionAsync { get; set; }
 
         /// <summary>設定のみ保存する（テーマ適用等はしない）コールバック。</summary>
         internal Action? SaveSettingsOnly { get; set; }
