@@ -1,12 +1,9 @@
 using Microsoft.UI.Xaml;
 using System;
-using System.Globalization;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Net.NetworkInformation;
 using System.Reflection;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace XTimelineViewer.Views
@@ -15,42 +12,75 @@ namespace XTimelineViewer.Views
     {
         // ── Update check ─────────────────────────────────────────────────────
 
-        private static bool IsUpdateAvailable(Version current, Version latest)
+        /// <summary>
+        /// winget show --versions の出力から最新バージョンを取得する。
+        /// 失敗時は null を返す（winget 未インストール、ネットワーク不通、パース失敗など）。
+        /// </summary>
+        private static async Task<Version?> FetchWingetLatestVersionAsync()
         {
-            if (PackageContext.IsPackaged)
-                return latest.Major > current.Major
-                    || (latest.Major == current.Major && latest.Minor > current.Minor);
-            return latest > current;
-        }
-
-        private static async Task<(Version version, string tag, string releaseUrl)> FetchLatestReleaseAsync()
-        {
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("User-Agent", "XTimelineViewer");
-            var json = await client.GetStringAsync(
-                "https://api.github.com/repos/daruyanagi/XTimelineViewer/releases/latest");
-            using var doc = JsonDocument.Parse(json);
-            var tag = doc.RootElement.GetProperty("tag_name").GetString()!;
-            var url = doc.RootElement.GetProperty("html_url").GetString()!;
-            return (new Version(tag.TrimStart('v')), tag, url);
-        }
-
-        private async Task CheckForUpdatesInBackgroundAsync()
-        {
-            await Task.Delay(3000);
-            if (!NetworkInterface.GetIsNetworkAvailable()) return;
-
-            if (_appSettings.LastUpdateCheck is { } raw
-                && DateTime.TryParse(raw, null, DateTimeStyles.RoundtripKind, out var last)
-                && (DateTime.UtcNow - last).TotalDays < 7)
-                return;
+            var winget = FindWinget();
+            if (winget is null) return null;
 
             try
             {
-                var (latest, tag, _) = await FetchLatestReleaseAsync();
+                var psi = new ProcessStartInfo
+                {
+                    FileName               = winget,
+                    Arguments              = "show daruyanagi.XTimelineViewer --versions --disable-interactivity",
+                    RedirectStandardOutput = true,
+                    UseShellExecute        = false,
+                    CreateNoWindow         = true,
+                };
+                using var proc = Process.Start(psi);
+                if (proc is null) return null;
+
+                var output = await proc.StandardOutput.ReadToEndAsync();
+                await proc.WaitForExitAsync();
+                if (proc.ExitCode != 0) return null;
+
+                // "---" 区切り線より後の行からバージョンを抽出
+                var lines = output.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                var separatorIndex = Array.FindIndex(lines, l => l.StartsWith("---"));
+                if (separatorIndex < 0) return null;
+
+                // 区切り線の直後が最新バージョン（降順表示）
+                for (int i = separatorIndex + 1; i < lines.Length; i++)
+                {
+                    if (Version.TryParse(lines[i], out var version))
+                        return version;
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// アプリ起動後にアイドルで更新チェックを行う。
+        /// winget ベースで確認し、MSIX (Store) 版や winget のない環境ではスキップする。
+        /// </summary>
+        private async Task CheckForUpdatesInBackgroundAsync()
+        {
+            await Task.Delay(5000);
+
+            // MSIX 版は Store の自動更新に任せる
+            if (PackageContext.IsPackaged) return;
+
+            // winget がなければチェック不要
+            if (FindWinget() is null) return;
+
+            try
+            {
+                var latest = await FetchWingetLatestVersionAsync();
+                if (latest is null) return;
+
                 var current = Assembly.GetExecutingAssembly().GetName().Version!;
-                _appSettings.LastUpdateCheck     = DateTime.UtcNow.ToString("O");
-                _appSettings.CachedLatestVersion = IsUpdateAvailable(current, latest) ? tag : null;
+                _appSettings.CachedLatestVersion = latest > current
+                    ? $"v{latest.ToString(3)}"
+                    : null;
                 SaveSettings();
                 UpdateMenuUpdateBadge();
             }
