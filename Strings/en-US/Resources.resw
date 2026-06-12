@@ -10,7 +10,6 @@
 
   <!-- Toolbar tooltips -->
   <data name="PostBtn_Tooltip" xml:space="preserve"><value>New Post</value></data>
-  <data name="AppSettingsBtn_Tooltip" xml:space="preserve"><value>App Settings</value></data>
   <data name="AppMenu_Tooltip" xml:space="preserve"><value>Menu</value></data>
 
   <!-- App menu items -->
@@ -31,9 +30,6 @@
   <data name="AddProfile_CreateBtn" xml:space="preserve"><value>Create Profile</value></data>
   <data name="AddProfile_FallbackLabel" xml:space="preserve"><value>Profile Name</value></data>
 
-  <!-- About dialog -->
-  <data name="About_Title" xml:space="preserve"><value>About XTimelineViewer</value></data>
-
   <!-- Theme selector items -->
   <data name="Theme_System" xml:space="preserve"><value>System</value></data>
   <data name="Theme_Light" xml:space="preserve"><value>Light</value></data>
@@ -52,8 +48,6 @@
   <data name="Settings_ExportFolder" xml:space="preserve"><value>Export Settings</value></data>
   <data name="Settings_Theme_Description" xml:space="preserve"><value>Change the app's appearance</value></data>
   <data name="Settings_Language_Description" xml:space="preserve"><value>Change the display language</value></data>
-  <data name="Section_Experimental" xml:space="preserve"><value>Experimental Features</value></data>
-  <data name="Section_About" xml:space="preserve"><value>About</value></data>
   <data name="Settings_OpenComposerInBrowser" xml:space="preserve"><value>Open Composer in External Browser</value></data>
   <data name="Settings_OpenComposerInBrowser_Description" xml:space="preserve"><value>Open new posts in an external browser instead of the built-in composer</value></data>
   <data name="Settings_OpenTimestampInBrowser" xml:space="preserve"><value>Open Timestamp Links in External Browser</value></data>
@@ -71,12 +65,10 @@
 
 
   <!-- Common buttons -->
-  <data name="Button_Save" xml:space="preserve"><value>Save</value></data>
   <data name="Button_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Button_Close" xml:space="preserve"><value>Close</value></data>
   <data name="Button_Apply" xml:space="preserve"><value>Apply</value></data>
   <data name="Button_Copy" xml:space="preserve"><value>Copy</value></data>
-  <data name="Button_ReportIssue" xml:space="preserve"><value>Report Issue</value></data>
   <data name="Button_OpenFolder" xml:space="preserve"><value>Open Folder</value></data>
 
   <!-- Timeline pane settings dialog -->
@@ -113,18 +105,12 @@
   <data name="Nav_Data" xml:space="preserve"><value>User Data</value></data>
   <data name="Settings_RelatedSettings" xml:space="preserve"><value>Related settings</value></data>
   <data name="Nav_About" xml:space="preserve"><value>About</value></data>
-  <data name="Settings_Placeholder" xml:space="preserve"><value>This page will be implemented in a future update.</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>Settings</value></data>
-  <data name="Pane_Close_Tooltip" xml:space="preserve"><value>Close</value></data>
   <data name="Pane_Delete" xml:space="preserve"><value>Remove This Timeline</value></data>
   <data name="DragCaption" xml:space="preserve"><value>Add Timeline</value></data>
 
   <!-- Profile management -->
-  <data name="Profile_Reset" xml:space="preserve"><value>Reset</value></data>
   <data name="Profile_Delete" xml:space="preserve"><value>Delete</value></data>
-  <data name="Profile_ResetConfirmTitle" xml:space="preserve"><value>Reset Profile</value></data>
-  <data name="Profile_ResetConfirmBody" xml:space="preserve"><value>All cookies and login data will be deleted. Timelines using this profile will be removed, and data will be cleared on next launch.</value></data>
-  <data name="Profile_ResetConfirm" xml:space="preserve"><value>Reset</value></data>
   <data name="Profile_DeleteConfirmTitle" xml:space="preserve"><value>Delete Profile</value></data>
   <data name="Profile_DeleteConfirmBody" xml:space="preserve"><value>{0} timeline(s) using this profile will also be removed.</value></data>
   <data name="Profile_DeleteConfirm" xml:space="preserve"><value>Delete</value></data>
@@ -153,12 +139,6 @@
   <!-- Version info -->
   <data name="Version_Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="EdgeChannel_Runtime" xml:space="preserve"><value>WebView2 Runtime</value></data>
-
-
-  <!-- Issue report body labels -->
-  <data name="IssueLabel_AppVersion" xml:space="preserve"><value>App version</value></data>
-  <data name="IssueLabel_EdgeVersion" xml:space="preserve"><value>Edge version</value></data>
-  <data name="IssueLabel_Symptoms" xml:space="preserve"><value>Symptoms</value></data>
 
   <!-- Extension settings -->
   <data name="ExtSettings_Format" xml:space="preserve"><value>{0} Settings</value></data>
@@ -197,9 +177,6 @@
 
   <!-- About dialog sections -->
   <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>
-  <data name="About_Links" xml:space="preserve"><value>Links</value></data>
-  <data name="About_Repository" xml:space="preserve"><value>GitHub Repository</value></data>
-  <data name="About_Acknowledgements" xml:space="preserve"><value>Acknowledgements</value></data>
   <data name="About_License" xml:space="preserve"><value>License</value></data>
   <data name="About_Components" xml:space="preserve"><value>Components Used</value></data>
 </root>
