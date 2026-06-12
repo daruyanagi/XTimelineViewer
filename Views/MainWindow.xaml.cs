@@ -159,9 +159,10 @@ namespace XTimelineViewer.Views
                         if (k === 'n')          { e.preventDefault(); window.chrome.webview.postMessage('newPost');   return; }
                         if (k === 'ArrowUp')    { e.preventDefault(); navigatePosts(-1); return; }
                         if (k === 'ArrowDown')  { e.preventDefault(); navigatePosts(1);  return; }
+                        if (k === 'f')          { e.preventDefault(); window.chrome.webview.postMessage('focusSearch'); return; }
                         if (k === 'r' && ni)    { e.preventDefault(); actOnPost('retweet',  'unretweet');      return; }
                         if (k === 'b' && ni)    { e.preventDefault(); actOnPost('bookmark', 'removeBookmark'); return; }
-                        if (k === 'f' && ni)    { e.preventDefault(); actOnPost('like',     'unlike');         return; }
+                        if (k === 'l' && ni)    { e.preventDefault(); actOnPost('like',     'unlike');         return; }
                     }
                     if (!c && !s && !a) {
                         if (k === 'Home'      && ni) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }

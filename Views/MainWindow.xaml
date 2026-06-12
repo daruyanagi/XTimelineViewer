@@ -5,6 +5,10 @@
     Title="XTimelineViewer">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="FocusSearchBox_Invoked"/>
+            <KeyboardAccelerator Key="F3" Invoked="FocusSearchBox_Invoked"/>
+        </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -41,11 +45,7 @@
                             IsEnabled="{x:Bind ViewModel.HasNamedProfiles, Mode=OneWay}"
                             QuerySubmitted="SearchBox_QuerySubmitted"
                             TextChanged="SearchBox_TextChanged"
-                            SuggestionChosen="SearchBox_SuggestionChosen">
-                <AutoSuggestBox.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="F" Modifiers="Control"/>
-                </AutoSuggestBox.KeyboardAccelerators>
-            </AutoSuggestBox>
+                            SuggestionChosen="SearchBox_SuggestionChosen"/>
             <StackPanel x:Name="RightToolbar"
                         Orientation="Horizontal"
                         Spacing="4"
