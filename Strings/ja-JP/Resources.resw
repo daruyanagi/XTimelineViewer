@@ -190,6 +190,8 @@
   <data name="Search_Tooltip" xml:space="preserve"><value>X を検索</value></data>
   <data name="Search_DialogTitle" xml:space="preserve"><value>検索結果</value></data>
   <data name="Search_AddBtn" xml:space="preserve"><value>タイムラインとして追加</value></data>
+  <data name="Settings_SavedQueries" xml:space="preserve"><value>保存済み検索クエリ</value></data>
+  <data name="Settings_SavedQueries_Description" xml:space="preserve"><value>検索ボックスのサジェストに表示されるクエリ</value></data>
 
   <!-- About dialog sections -->
   <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>

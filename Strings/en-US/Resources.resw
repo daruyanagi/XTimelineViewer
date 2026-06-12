@@ -190,6 +190,8 @@
   <data name="Search_Tooltip" xml:space="preserve"><value>Search X</value></data>
   <data name="Search_DialogTitle" xml:space="preserve"><value>Search Results</value></data>
   <data name="Search_AddBtn" xml:space="preserve"><value>Add as Timeline</value></data>
+  <data name="Settings_SavedQueries" xml:space="preserve"><value>Saved Search Queries</value></data>
+  <data name="Settings_SavedQueries_Description" xml:space="preserve"><value>Queries shown as suggestions in the search box</value></data>
 
   <!-- About dialog sections -->
   <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>
