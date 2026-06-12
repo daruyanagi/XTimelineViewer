@@ -1,19 +1,19 @@
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
-using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using XTimelineViewer.Services;
+using XTimelineViewer.ViewModels;
 
 namespace XTimelineViewer.Views.Settings
 {
     public sealed partial class ExperimentalPage : Page
     {
-        private static readonly string[] BrowserValues = ["system", "edge"];
-
         private SettingsWindow? _parent;
-        private bool _isInitializing = true;
         private List<EdgeProfile> _edgeProfiles = [];
+
+        /// <summary>x:Bind のバインディングソース。XAML から参照される。</summary>
+        public SettingsViewModel? VM { get; private set; }
 
         public ExperimentalPage()
         {
@@ -24,51 +24,66 @@ namespace XTimelineViewer.Views.Settings
         {
             base.OnNavigatedTo(e);
             _parent = e.Parameter as SettingsWindow;
+            VM      = _parent?.ViewModel;
+            if (VM is not null)
+                VM.PropertyChanged += OnViewModelPropertyChanged;
             PopulateUI();
         }
 
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            base.OnNavigatedFrom(e);
+            if (VM is not null)
+                VM.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+
+        private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(SettingsViewModel.LanguageIndex):
+                    PopulateUI();
+                    break;
+                case nameof(SettingsViewModel.IsEdgeSelected):
+                    UpdateEdgeProfileComboEnabled();
+                    break;
+            }
+        }
+
+        private void UpdateEdgeProfileComboEnabled()
+            => EdgeProfileCombo.IsEnabled = (VM?.IsEdgeSelected ?? false) && _edgeProfiles.Count > 0;
+
         private void PopulateUI()
         {
-            _isInitializing = true;
             var s = _parent?.Settings;
 
             PageTitle.Text = R.Get("Nav_Experimental");
 
-            // Open Composer in Browser
             OpenComposerCard.Header      = R.Get("Settings_OpenComposerInBrowser");
             OpenComposerCard.Description = R.Get("Settings_OpenComposerInBrowser_Description");
             OpenComposerToggle.OnContent  = R.Get("Toggle_On");
             OpenComposerToggle.OffContent = R.Get("Toggle_Off");
-            OpenComposerToggle.IsOn       = s?.OpenComposerInBrowser ?? false;
 
-            // Open Timestamp in Browser
             OpenTimestampCard.Header      = R.Get("Settings_OpenTimestampInBrowser");
             OpenTimestampCard.Description = R.Get("Settings_OpenTimestampInBrowser_Description");
             OpenTimestampToggle.OnContent  = R.Get("Toggle_On");
             OpenTimestampToggle.OffContent = R.Get("Toggle_Off");
-            OpenTimestampToggle.IsOn       = s?.OpenTimestampInBrowser ?? false;
 
-            // Auto-Activate
             AutoActivateCard.Header      = R.Get("Settings_AutoActivate");
             AutoActivateCard.Description = R.Get("Settings_AutoActivate_Description");
-            AutoActivateBox.Value        = s?.AutoActivateMinutes ?? 0;
 
-            // Show Auto-Activate Label
             ShowAutoActivateLabelCard.Header      = R.Get("Settings_ShowAutoActivateLabel");
             ShowAutoActivateLabelCard.Description = R.Get("Settings_ShowAutoActivateLabel_Description");
             ShowAutoActivateLabelToggle.OnContent  = R.Get("Toggle_On");
             ShowAutoActivateLabelToggle.OffContent = R.Get("Toggle_Off");
-            ShowAutoActivateLabelToggle.IsOn       = s?.ShowAutoActivateLabel ?? false;
 
-            // External Browser Section
             ExternalBrowserHeader.Text = R.Get("Section_ExternalBrowser");
 
             BrowserCard.Header      = R.Get("Settings_ExternalBrowser");
             BrowserCard.Description = R.Get("Settings_ExternalBrowser_Description");
             BrowserCombo.ItemsSource = new List<string> { R.Get("Browser_System"), "Microsoft Edge" };
-            BrowserCombo.SelectedIndex = s?.ExternalBrowser == "edge" ? 1 : 0;
 
-            // Edge Profile
+            // Edge Profile（ファイルシステム列挙に依存するためコードビハインドで構築）
             EdgeProfileCard.Header      = R.Get("Settings_EdgeProfile");
             EdgeProfileCard.Description = R.Get("Settings_EdgeProfile_Description");
             _edgeProfiles = EdgeService.EnumerateProfiles();
@@ -77,7 +92,6 @@ namespace XTimelineViewer.Views.Settings
             {
                 EdgeProfileCombo.ItemsSource   = new List<string> { R.Get("Browser_EdgeNotFound") };
                 EdgeProfileCombo.SelectedIndex = 0;
-                EdgeProfileCombo.IsEnabled     = false;
             }
             else
             {
@@ -93,62 +107,25 @@ namespace XTimelineViewer.Views.Settings
                 }
                 EdgeProfileCombo.ItemsSource   = names;
                 EdgeProfileCombo.SelectedIndex = selectedIdx;
-                EdgeProfileCombo.IsEnabled     = s?.ExternalBrowser == "edge";
             }
+            UpdateEdgeProfileComboEnabled();
 
-            _isInitializing = false;
-        }
-
-        private void OpenComposerToggle_Toggled(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing || _parent is null) return;
-            _parent.Settings.OpenComposerInBrowser = OpenComposerToggle.IsOn;
-            _parent.NotifySettingsChanged();
-        }
-
-        private void OpenTimestampToggle_Toggled(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing || _parent is null) return;
-            _parent.Settings.OpenTimestampInBrowser = OpenTimestampToggle.IsOn;
-            _parent.NotifySettingsChanged();
-        }
-
-        private void AutoActivateBox_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
-        {
-            if (_isInitializing || _parent is null) return;
-            _parent.Settings.AutoActivateMinutes = (int)Math.Clamp(args.NewValue, 0, 60);
-            _parent.NotifySettingsChanged();
-        }
-
-        private void ShowAutoActivateLabelToggle_Toggled(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing || _parent is null) return;
-            _parent.Settings.ShowAutoActivateLabel = ShowAutoActivateLabelToggle.IsOn;
-            _parent.NotifySettingsChanged();
-        }
-
-        private void BrowserCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_isInitializing || _parent is null) return;
-
-            var idx = Math.Clamp(BrowserCombo.SelectedIndex, 0, BrowserValues.Length - 1);
-            _parent.Settings.ExternalBrowser = BrowserValues[idx];
-
-            // Edge プロファイル ComboBox の有効/無効を切り替え
-            var isEdge = idx == 1;
-            EdgeProfileCombo.IsEnabled = isEdge && _edgeProfiles.Count > 0;
-
-            _parent.NotifySettingsChanged();
+            // ItemsSource 再設定で SelectedIndex が失われるため、バインディングを再評価する
+            Bindings.Update();
         }
 
         private void EdgeProfileCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_isInitializing || _parent is null) return;
+            if (_parent is null) return;
 
             var idx = EdgeProfileCombo.SelectedIndex;
-            if (_edgeProfiles.Count > 0 && idx >= 0 && idx < _edgeProfiles.Count)
-                _parent.Settings.EdgeProfileDirectory = _edgeProfiles[idx].Directory;
+            if (_edgeProfiles.Count == 0 || idx < 0 || idx >= _edgeProfiles.Count) return;
 
+            // PopulateUI による再設定では値が変わらないため通知しない
+            var dir = _edgeProfiles[idx].Directory;
+            if (_parent.Settings.EdgeProfileDirectory == dir) return;
+
+            _parent.Settings.EdgeProfileDirectory = dir;
             _parent.NotifySettingsChanged();
         }
     }

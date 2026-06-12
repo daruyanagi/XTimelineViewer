@@ -10,8 +10,9 @@ namespace XTimelineViewer.ViewModels
     /// </summary>
     public partial class SettingsViewModel : ObservableObject
     {
-        internal static readonly string[] ThemeValues = ["Default", "Light", "Dark"];
-        internal static readonly string[] LangValues  = ["system", "ja-JP", "en-US"];
+        internal static readonly string[] ThemeValues   = ["Default", "Light", "Dark"];
+        internal static readonly string[] LangValues    = ["system", "ja-JP", "en-US"];
+        internal static readonly string[] BrowserValues = ["system", "edge"];
 
         private readonly AppSettings _settings;
         private readonly Action?     _settingsChanged;
@@ -91,5 +92,70 @@ namespace XTimelineViewer.ViewModels
                 Notify(nameof(ShowListHeaderByDefault));
             }
         }
+
+        // ── 試験機能 ──────────────────────────────────────────────────────────────
+
+        public bool OpenComposerInBrowser
+        {
+            get => _settings.OpenComposerInBrowser;
+            set
+            {
+                if (_settings.OpenComposerInBrowser == value) return;
+                _settings.OpenComposerInBrowser = value;
+                Notify(nameof(OpenComposerInBrowser));
+            }
+        }
+
+        public bool OpenTimestampInBrowser
+        {
+            get => _settings.OpenTimestampInBrowser;
+            set
+            {
+                if (_settings.OpenTimestampInBrowser == value) return;
+                _settings.OpenTimestampInBrowser = value;
+                Notify(nameof(OpenTimestampInBrowser));
+            }
+        }
+
+        /// <summary>NumberBox.Value（double）にバインドする。NaN（空欄）は無視し、0–60 に丸める。</summary>
+        public double AutoActivateMinutes
+        {
+            get => _settings.AutoActivateMinutes;
+            set
+            {
+                if (double.IsNaN(value)) return;
+                var minutes = (int)Math.Clamp(value, 0, 60);
+                if (_settings.AutoActivateMinutes == minutes) return;
+                _settings.AutoActivateMinutes = minutes;
+                Notify(nameof(AutoActivateMinutes));
+            }
+        }
+
+        public bool ShowAutoActivateLabel
+        {
+            get => _settings.ShowAutoActivateLabel;
+            set
+            {
+                if (_settings.ShowAutoActivateLabel == value) return;
+                _settings.ShowAutoActivateLabel = value;
+                Notify(nameof(ShowAutoActivateLabel));
+            }
+        }
+
+        public int BrowserIndex
+        {
+            get => Math.Max(0, Array.IndexOf(BrowserValues, _settings.ExternalBrowser));
+            set
+            {
+                if (value < 0 || value >= BrowserValues.Length) return;
+                if (_settings.ExternalBrowser == BrowserValues[value]) return;
+                _settings.ExternalBrowser = BrowserValues[value];
+                Notify(nameof(BrowserIndex));
+                OnPropertyChanged(nameof(IsEdgeSelected));
+            }
+        }
+
+        /// <summary>Edge プロファイル ComboBox の有効/無効判定に使う。</summary>
+        public bool IsEdgeSelected => _settings.ExternalBrowser == "edge";
     }
 }
