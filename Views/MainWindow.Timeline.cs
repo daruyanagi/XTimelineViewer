@@ -21,6 +21,7 @@ using Windows.Storage;
 using Windows.UI;
 
 using XTimelineViewer.Models;
+using XTimelineViewer.Services;
 
 namespace XTimelineViewer.Views
 {
@@ -77,7 +78,7 @@ namespace XTimelineViewer.Views
                         file.FileType.Equals(".url", StringComparison.OrdinalIgnoreCase))
                     {
                         var url = await ParseUrlShortcutAsync(file);
-                        if (url is not null && IsXUrl(url))
+                        if (url is not null && UrlHelper.IsXUrl(url))
                             AddTimeline(CreateDefaultConfig(url));
                     }
                 }
@@ -90,17 +91,11 @@ namespace XTimelineViewer.Views
             try
             {
                 var lines = await FileIO.ReadLinesAsync(file);
-                foreach (var line in lines)
-                    if (line.StartsWith("URL=", StringComparison.OrdinalIgnoreCase))
-                        return line[4..].Trim();
+                return UrlHelper.ParseUrlShortcut(lines);
             }
             catch { }
             return null;
         }
-
-        private static bool IsXUrl(string url) =>
-            url.Contains("x.com",       StringComparison.OrdinalIgnoreCase) ||
-            url.Contains("twitter.com", StringComparison.OrdinalIgnoreCase);
 
         // ── Quick add from menu (#120) ────────────────────────────────────────
 
@@ -192,7 +187,7 @@ namespace XTimelineViewer.Views
 
             var typeIcon = new FontIcon
             {
-                Glyph             = GetTimelineGlyph(cfg.Url),
+                Glyph             = UrlHelper.GetTimelineGlyph(cfg.Url),
                 FontFamily        = new FontFamily("Segoe Fluent Icons"),
                 FontSize          = 14,
                 Opacity           = 0.8,
@@ -377,7 +372,7 @@ namespace XTimelineViewer.Views
                     OffContent = R.Get("Toggle_Show")
                 };
 
-                var listHeaderApplicable = IsListHeaderApplicable(cfg.Url);
+                var listHeaderApplicable = UrlHelper.IsListHeaderApplicable(cfg.Url);
                 var hideListHeaderToggle = new ToggleSwitch
                 {
                     IsOn       = cfg.HideListHeader,

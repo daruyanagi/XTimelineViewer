@@ -264,9 +264,9 @@ namespace XTimelineViewer.Views
             AddNotificationsTimelineItem.Text = R.Get("Timeline_Notifications");
             AddBookmarksTimelineItem.Text     = R.Get("Timeline_Bookmarks");
             // アイコンは既存ペインと同じく URL 種別から導出して一貫性を保つ
-            AddHomeIcon.Glyph          = GetTimelineGlyph(HomeTimelineUrl);
-            AddNotificationsIcon.Glyph = GetTimelineGlyph(NotificationsTimelineUrl);
-            AddBookmarksIcon.Glyph     = GetTimelineGlyph(BookmarksTimelineUrl);
+            AddHomeIcon.Glyph          = UrlHelper.GetTimelineGlyph(HomeTimelineUrl);
+            AddNotificationsIcon.Glyph = UrlHelper.GetTimelineGlyph(NotificationsTimelineUrl);
+            AddBookmarksIcon.Glyph     = UrlHelper.GetTimelineGlyph(BookmarksTimelineUrl);
 
             SearchBox.PlaceholderText = R.Get("Search_Placeholder");
             ToolTipService.SetToolTip(SearchBox, R.Get("Search_Tooltip"));
@@ -285,14 +285,6 @@ namespace XTimelineViewer.Views
                 _dialogOpenCount--;
                 if (_dialogOpenCount == 0) RestartAutoActivateTimer();
             }
-        }
-
-        private static bool IsOnBaseUrl(string currentUrl, string baseUrl)
-        {
-            if (!Uri.TryCreate(currentUrl, UriKind.Absolute, out var cur))  return false;
-            if (!Uri.TryCreate(baseUrl,    UriKind.Absolute, out var @base)) return false;
-            return string.Equals(cur.Host,         @base.Host,         StringComparison.OrdinalIgnoreCase)
-                && string.Equals(cur.AbsolutePath, @base.AbsolutePath, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

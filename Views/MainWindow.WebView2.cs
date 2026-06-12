@@ -21,50 +21,13 @@ using Windows.Storage;
 using Windows.UI;
 
 using XTimelineViewer.Models;
+using XTimelineViewer.Services;
 
 namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
     {
         // ── WebView2 init ─────────────────────────────────────────────────────
-
-        // グリフは Segoe Fluent Icons の私用領域(PUA)コードポイント。
-        // 生の PUA 文字を直書きするとエンコーディング事故で欠落するため (#122)、
-        // 必ず "\uXXXX" エスケープ表記で記述すること。
-        private static string GetTimelineGlyph(string url)
-        {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return "";
-            var p = uri.AbsolutePath;
-            if (p.StartsWith("/home"))                                return "\uE80F"; // Home
-            if (p.StartsWith("/notifications"))                       return "\uE7E7"; // Bell
-            if (p.StartsWith("/search") || p.StartsWith("/explore")) return "\uE71E"; // Search
-            if (p == "/bookmarks" || p.StartsWith("/bookmarks/") ||
-                p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/")) return "\uE734"; // Bookmark
-            if (p.StartsWith("/i/lists/"))                            return "\uE71D"; // BulletedList
-            if (p.StartsWith("/messages"))                            return "\uE8BD"; // Chat
-            if (System.Text.RegularExpressions.Regex.IsMatch(p, @"^/[^/]+$")) return "\uE77B"; // Contact
-            return "\uE774"; // Globe
-        }
-
-        private static bool IsProfilePath(string p) =>
-            System.Text.RegularExpressions.Regex.IsMatch(p, @"^/[A-Za-z0-9_]+$") &&
-            !p.StartsWith("/home") && !p.StartsWith("/notifications") &&
-            !p.StartsWith("/search") && !p.StartsWith("/explore") &&
-            !p.StartsWith("/bookmarks") && !p.StartsWith("/messages") &&
-            !p.StartsWith("/i/");
-
-        private static bool IsListHeaderApplicable(string url)
-        {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return false;
-            var p = uri.AbsolutePath;
-            return p.StartsWith("/notifications") ||
-                   p.StartsWith("/search")        ||
-                   p.StartsWith("/explore")       ||
-                   p == "/bookmarks" || p.StartsWith("/bookmarks/") ||
-                   p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/") ||
-                   p.StartsWith("/i/lists/")      ||
-                   IsProfilePath(p);
-        }
 
         private static string BuildHideListHeaderJs(bool hide) => $$"""
             (function(hide){
@@ -392,7 +355,7 @@ namespace XTimelineViewer.Views
                 await webView.EnsureCoreWebView2Async(env);
                 webView.CoreWebView2.SourceChanged += (s, e) =>
                 {
-                    bool diverged = !IsOnBaseUrl(webView.CoreWebView2.Source, cfg.Url);
+                    bool diverged = !UrlHelper.IsOnBaseUrl(webView.CoreWebView2.Source, cfg.Url);
                     if (diverged)
                     {
                         _urlDivergedWebViews.Add(webView);
