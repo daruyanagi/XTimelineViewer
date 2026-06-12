@@ -1,9 +1,19 @@
 using System;
+using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using XTimelineViewer.Models;
 
 namespace XTimelineViewer.ViewModels
 {
+    /// <summary>保存済み検索クエリの表示用アイテム。x:Bind から参照される。</summary>
+    public sealed class SavedQueryItem(string path, string decoded, string deleteLabel)
+    {
+        public string Path        { get; set; } = path;
+        public string Decoded     { get; set; } = decoded;
+        public string DeleteLabel { get; set; } = deleteLabel;
+    }
+
     /// <summary>
     /// 設定ページ用 ViewModel (#199)。AppSettings をラップして双方向 x:Bind を提供する。
     /// UI 非依存（Microsoft.UI.Xaml を参照しない）に保ち、ユニットテスト可能にする。
@@ -157,5 +167,30 @@ namespace XTimelineViewer.ViewModels
 
         /// <summary>Edge プロファイル ComboBox の有効/無効判定に使う。</summary>
         public bool IsEdgeSelected => _settings.ExternalBrowser == "edge";
+
+        // ── 保存済み検索クエリ（ユーザーデータ管理ページ） ─────────────────────────
+
+        public ObservableCollection<SavedQueryItem> SavedQueries { get; } = [];
+
+        /// <summary>保存済みクエリが 1 件以上あるか。Expander の有効/無効判定に使う。</summary>
+        public bool HasSavedQueries => SavedQueries.Count > 0;
+
+        /// <summary>AppSettings から保存済みクエリ一覧を再構築する。削除ラベルは表示言語に依存するため引数で受け取る。</summary>
+        public void ReloadSavedQueries(string deleteLabel)
+        {
+            SavedQueries.Clear();
+            foreach (var path in _settings.SavedSearchQueries)
+                SavedQueries.Add(new SavedQueryItem(path, Uri.UnescapeDataString(path), deleteLabel));
+            OnPropertyChanged(nameof(HasSavedQueries));
+        }
+
+        public void RemoveSavedQuery(string path)
+        {
+            _settings.SavedSearchQueries.Remove(path);
+            var item = SavedQueries.FirstOrDefault(q => q.Path == path);
+            if (item is not null) SavedQueries.Remove(item);
+            _settingsChanged?.Invoke();
+            OnPropertyChanged(nameof(HasSavedQueries));
+        }
     }
 }
