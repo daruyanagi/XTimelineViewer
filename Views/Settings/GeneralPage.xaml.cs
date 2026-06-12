@@ -89,7 +89,57 @@ namespace XTimelineViewer.Views.Settings
                 ListHeaderToggle.IsOn       = !s.DefaultHideListHeader;
             }
 
+            // Saved Search Queries
+            SavedQueriesExpander.Header      = R.Get("Settings_SavedQueries");
+            SavedQueriesExpander.Description = R.Get("Settings_SavedQueries_Description");
+            RebuildSavedQueriesItems();
+
             _isInitializing = false;
+        }
+
+        private void RebuildSavedQueriesItems()
+        {
+            SavedQueriesExpander.Items.Clear();
+            if (_parent is null) return;
+
+            var saved = _parent.Settings.SavedSearchQueries;
+            if (saved.Count == 0)
+            {
+                SavedQueriesExpander.IsExpanded = false;
+                SavedQueriesExpander.IsEnabled  = false;
+                return;
+            }
+
+            SavedQueriesExpander.IsEnabled = true;
+
+            foreach (var path in saved)
+            {
+                var decoded = Uri.UnescapeDataString(path);
+
+                var deleteBtn = new Button
+                {
+                    Content = R.Get("Profile_Delete"),
+                    Tag     = path,
+                    Foreground = (Microsoft.UI.Xaml.Media.Brush)
+                        Application.Current.Resources["SystemFillColorCriticalBrush"],
+                };
+                deleteBtn.Click += SavedQueryDelete_Click;
+
+                var card = new CommunityToolkit.WinUI.Controls.SettingsCard
+                {
+                    Header  = decoded,
+                    Content = deleteBtn,
+                };
+                SavedQueriesExpander.Items.Add(card);
+            }
+        }
+
+        private void SavedQueryDelete_Click(object sender, RoutedEventArgs e)
+        {
+            if (_parent is null || sender is not Button btn || btn.Tag is not string path) return;
+            _parent.Settings.SavedSearchQueries.Remove(path);
+            _parent.NotifySettingsChanged();
+            RebuildSavedQueriesItems();
         }
 
         private void ThemeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)

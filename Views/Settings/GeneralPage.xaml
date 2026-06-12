@@ -61,6 +61,13 @@
                     </controls:SettingsCard>
                 </controls:SettingsExpander.Items>
             </controls:SettingsExpander>
+
+            <!-- Saved Search Queries -->
+            <controls:SettingsExpander x:Name="SavedQueriesExpander">
+                <controls:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE721;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsExpander.HeaderIcon>
+            </controls:SettingsExpander>
         </StackPanel>
     </ScrollViewer>
 </Page>
