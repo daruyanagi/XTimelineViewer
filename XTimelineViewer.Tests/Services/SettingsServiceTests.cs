@@ -79,6 +79,82 @@ public class SettingsServiceTests : IDisposable
         Assert.Equal(10,       loaded.AutoActivateMinutes);
     }
 
+    // ── 後方互換 ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void LoadSettings_OldVersionJson_NewPropertiesGetDefaults()
+    {
+        // v1.4 相当の settings.json（後から追加されたプロパティを含まない）
+        File.WriteAllText(At("settings.json"),
+            """{"OpenComposerInBrowser":true,"Theme":"Dark","Language":"ja-JP"}""");
+
+        var s = SettingsService.LoadSettings(At("settings.json"));
+
+        Assert.True(s.OpenComposerInBrowser);
+        // 後から追加されたプロパティはクラス既定値で初期化される
+        Assert.False(s.DefaultHideSidebar);
+        Assert.True(s.DefaultHideCompose);
+        Assert.False(s.DefaultHideListHeader);
+        Assert.Equal("system", s.ExternalBrowser);
+        Assert.Null(s.LastUsedProfileId);
+        Assert.NotNull(s.SavedSearchQueries);
+        Assert.Empty(s.SavedSearchQueries);
+    }
+
+    [Fact]
+    public void LoadSettings_UnknownProperty_Ignored()
+    {
+        // 将来バージョンからのダウングレードを想定（未知プロパティが含まれる）
+        File.WriteAllText(At("settings.json"),
+            """{"Theme":"Light","FuturePropertyFromV99":{"nested":[1,2,3]}}""");
+
+        var s = SettingsService.LoadSettings(At("settings.json"));
+
+        Assert.Equal("Light", s.Theme);
+    }
+
+    [Fact]
+    public void SaveAndLoadSettings_RoundTrip_AllProperties()
+    {
+        var path = At("settings.json");
+        var original = new AppSettings
+        {
+            OpenComposerInBrowser  = true,
+            OpenTimestampInBrowser = true,
+            Theme                  = "Dark",
+            AutoActivateMinutes    = 15,
+            Language               = "en-US",
+            CachedLatestVersion    = "v9.9.9",
+            DefaultHideSidebar     = true,
+            DefaultHideCompose     = false,
+            DefaultHideListHeader  = true,
+            ShowAutoActivateLabel  = true,
+            ExternalBrowser        = "edge",
+            EdgeProfileDirectory   = "Profile 1",
+            LastUsedProfileId      = "abc123",
+            SavedSearchQueries     = ["/search?q=%E6%97%A5%E6%9C%AC&f=live", "/search?q=test"],
+        };
+
+        SettingsService.SaveSettings(path, original);
+        var loaded = SettingsService.LoadSettings(path);
+
+        Assert.True(loaded.OpenComposerInBrowser);
+        Assert.True(loaded.OpenTimestampInBrowser);
+        Assert.Equal("Dark",      loaded.Theme);
+        Assert.Equal(15,          loaded.AutoActivateMinutes);
+        Assert.Equal("en-US",     loaded.Language);
+        Assert.Equal("v9.9.9",    loaded.CachedLatestVersion);
+        Assert.True(loaded.DefaultHideSidebar);
+        Assert.False(loaded.DefaultHideCompose);
+        Assert.True(loaded.DefaultHideListHeader);
+        Assert.True(loaded.ShowAutoActivateLabel);
+        Assert.Equal("edge",      loaded.ExternalBrowser);
+        Assert.Equal("Profile 1", loaded.EdgeProfileDirectory);
+        Assert.Equal("abc123",    loaded.LastUsedProfileId);
+        Assert.Equal(["/search?q=%E6%97%A5%E6%9C%AC&f=live", "/search?q=test"],
+                     loaded.SavedSearchQueries);
+    }
+
     // ── LoadProfiles ──────────────────────────────────────────────────────────
 
     [Fact]
