@@ -241,6 +241,9 @@ namespace XTimelineViewer.Views
                     else
                         _ = OpenPostDialogAsync(senderWebView);
                     break;
+                case "focusSearch":
+                    SearchBox.Focus(FocusState.Programmatic);
+                    break;
             }
         }
 

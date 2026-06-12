@@ -2,9 +2,14 @@
     x:Class="XTimelineViewer.Views.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:XTimelineViewer.Views"
     Title="XTimelineViewer">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="FocusSearchBox_Invoked"/>
+            <KeyboardAccelerator Key="F3" Invoked="FocusSearchBox_Invoked"/>
+        </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -33,6 +38,24 @@
                     <TextBlock x:Name="PostLabel" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
+            <AutoSuggestBox x:Name="SearchBox"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Width="300"
+                            QueryIcon="Find"
+                            IsEnabled="{x:Bind ViewModel.HasNamedProfiles, Mode=OneWay}"
+                            QuerySubmitted="SearchBox_QuerySubmitted"
+                            TextChanged="SearchBox_TextChanged"
+                            SuggestionChosen="SearchBox_SuggestionChosen"
+                            UpdateTextOnSelect="False">
+                <AutoSuggestBox.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <TextBlock Text="{x:Bind local:MainWindow.DecodeSearchPath((x:String))}"
+                                   TextTrimming="CharacterEllipsis"
+                                   ToolTipService.ToolTip="{x:Bind local:MainWindow.DecodeSearchPath((x:String))}"/>
+                    </DataTemplate>
+                </AutoSuggestBox.ItemTemplate>
+            </AutoSuggestBox>
             <StackPanel x:Name="RightToolbar"
                         Orientation="Horizontal"
                         Spacing="4"
