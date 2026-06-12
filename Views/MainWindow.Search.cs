@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Web.WebView2.Core;
+using XTimelineViewer.Services;
 
 namespace XTimelineViewer.Views
 {
@@ -41,14 +42,14 @@ namespace XTimelineViewer.Views
             }
             var filtered = string.IsNullOrEmpty(text)
                 ? saved.ToList()
-                : saved.Where(q => DecodeSearchPath(q).Contains(text, StringComparison.OrdinalIgnoreCase)).ToList();
+                : saved.Where(q => SearchQueryHelper.DecodeSearchPath(q).Contains(text, StringComparison.OrdinalIgnoreCase)).ToList();
             sender.ItemsSource = filtered.Count > 0 ? filtered : null;
         }
 
         private void SearchBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
         {
             if (args.SelectedItem is string chosen)
-                sender.Text = ExtractQueryFromSearchPath(chosen) ?? chosen;
+                sender.Text = SearchQueryHelper.ExtractQueryFromSearchPath(chosen) ?? chosen;
         }
 
         private async Task OpenSearchDialogAsync(string input)
@@ -58,7 +59,7 @@ namespace XTimelineViewer.Views
             // サジェストからのクエリパス or 直接入力のキーワード
             var initialUrl = input.StartsWith("/search?", StringComparison.OrdinalIgnoreCase)
                 ? "https://x.com" + input
-                : BuildSearchUrl(input);
+                : SearchQueryHelper.BuildSearchUrl(input);
 
             var webView = new WebView2 { Width = 500, MinHeight = 520 };
 
@@ -83,10 +84,10 @@ namespace XTimelineViewer.Views
                 if (result == ContentDialogResult.Primary)
                 {
                     var currentUrl = webView.Source?.ToString();
-                    if (currentUrl is not null && ExtractQueryFromUrl(currentUrl) is not null)
+                    if (currentUrl is not null && SearchQueryHelper.ExtractQueryFromUrl(currentUrl) is not null)
                     {
                         AddTimeline(CreateDefaultConfig(currentUrl));
-                        var searchPath = ExtractSearchPath(currentUrl);
+                        var searchPath = SearchQueryHelper.ExtractSearchPath(currentUrl);
                         if (searchPath is not null)
                             AddSavedSearchQuery(searchPath);
                     }
@@ -145,50 +146,8 @@ namespace XTimelineViewer.Views
             };
         }
 
-        private static string BuildSearchUrl(string query)
-        {
-            var encoded = Uri.EscapeDataString(query);
-            return $"https://x.com/search?q={encoded}&src=typed_query";
-        }
-
-        /// <summary>URL からクエリパス部分を抽出する（例: /search?q=test&amp;f=live）。src= は除外。</summary>
-        private static string? ExtractSearchPath(string? url)
-        {
-            if (url is null || !Uri.TryCreate(url, UriKind.Absolute, out var uri)) return null;
-            if (!uri.AbsolutePath.Equals("/search", StringComparison.OrdinalIgnoreCase)) return null;
-            var qs = uri.Query;
-            if (string.IsNullOrEmpty(qs)) return null;
-            var meaningful = qs.TrimStart('?').Split('&')
-                .Where(p => !p.StartsWith("src=", StringComparison.OrdinalIgnoreCase))
-                .ToArray();
-            return meaningful.Length > 0
-                ? "/search?" + string.Join("&", meaningful)
-                : null;
-        }
-
-        /// <summary>URL から q= パラメータの値を抽出する。</summary>
-        private static string? ExtractQueryFromUrl(string? url)
-        {
-            if (url is null || !Uri.TryCreate(url, UriKind.Absolute, out var uri)) return null;
-            var qs = uri.Query;
-            if (string.IsNullOrEmpty(qs)) return null;
-            foreach (var pair in qs.TrimStart('?').Split('&'))
-            {
-                var parts = pair.Split('=', 2);
-                if (parts.Length == 2 && parts[0] == "q")
-                    return Uri.UnescapeDataString(parts[1]);
-            }
-            return null;
-        }
-
-        /// <summary>クエリパスをデコードして表示用文字列を返す。x:Bind から呼ばれる。</summary>
+        /// <summary>クエリパスをデコードして表示用文字列を返す。x:Bind から呼ばれるため MainWindow に残している。</summary>
         public static string DecodeSearchPath(string searchPath)
-            => Uri.UnescapeDataString(searchPath);
-
-        /// <summary>クエリパス（/search?q=...&amp;f=live）から q= の値を抽出する。</summary>
-        private static string? ExtractQueryFromSearchPath(string searchPath)
-        {
-            return ExtractQueryFromUrl("https://x.com" + searchPath);
-        }
+            => SearchQueryHelper.DecodeSearchPath(searchPath);
     }
 }

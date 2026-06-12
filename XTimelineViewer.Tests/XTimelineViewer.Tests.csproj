@@ -29,6 +29,8 @@
     <Compile Include="..\Models\*.cs"                  Link="Models\%(Filename)%(Extension)" />
     <Compile Include="..\Services\SettingsService.cs" Link="Services\SettingsService.cs" />
     <Compile Include="..\Services\EdgeService.cs"    Link="Services\EdgeService.cs" />
+    <Compile Include="..\Services\UrlHelper.cs"      Link="Services\UrlHelper.cs" />
+    <Compile Include="..\Services\SearchQueryHelper.cs" Link="Services\SearchQueryHelper.cs" />
   </ItemGroup>
 
 </Project>
