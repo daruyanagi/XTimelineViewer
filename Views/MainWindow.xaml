@@ -2,6 +2,7 @@
     x:Class="XTimelineViewer.Views.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:XTimelineViewer.Views"
     Title="XTimelineViewer">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
@@ -45,7 +46,16 @@
                             IsEnabled="{x:Bind ViewModel.HasNamedProfiles, Mode=OneWay}"
                             QuerySubmitted="SearchBox_QuerySubmitted"
                             TextChanged="SearchBox_TextChanged"
-                            SuggestionChosen="SearchBox_SuggestionChosen"/>
+                            SuggestionChosen="SearchBox_SuggestionChosen"
+                            UpdateTextOnSelect="False">
+                <AutoSuggestBox.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <TextBlock Text="{x:Bind local:MainWindow.DecodeSearchPath((x:String))}"
+                                   TextTrimming="CharacterEllipsis"
+                                   ToolTipService.ToolTip="{x:Bind local:MainWindow.DecodeSearchPath((x:String))}"/>
+                    </DataTemplate>
+                </AutoSuggestBox.ItemTemplate>
+            </AutoSuggestBox>
             <StackPanel x:Name="RightToolbar"
                         Orientation="Horizontal"
                         Spacing="4"

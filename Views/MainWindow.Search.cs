@@ -41,19 +41,24 @@ namespace XTimelineViewer.Views
             }
             var filtered = string.IsNullOrEmpty(text)
                 ? saved.ToList()
-                : saved.Where(q => q.Contains(text, StringComparison.OrdinalIgnoreCase)).ToList();
+                : saved.Where(q => DecodeSearchPath(q).Contains(text, StringComparison.OrdinalIgnoreCase)).ToList();
             sender.ItemsSource = filtered.Count > 0 ? filtered : null;
         }
 
         private void SearchBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
         {
             if (args.SelectedItem is string chosen)
-                sender.Text = chosen;
+                sender.Text = ExtractQueryFromSearchPath(chosen) ?? chosen;
         }
 
-        private async Task OpenSearchDialogAsync(string query)
+        private async Task OpenSearchDialogAsync(string input)
         {
             var profileId = ResolveComposeProfileId();
+
+            // サジェストからのクエリパス or 直接入力のキーワード
+            var initialUrl = input.StartsWith("/search?", StringComparison.OrdinalIgnoreCase)
+                ? "https://x.com" + input
+                : BuildSearchUrl(input);
 
             var webView = new WebView2 { Width = 500, MinHeight = 520 };
 
@@ -67,10 +72,8 @@ namespace XTimelineViewer.Views
                 DefaultButton      = ContentDialogButton.Primary,
             };
 
-            string currentQuery = query;
-
-            await InitSearchWebView(webView, profileId, q => currentQuery = q);
-            webView.Source = new Uri(BuildSearchUrl(query));
+            await InitSearchWebView(webView, profileId);
+            webView.Source = new Uri(initialUrl);
 
             foreach (var wv in _webViews)
                 wv.Visibility = Visibility.Collapsed;
@@ -79,12 +82,13 @@ namespace XTimelineViewer.Views
                 var result = await ShowDialogAsync(dlg);
                 if (result == ContentDialogResult.Primary)
                 {
-                    var finalQuery = ExtractQueryFromUrl(webView.Source?.ToString()) ?? currentQuery;
-                    if (!string.IsNullOrEmpty(finalQuery))
+                    var currentUrl = webView.Source?.ToString();
+                    if (currentUrl is not null && ExtractQueryFromUrl(currentUrl) is not null)
                     {
-                        var url = BuildSearchUrl(finalQuery);
-                        AddTimeline(CreateDefaultConfig(url));
-                        AddSavedSearchQuery(finalQuery);
+                        AddTimeline(CreateDefaultConfig(currentUrl));
+                        var searchPath = ExtractSearchPath(currentUrl);
+                        if (searchPath is not null)
+                            AddSavedSearchQuery(searchPath);
                     }
                 }
             }
@@ -99,15 +103,15 @@ namespace XTimelineViewer.Views
             SearchBox.Text = "";
         }
 
-        private void AddSavedSearchQuery(string query)
+        private void AddSavedSearchQuery(string searchPath)
         {
             var saved = _appSettings.SavedSearchQueries;
-            saved.Remove(query);
-            saved.Insert(0, query);
+            saved.Remove(searchPath);
+            saved.Insert(0, searchPath);
             SaveSettings();
         }
 
-        private async Task InitSearchWebView(WebView2 webView, string profileId, Action<string> onQueryChanged)
+        private async Task InitSearchWebView(WebView2 webView, string profileId)
         {
             var env = await GetOrCreateProfileEnvAsync(profileId);
             await webView.EnsureCoreWebView2Async(env);
@@ -124,10 +128,6 @@ namespace XTimelineViewer.Views
             webView.CoreWebView2.NavigationCompleted += async (s, args) =>
             {
                 if (!args.IsSuccess) return;
-
-                var q = ExtractQueryFromUrl(webView.Source?.ToString());
-                if (q is not null) onQueryChanged(q);
-
                 await webView.CoreWebView2.ExecuteScriptAsync("""
                     (function() {
                         var id = 'xtv-search-style';
@@ -151,6 +151,22 @@ namespace XTimelineViewer.Views
             return $"https://x.com/search?q={encoded}&src=typed_query";
         }
 
+        /// <summary>URL からクエリパス部分を抽出する（例: /search?q=test&amp;f=live）。src= は除外。</summary>
+        private static string? ExtractSearchPath(string? url)
+        {
+            if (url is null || !Uri.TryCreate(url, UriKind.Absolute, out var uri)) return null;
+            if (!uri.AbsolutePath.Equals("/search", StringComparison.OrdinalIgnoreCase)) return null;
+            var qs = uri.Query;
+            if (string.IsNullOrEmpty(qs)) return null;
+            var meaningful = qs.TrimStart('?').Split('&')
+                .Where(p => !p.StartsWith("src=", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            return meaningful.Length > 0
+                ? "/search?" + string.Join("&", meaningful)
+                : null;
+        }
+
+        /// <summary>URL から q= パラメータの値を抽出する。</summary>
         private static string? ExtractQueryFromUrl(string? url)
         {
             if (url is null || !Uri.TryCreate(url, UriKind.Absolute, out var uri)) return null;
@@ -163,6 +179,16 @@ namespace XTimelineViewer.Views
                     return Uri.UnescapeDataString(parts[1]);
             }
             return null;
+        }
+
+        /// <summary>クエリパスをデコードして表示用文字列を返す。x:Bind から呼ばれる。</summary>
+        public static string DecodeSearchPath(string searchPath)
+            => Uri.UnescapeDataString(searchPath);
+
+        /// <summary>クエリパス（/search?q=...&amp;f=live）から q= の値を抽出する。</summary>
+        private static string? ExtractQueryFromSearchPath(string searchPath)
+        {
+            return ExtractQueryFromUrl("https://x.com" + searchPath);
         }
     }
 }
