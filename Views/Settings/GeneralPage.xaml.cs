@@ -3,12 +3,25 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 
 namespace XTimelineViewer.Views.Settings
 {
+    /// <summary>保存済み検索クエリの表示用アイテム。x:Bind から参照される。</summary>
+    public sealed class SavedQueryItem(string path, string decoded, string deleteLabel)
+    {
+        public string Path        { get; set; } = path;
+        public string Decoded     { get; set; } = decoded;
+        public string DeleteLabel { get; set; } = deleteLabel;
+    }
+
     public sealed partial class GeneralPage : Page
     {
+        /// <summary>x:Bind のバインディングソース。XAML から参照される。</summary>
+        public ObservableCollection<SavedQueryItem> SavedQueries { get; } = [];
+
         private static readonly string[] ThemeValues = ["Default", "Light", "Dark"];
         private static readonly string[] LangValues  = ["system", "ja-JP", "en-US"];
 
@@ -99,38 +112,26 @@ namespace XTimelineViewer.Views.Settings
 
         private void RebuildSavedQueriesItems()
         {
-            SavedQueriesExpander.Items.Clear();
+            SavedQueries.Clear();
             if (_parent is null) return;
 
-            var saved = _parent.Settings.SavedSearchQueries;
-            if (saved.Count == 0)
+            var deleteLabel = R.Get("Profile_Delete");
+            foreach (var path in _parent.Settings.SavedSearchQueries)
+                SavedQueries.Add(new SavedQueryItem(path, Uri.UnescapeDataString(path), deleteLabel));
+
+            UpdateSavedQueriesExpanderState();
+        }
+
+        private void UpdateSavedQueriesExpanderState()
+        {
+            if (SavedQueries.Count == 0)
             {
                 SavedQueriesExpander.IsExpanded = false;
                 SavedQueriesExpander.IsEnabled  = false;
-                return;
             }
-
-            SavedQueriesExpander.IsEnabled = true;
-
-            foreach (var path in saved)
+            else
             {
-                var decoded = Uri.UnescapeDataString(path);
-
-                var deleteBtn = new Button
-                {
-                    Content = R.Get("Profile_Delete"),
-                    Tag     = path,
-                    Foreground = (Microsoft.UI.Xaml.Media.Brush)
-                        Application.Current.Resources["SystemFillColorCriticalBrush"],
-                };
-                deleteBtn.Click += SavedQueryDelete_Click;
-
-                var card = new CommunityToolkit.WinUI.Controls.SettingsCard
-                {
-                    Header  = decoded,
-                    Content = deleteBtn,
-                };
-                SavedQueriesExpander.Items.Add(card);
+                SavedQueriesExpander.IsEnabled = true;
             }
         }
 
@@ -139,7 +140,10 @@ namespace XTimelineViewer.Views.Settings
             if (_parent is null || sender is not Button btn || btn.Tag is not string path) return;
             _parent.Settings.SavedSearchQueries.Remove(path);
             _parent.NotifySettingsChanged();
-            RebuildSavedQueriesItems();
+
+            var item = SavedQueries.FirstOrDefault(q => q.Path == path);
+            if (item is not null) SavedQueries.Remove(item);
+            UpdateSavedQueriesExpanderState();
         }
 
         private void ThemeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
