@@ -10,7 +10,6 @@
 
   <!-- Toolbar tooltips -->
   <data name="PostBtn_Tooltip" xml:space="preserve"><value>新規投稿</value></data>
-  <data name="AppSettingsBtn_Tooltip" xml:space="preserve"><value>アプリ設定</value></data>
   <data name="AppMenu_Tooltip" xml:space="preserve"><value>メニュー</value></data>
 
   <!-- App menu items -->
@@ -31,9 +30,6 @@
   <data name="AddProfile_CreateBtn" xml:space="preserve"><value>プロファイルを作成</value></data>
   <data name="AddProfile_FallbackLabel" xml:space="preserve"><value>プロファイル名</value></data>
 
-  <!-- About dialog -->
-  <data name="About_Title" xml:space="preserve"><value>XTimelineViewer について</value></data>
-
   <!-- Theme selector items -->
   <data name="Theme_System" xml:space="preserve"><value>システム</value></data>
   <data name="Theme_Light" xml:space="preserve"><value>ライト</value></data>
@@ -52,8 +48,6 @@
   <data name="Settings_ExportFolder" xml:space="preserve"><value>設定ファイルのエクスポート</value></data>
   <data name="Settings_Theme_Description" xml:space="preserve"><value>アプリの外観を変更します</value></data>
   <data name="Settings_Language_Description" xml:space="preserve"><value>アプリの表示言語を変更します</value></data>
-  <data name="Section_Experimental" xml:space="preserve"><value>試験機能</value></data>
-  <data name="Section_About" xml:space="preserve"><value>バージョン情報</value></data>
   <data name="Settings_OpenComposerInBrowser" xml:space="preserve"><value>新規投稿を外部ブラウザーで開く</value></data>
   <data name="Settings_OpenComposerInBrowser_Description" xml:space="preserve"><value>内蔵のコンポーザーの代わりに外部ブラウザーで新規投稿を開きます</value></data>
   <data name="Settings_OpenTimestampInBrowser" xml:space="preserve"><value>タイムスタンプリンクを外部ブラウザーで開く</value></data>
@@ -71,12 +65,10 @@
 
 
   <!-- Common buttons -->
-  <data name="Button_Save" xml:space="preserve"><value>保存</value></data>
   <data name="Button_Cancel" xml:space="preserve"><value>キャンセル</value></data>
   <data name="Button_Close" xml:space="preserve"><value>閉じる</value></data>
   <data name="Button_Apply" xml:space="preserve"><value>適用</value></data>
   <data name="Button_Copy" xml:space="preserve"><value>コピー</value></data>
-  <data name="Button_ReportIssue" xml:space="preserve"><value>Issue を報告</value></data>
   <data name="Button_OpenFolder" xml:space="preserve"><value>フォルダーを開く</value></data>
 
   <!-- Timeline pane settings dialog -->
@@ -113,18 +105,12 @@
   <data name="Nav_Data" xml:space="preserve"><value>ユーザーデータ管理</value></data>
   <data name="Settings_RelatedSettings" xml:space="preserve"><value>関連する設定</value></data>
   <data name="Nav_About" xml:space="preserve"><value>バージョン情報</value></data>
-  <data name="Settings_Placeholder" xml:space="preserve"><value>このページは今後のアップデートで実装されます。</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>設定</value></data>
-  <data name="Pane_Close_Tooltip" xml:space="preserve"><value>閉じる</value></data>
   <data name="Pane_Delete" xml:space="preserve"><value>このタイムラインを削除</value></data>
   <data name="DragCaption" xml:space="preserve"><value>タイムラインを追加</value></data>
 
   <!-- Profile management -->
-  <data name="Profile_Reset" xml:space="preserve"><value>初期化</value></data>
   <data name="Profile_Delete" xml:space="preserve"><value>削除</value></data>
-  <data name="Profile_ResetConfirmTitle" xml:space="preserve"><value>プロファイルの初期化</value></data>
-  <data name="Profile_ResetConfirmBody" xml:space="preserve"><value>Cookie やログイン情報がすべて削除されます。このプロファイルを使用しているタイムラインは削除され、次回起動時にデータが消去されます。</value></data>
-  <data name="Profile_ResetConfirm" xml:space="preserve"><value>初期化する</value></data>
   <data name="Profile_DeleteConfirmTitle" xml:space="preserve"><value>プロファイルの削除</value></data>
   <data name="Profile_DeleteConfirmBody" xml:space="preserve"><value>このプロファイルを使用している {0} 個のタイムラインも削除されます。</value></data>
   <data name="Profile_DeleteConfirm" xml:space="preserve"><value>削除する</value></data>
@@ -153,12 +139,6 @@
   <!-- Version info -->
   <data name="Version_Unknown" xml:space="preserve"><value>不明</value></data>
   <data name="EdgeChannel_Runtime" xml:space="preserve"><value>WebView2 ランタイム</value></data>
-
-
-  <!-- Issue report body labels -->
-  <data name="IssueLabel_AppVersion" xml:space="preserve"><value>アプリバージョン</value></data>
-  <data name="IssueLabel_EdgeVersion" xml:space="preserve"><value>内部の Edge バージョン</value></data>
-  <data name="IssueLabel_Symptoms" xml:space="preserve"><value>具体的な症状</value></data>
 
   <!-- Extension settings -->
   <data name="ExtSettings_Format" xml:space="preserve"><value>{0} の設定</value></data>
@@ -197,9 +177,6 @@
 
   <!-- About dialog sections -->
   <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>
-  <data name="About_Links" xml:space="preserve"><value>リンク</value></data>
-  <data name="About_Repository" xml:space="preserve"><value>GitHub リポジトリ</value></data>
-  <data name="About_Acknowledgements" xml:space="preserve"><value>謝辞</value></data>
   <data name="About_License" xml:space="preserve"><value>ライセンス</value></data>
   <data name="About_Components" xml:space="preserve"><value>利用しているコンポーネント</value></data>
 </root>
