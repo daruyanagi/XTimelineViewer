@@ -1,0 +1,53 @@
+<Page
+    x:Class="XTimelineViewer.Views.Settings.DataPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:local="using:XTimelineViewer.Views.Settings">
+
+    <ScrollViewer Padding="24,16">
+        <StackPanel Spacing="4">
+            <TextBlock x:Name="PageTitle"
+                       Style="{StaticResource TitleTextBlockStyle}"
+                       Margin="0,0,0,16"/>
+
+            <!-- Export Settings Folder -->
+            <controls:SettingsCard x:Name="ExportFolderCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE838;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <Button x:Name="OpenFolderBtn" Click="OpenFolderBtn_Click"/>
+            </controls:SettingsCard>
+
+            <!-- Saved Search Queries -->
+            <controls:SettingsExpander x:Name="SavedQueriesExpander"
+                                       ItemsSource="{x:Bind SavedQueries}">
+                <controls:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE721;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsExpander.HeaderIcon>
+                <controls:SettingsExpander.ItemTemplate>
+                    <DataTemplate x:DataType="local:SavedQueryItem">
+                        <controls:SettingsCard Header="{x:Bind Decoded}">
+                            <Button Content="{x:Bind DeleteLabel}"
+                                    Tag="{x:Bind Path}"
+                                    Click="SavedQueryDelete_Click"
+                                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"/>
+                        </controls:SettingsCard>
+                    </DataTemplate>
+                </controls:SettingsExpander.ItemTemplate>
+            </controls:SettingsExpander>
+
+            <!-- Related settings -->
+            <TextBlock x:Name="RelatedHeader"
+                       Style="{StaticResource BodyStrongTextBlockStyle}"
+                       Margin="0,24,0,8"/>
+            <controls:SettingsCard x:Name="ProfilesLinkCard"
+                                   IsClickEnabled="True"
+                                   Click="ProfilesLinkCard_Click">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE716;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+            </controls:SettingsCard>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

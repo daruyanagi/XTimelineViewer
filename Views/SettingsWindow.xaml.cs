@@ -112,6 +112,7 @@ namespace XTimelineViewer.Views
         {
             Title                  = R.Get("AppSettings_Title");
             NavGeneral.Content     = R.Get("Nav_General");
+            NavData.Content        = R.Get("Nav_Data");
             NavExperimental.Content = R.Get("Nav_Experimental");
             NavExtensions.Content  = R.Get("Nav_Extensions");
             NavProfiles.Content    = R.Get("Nav_Profiles");
@@ -139,6 +140,7 @@ namespace XTimelineViewer.Views
             var pageType = tag switch
             {
                 "General"      => typeof(Settings.GeneralPage),
+                "Data"         => typeof(Settings.DataPage),
                 "Experimental" => typeof(Settings.ExperimentalPage),
                 "Extensions"   => typeof(Settings.ExtensionsPage),
                 "Profiles"     => typeof(Settings.ProfilesPage),

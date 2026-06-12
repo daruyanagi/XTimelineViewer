@@ -110,6 +110,8 @@
   <data name="Nav_Experimental" xml:space="preserve"><value>Experimental</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>Extensions</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>Profiles</value></data>
+  <data name="Nav_Data" xml:space="preserve"><value>User Data</value></data>
+  <data name="Settings_RelatedSettings" xml:space="preserve"><value>Related settings</value></data>
   <data name="Nav_About" xml:space="preserve"><value>About</value></data>
   <data name="Settings_Placeholder" xml:space="preserve"><value>This page will be implemented in a future update.</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>Settings</value></data>
