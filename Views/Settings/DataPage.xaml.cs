@@ -48,7 +48,14 @@ namespace XTimelineViewer.Views.Settings
             SavedQueriesExpander.Header      = R.Get("Settings_SavedQueries");
             SavedQueriesExpander.Description = R.Get("Settings_SavedQueries_Description");
             RebuildSavedQueriesItems();
+
+            // Related settings
+            RelatedHeader.Text      = R.Get("Settings_RelatedSettings");
+            ProfilesLinkCard.Header = R.Get("Nav_Profiles");
         }
+
+        private void ProfilesLinkCard_Click(object sender, RoutedEventArgs e)
+            => _parent?.SelectPage("Profiles");
 
         private void RebuildSavedQueriesItems()
         {

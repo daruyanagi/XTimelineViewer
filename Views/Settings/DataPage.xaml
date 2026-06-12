@@ -36,6 +36,18 @@
                     </DataTemplate>
                 </controls:SettingsExpander.ItemTemplate>
             </controls:SettingsExpander>
+
+            <!-- Related settings -->
+            <TextBlock x:Name="RelatedHeader"
+                       Style="{StaticResource BodyStrongTextBlockStyle}"
+                       Margin="0,24,0,8"/>
+            <controls:SettingsCard x:Name="ProfilesLinkCard"
+                                   IsClickEnabled="True"
+                                   Click="ProfilesLinkCard_Click">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE716;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+            </controls:SettingsCard>
         </StackPanel>
     </ScrollViewer>
 </Page>
