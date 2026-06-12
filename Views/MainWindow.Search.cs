@@ -106,9 +106,7 @@ namespace XTimelineViewer.Views
 
         private void AddSavedSearchQuery(string searchPath)
         {
-            var saved = _appSettings.SavedSearchQueries;
-            saved.Remove(searchPath);
-            saved.Insert(0, searchPath);
+            SearchQueryHelper.AddSavedQuery(_appSettings.SavedSearchQueries, searchPath);
             SaveSettings();
         }
 

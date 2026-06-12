@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using XTimelineViewer.Services;
 using Xunit;
 
@@ -68,6 +69,38 @@ public class SearchQueryHelperTests
         => Assert.Equal(
             "日本代表",
             SearchQueryHelper.ExtractQueryFromSearchPath("/search?q=%E6%97%A5%E6%9C%AC%E4%BB%A3%E8%A1%A8&f=live"));
+
+    // ── AddSavedQuery（重複排除・先頭挿入） ───────────────────────────────────
+
+    [Fact]
+    public void AddSavedQuery_NewQuery_InsertsAtHead()
+    {
+        var saved = new List<string> { "/search?q=old" };
+
+        SearchQueryHelper.AddSavedQuery(saved, "/search?q=new");
+
+        Assert.Equal(["/search?q=new", "/search?q=old"], saved);
+    }
+
+    [Fact]
+    public void AddSavedQuery_ExistingQuery_MovesToHeadWithoutDuplicate()
+    {
+        var saved = new List<string> { "/search?q=a", "/search?q=b", "/search?q=c" };
+
+        SearchQueryHelper.AddSavedQuery(saved, "/search?q=b");
+
+        Assert.Equal(["/search?q=b", "/search?q=a", "/search?q=c"], saved);
+    }
+
+    [Fact]
+    public void AddSavedQuery_EmptyList_Works()
+    {
+        var saved = new List<string>();
+
+        SearchQueryHelper.AddSavedQuery(saved, "/search?q=first");
+
+        Assert.Equal(["/search?q=first"], saved);
+    }
 
     // ── 往復（Build → Extract） ───────────────────────────────────────────────
 

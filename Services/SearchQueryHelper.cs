@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace XTimelineViewer.Services
@@ -49,5 +50,12 @@ namespace XTimelineViewer.Services
         /// <summary>クエリパス（/search?q=...&amp;f=live）から q= の値を抽出する。</summary>
         internal static string? ExtractQueryFromSearchPath(string searchPath)
             => ExtractQueryFromUrl("https://x.com" + searchPath);
+
+        /// <summary>保存済みクエリの先頭に追加する。既存の同一クエリは重複させず先頭へ移動する。</summary>
+        internal static void AddSavedQuery(IList<string> saved, string searchPath)
+        {
+            saved.Remove(searchPath);
+            saved.Insert(0, searchPath);
+        }
     }
 }
