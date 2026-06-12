@@ -111,6 +111,10 @@ namespace XTimelineViewer.Views.Settings
             var idx = Math.Clamp(LanguageCombo.SelectedIndex, 0, LangValues.Length - 1);
             _parent.Settings.Language = LangValues[idx];
             _parent.NotifySettingsChanged();
+
+            // NotifySettingsChanged で R が再読込された後、このページ自身の表示も
+            // 新しい言語で再構築する（他ページは遷移時の PopulateUI で反映される）
+            PopulateUI();
         }
 
         private void SidebarToggle_Toggled(object sender, RoutedEventArgs e)
