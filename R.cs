@@ -1,79 +1,67 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Xml.Linq;
+using Microsoft.Windows.ApplicationModel.Resources;
 
 namespace XTimelineViewer
 {
+    /// <summary>
+    /// 多言語リソースへのアクセスを提供する。
+    /// MRT Core (ResourceManager) でビルド時生成の resources.pri から文字列を解決する (#198)。
+    /// WinAppSDK 1.6 以降は Microsoft.Windows.Globalization.ApplicationLanguages により
+    /// unpackaged でも PrimaryLanguageOverride が有効。ただし unpackaged では
+    /// セッション間で永続化されないため、起動のたびに設定する。
+    /// </summary>
     internal static class R
     {
-        private static Dictionary<string, string> _dict = [];
-        private static bool _initialized;
+        private static ResourceManager? _manager;
+        private static ResourceMap?     _map;
+        private static ResourceContext? _context;
 
         internal static void Initialize(string? languageOverride = null)
         {
-            if (_initialized) return;
-            _initialized = true;
-
-            // ResourceMap.GetValue() はドットを含むキー（x:Uid バインディング用）を
-            // 特定の言語コンテキストで正しく解決できず COMException をスローする (#40)。
-            // すべての言語で resw 直接パースに統一して回避する。
-            var locale = languageOverride ?? ResolveSystemLocale();
-            _dict = LoadResw(locale) ?? LoadResw("en-US") ?? [];
-        }
-
-        // 実行中に言語を切り替えるためリソース辞書を再読み込みする (#117)。
-        // languageOverride が null の場合はシステム言語にフォールバックする。
-        internal static void Reload(string? languageOverride = null)
-        {
-            _initialized = false;
-            Initialize(languageOverride);
-        }
-
-        // システム言語から使用する resw ロケールフォルダー名を決定する。
-        // ja 系は "ja-JP"、それ以外は "en-US" にフォールバックする。
-        private static string ResolveSystemLocale()
-        {
+            // x:Uid で解決される XAML リソース（#199 で導入予定）にも反映させるため、
+            // 明示コンテキストとは別にプロセス全体の言語も上書きする。
             try
             {
-                var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-                return lang == "ja" ? "ja-JP" : "en-US";
-            }
-            catch
-            {
-                return "en-US";
-            }
-        }
-
-        private static Dictionary<string, string>? LoadResw(string locale)
-        {
-            var path = Path.Combine(AppContext.BaseDirectory, "Strings", locale, "Resources.resw");
-            if (!File.Exists(path)) return null;
-
-            var dict = new Dictionary<string, string>();
-            try
-            {
-                foreach (var data in XDocument.Load(path).Descendants("data"))
-                {
-                    var name  = data.Attribute("name")?.Value;
-                    var value = data.Element("value")?.Value;
-                    if (name != null && value != null)
-                        dict[name] = value;
-                }
+                Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride =
+                    languageOverride ?? "";
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[R] LoadResw({locale}) FAILED: {ex.Message}");
-                return null;
+                Debug.WriteLine($"[R] PrimaryLanguageOverride FAILED: {ex.Message}");
             }
-            return dict;
+
+            _manager = new ResourceManager();
+            _map     = _manager.MainResourceMap.GetSubtree("Resources");
+
+            // 実行中の言語切り替え (#117) を確実にするため、明示的な ResourceContext で解決する。
+            // 既定コンテキストはプロセス起動時の言語をキャッシュすることがある。
+            _context = _manager.CreateResourceContext();
+            if (languageOverride is not null)
+                _context.QualifierValues["Language"] = languageOverride;
         }
+
+        // 実行中に言語を切り替えるためリソースコンテキストを再構築する (#117)。
+        // languageOverride が null の場合はシステム言語にフォールバックする。
+        internal static void Reload(string? languageOverride = null)
+            => Initialize(languageOverride);
 
         public static string Get(string key)
         {
-            if (!_initialized) Initialize();
-            return _dict.TryGetValue(key, out var val) ? val : string.Empty;
+            if (_map is null || _context is null) Initialize();
+
+            try
+            {
+                // x:Uid 形式のキー（例: PostLabel.Text）は PRI 内では PostLabel/Text として
+                // 格納されるため変換する。ドットのまま GetValue すると COMException になる (#40)。
+                var candidate = _map!.TryGetValue(key.Replace('.', '/'), _context);
+                return candidate?.ValueAsString ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[R] Get({key}) FAILED: {ex.Message}");
+                return string.Empty;
+            }
         }
     }
 }

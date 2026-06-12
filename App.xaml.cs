@@ -59,11 +59,9 @@ namespace XTimelineViewer
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
+            // WinAppSDK 1.6+ の Microsoft.Windows.Globalization 経由で packaged / unpackaged
+            // 両対応の言語上書きを行う（R.Initialize 内で設定）。リソース読み込み前に呼ぶこと。
             var lang = ReadLanguageSetting();
-
-            if (lang != null && PackageContext.IsPackaged)
-                Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = lang;
-
             R.Initialize(lang);
             _window = new MainWindow();
             _window.Activate();
