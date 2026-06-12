@@ -110,6 +110,7 @@
   <data name="Nav_Experimental" xml:space="preserve"><value>試験機能</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>拡張機能</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>プロファイル</value></data>
+  <data name="Nav_Data" xml:space="preserve"><value>データ管理</value></data>
   <data name="Nav_About" xml:space="preserve"><value>バージョン情報</value></data>
   <data name="Settings_Placeholder" xml:space="preserve"><value>このページは今後のアップデートで実装されます。</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>設定</value></data>
