@@ -157,7 +157,7 @@ namespace XTimelineViewer.Views
             var pageType = tag switch
             {
                 "General"      => typeof(Settings.GeneralPage),
-                "Data"         => typeof(Settings.DataPage),
+                "Data"         => typeof(Settings.UserDataPage),
                 "Experimental" => typeof(Settings.ExperimentalPage),
                 "Extensions"   => typeof(Settings.ExtensionsPage),
                 "Profiles"     => typeof(Settings.ProfilesPage),

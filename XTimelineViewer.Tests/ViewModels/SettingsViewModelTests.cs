@@ -218,4 +218,56 @@ public class SettingsViewModelTests
 
         Assert.Equal(0, notified);
     }
+
+    // ── 保存済み検索クエリ ────────────────────────────────────────────────────
+
+    [Fact]
+    public void ReloadSavedQueries_DecodesAndPopulates()
+    {
+        var s = new AppSettings
+        {
+            SavedSearchQueries = ["/search?q=%E6%97%A5%E6%9C%AC%E4%BB%A3%E8%A1%A8&f=live"],
+        };
+        var vm = new SettingsViewModel(s);
+
+        vm.ReloadSavedQueries("削除");
+
+        var item = Assert.Single(vm.SavedQueries);
+        Assert.Equal("/search?q=%E6%97%A5%E6%9C%AC%E4%BB%A3%E8%A1%A8&f=live", item.Path);
+        Assert.Equal("/search?q=日本代表&f=live", item.Decoded);
+        Assert.Equal("削除", item.DeleteLabel);
+        Assert.True(vm.HasSavedQueries);
+    }
+
+    [Fact]
+    public void RemoveSavedQuery_UpdatesSettingsAndCollection()
+    {
+        var s = new AppSettings { SavedSearchQueries = ["/search?q=a", "/search?q=b"] };
+        var notified = 0;
+        var vm = new SettingsViewModel(s, () => notified++);
+        vm.ReloadSavedQueries("Delete");
+
+        vm.RemoveSavedQuery("/search?q=a");
+
+        Assert.Equal(["/search?q=b"], s.SavedSearchQueries);
+        Assert.Single(vm.SavedQueries);
+        Assert.Equal(1, notified);
+        Assert.True(vm.HasSavedQueries);
+    }
+
+    [Fact]
+    public void RemoveSavedQuery_LastItem_HasSavedQueriesBecomesFalse()
+    {
+        var s = new AppSettings { SavedSearchQueries = ["/search?q=a"] };
+        var vm = new SettingsViewModel(s);
+        vm.ReloadSavedQueries("Delete");
+        var raised = new List<string?>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        vm.RemoveSavedQuery("/search?q=a");
+
+        Assert.Empty(vm.SavedQueries);
+        Assert.False(vm.HasSavedQueries);
+        Assert.Contains(nameof(SettingsViewModel.HasSavedQueries), raised);
+    }
 }
