@@ -22,6 +22,9 @@ namespace XTimelineViewer.Views
         /// <summary>親ウィンドウから渡されたアプリ設定。ページが直接読み書きする。</summary>
         internal AppSettings Settings { get; }
 
+        /// <summary>設定ページが x:Bind する ViewModel (#199)。</summary>
+        internal ViewModels.SettingsViewModel ViewModel { get; }
+
         /// <summary>設定ファイルが格納されているフォルダーパス。</summary>
         internal string SettingsFolder { get; }
 
@@ -80,6 +83,20 @@ namespace XTimelineViewer.Views
             _ownerHwnd = ownerHwnd;
             Settings = settings;
             SettingsFolder = settingsFolder;
+            ViewModel = new ViewModels.SettingsViewModel(settings, NotifySettingsChanged);
+
+            // テーマ変更は設定ウィンドウ自身にも即時反映する
+            ViewModel.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName != nameof(ViewModels.SettingsViewModel.ThemeIndex)) return;
+                ApplyTheme(Settings.Theme switch
+                {
+                    "Light" => ElementTheme.Light,
+                    "Dark"  => ElementTheme.Dark,
+                    _       => ElementTheme.Default,
+                });
+            };
+
             this.InitializeComponent();
 
             // ウィンドウサイズ・アイコン設定

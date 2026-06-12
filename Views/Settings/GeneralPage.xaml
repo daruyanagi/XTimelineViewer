@@ -17,7 +17,7 @@
                 </controls:SettingsCard.HeaderIcon>
                 <ComboBox x:Name="ThemeCombo"
                           MinWidth="160"
-                          SelectionChanged="ThemeCombo_SelectionChanged"/>
+                          SelectedIndex="{x:Bind VM.ThemeIndex, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
             <!-- Language -->
@@ -27,7 +27,7 @@
                 </controls:SettingsCard.HeaderIcon>
                 <ComboBox x:Name="LanguageCombo"
                           MinWidth="160"
-                          SelectionChanged="LanguageCombo_SelectionChanged"/>
+                          SelectedIndex="{x:Bind VM.LanguageIndex, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
             <!-- Timeline Defaults -->
@@ -38,17 +38,17 @@
                 <controls:SettingsExpander.Items>
                     <controls:SettingsCard x:Name="SidebarCard">
                         <ToggleSwitch x:Name="SidebarToggle"
-                                      Toggled="SidebarToggle_Toggled"
+                                      IsOn="{x:Bind VM.ShowSidebarByDefault, Mode=TwoWay}"
                                       MinWidth="0"/>
                     </controls:SettingsCard>
                     <controls:SettingsCard x:Name="ComposeCard">
                         <ToggleSwitch x:Name="ComposeToggle"
-                                      Toggled="ComposeToggle_Toggled"
+                                      IsOn="{x:Bind VM.ShowComposeByDefault, Mode=TwoWay}"
                                       MinWidth="0"/>
                     </controls:SettingsCard>
                     <controls:SettingsCard x:Name="ListHeaderCard">
                         <ToggleSwitch x:Name="ListHeaderToggle"
-                                      Toggled="ListHeaderToggle_Toggled"
+                                      IsOn="{x:Bind VM.ShowListHeaderByDefault, Mode=TwoWay}"
                                       MinWidth="0"/>
                     </controls:SettingsCard>
                 </controls:SettingsExpander.Items>
