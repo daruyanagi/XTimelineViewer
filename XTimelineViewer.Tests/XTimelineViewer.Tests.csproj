@@ -26,7 +26,7 @@
     UI 非依存なファイルだけをリンクして参照する。
   -->
   <ItemGroup>
-    <Compile Include="..\Models\Models.cs"             Link="Models\Models.cs" />
+    <Compile Include="..\Models\*.cs"                  Link="Models\%(Filename)%(Extension)" />
     <Compile Include="..\Services\SettingsService.cs" Link="Services\SettingsService.cs" />
     <Compile Include="..\Services\EdgeService.cs"    Link="Services\EdgeService.cs" />
   </ItemGroup>

@@ -1,37 +1,7 @@
-using System;
 using System.Collections.Generic;
 
 namespace XTimelineViewer.Models
 {
-    internal record ExtensionInfo(
-        string Name,
-        string DirectoryPath,
-        string? IconPath,
-        string? OptionsPage,
-        string? HomepageUrl,
-        string? ExtensionId
-    );
-
-    internal class TimelineConfig
-    {
-        public string Url                { get; set; } = "";
-        public double Width              { get; set; } = 350;
-        public bool   HideSidebar       { get; set; } = false;
-        public bool   HideCompose       { get; set; } = true;
-        public bool   HideListHeader    { get; set; } = false;
-        public bool   HardReloadEnabled { get; set; } = false;
-        public int    HardReloadInterval{ get; set; } = 3;
-        public string ProfileId         { get; set; } = "default";
-    }
-
-    public class ProfileConfig
-    {
-        public string  Id             { get; set; } = Guid.NewGuid().ToString("N");
-        public string  Name           { get; set; } = "";
-        public int?    BadgeColorIndex{ get; set; }
-        public string? BadgeText      { get; set; }
-    }
-
     public class AppSettings
     {
         public bool    OpenComposerInBrowser { get; set; } = false;
