@@ -185,6 +185,12 @@
   <data name="Settings_DefaultListHeader" xml:space="preserve"><value>Notifications / Search / Bookmarks / List Header</value></data>
   <data name="Onboarding_DefaultsHint" xml:space="preserve"><value>You can change these later in Settings</value></data>
 
+  <!-- Search box (#182) -->
+  <data name="Search_Placeholder" xml:space="preserve"><value>Search</value></data>
+  <data name="Search_Tooltip" xml:space="preserve"><value>Search X</value></data>
+  <data name="Search_DialogTitle" xml:space="preserve"><value>Search Results</value></data>
+  <data name="Search_AddBtn" xml:space="preserve"><value>Add as Timeline</value></data>
+
   <!-- About dialog sections -->
   <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>
   <data name="About_Links" xml:space="preserve"><value>Links</value></data>

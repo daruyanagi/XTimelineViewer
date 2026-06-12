@@ -33,6 +33,19 @@
                     <TextBlock x:Name="PostLabel" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
+            <AutoSuggestBox x:Name="SearchBox"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Width="300"
+                            QueryIcon="Find"
+                            IsEnabled="{x:Bind ViewModel.HasNamedProfiles, Mode=OneWay}"
+                            QuerySubmitted="SearchBox_QuerySubmitted"
+                            TextChanged="SearchBox_TextChanged"
+                            SuggestionChosen="SearchBox_SuggestionChosen">
+                <AutoSuggestBox.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="F" Modifiers="Control"/>
+                </AutoSuggestBox.KeyboardAccelerators>
+            </AutoSuggestBox>
             <StackPanel x:Name="RightToolbar"
                         Orientation="Horizontal"
                         Spacing="4"

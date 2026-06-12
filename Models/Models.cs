@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace XTimelineViewer.Models
 {
@@ -46,5 +47,6 @@ namespace XTimelineViewer.Models
         public string  ExternalBrowser       { get; set; } = "system";  // "system" | "edge"
         public string  EdgeProfileDirectory  { get; set; } = "";        // "Default" | "Profile 1" など
         public string? LastUsedProfileId     { get; set; } = null;      // 投稿画面で最後に使ったプロファイル
+        public List<string> SavedSearchQueries { get; set; } = [];        // 検索ボックスのサジェスト用
     }
 }

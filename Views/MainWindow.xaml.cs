@@ -266,6 +266,10 @@ namespace XTimelineViewer.Views
             AddHomeIcon.Glyph          = GetTimelineGlyph(HomeTimelineUrl);
             AddNotificationsIcon.Glyph = GetTimelineGlyph(NotificationsTimelineUrl);
             AddBookmarksIcon.Glyph     = GetTimelineGlyph(BookmarksTimelineUrl);
+
+            SearchBox.PlaceholderText = R.Get("Search_Placeholder");
+            ToolTipService.SetToolTip(SearchBox, R.Get("Search_Tooltip"));
+            AutomationProperties.SetName(SearchBox, R.Get("Search_Tooltip"));
         }
 
         private async Task<ContentDialogResult> ShowDialogAsync(ContentDialog dlg)
