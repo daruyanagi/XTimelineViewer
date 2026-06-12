@@ -17,14 +17,19 @@ namespace XTimelineViewer
         private static ResourceMap?     _map;
         private static ResourceContext? _context;
 
+        // PrimaryLanguageOverride を設定すると CurrentUICulture も上書き後の言語を返すように
+        // なるため、起動時（最初の型アクセス時 = override 設定前）に一度だけ取得して保持する。
+        private static readonly string SystemLocale = ResolveSystemLocale();
+
         internal static void Initialize(string? languageOverride = null)
         {
             // x:Uid で解決される XAML リソース（#199 で導入予定）にも反映させるため、
-            // 明示コンテキストとは別にプロセス全体の言語も上書きする。
+            // プロセス全体の言語も上書きする。"" によるクリアは効かないことがあるため、
+            // システム選択時は起動時に捕捉したシステム言語を明示的に設定する。
             try
             {
                 Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride =
-                    languageOverride ?? "";
+                    languageOverride ?? SystemLocale;
             }
             catch (Exception ex)
             {
@@ -35,10 +40,25 @@ namespace XTimelineViewer
             _map     = _manager.MainResourceMap.GetSubtree("Resources");
 
             // 実行中の言語切り替え (#117) を確実にするため、明示的な ResourceContext で解決する。
-            // 既定コンテキストはプロセス起動時の言語をキャッシュすることがある。
+            // システム選択時も明示的に修飾子を設定する。クリア（""）した PrimaryLanguageOverride が
+            // 反映されず英語のまま残るケースがあるため、既定の修飾子に依存しない。
             _context = _manager.CreateResourceContext();
-            if (languageOverride is not null)
-                _context.QualifierValues["Language"] = languageOverride;
+            _context.QualifierValues["Language"] = languageOverride ?? SystemLocale;
+        }
+
+        // システム言語から使用するロケールを決定する。
+        // ja 系は "ja-JP"、それ以外は "en-US" にフォールバックする（旧実装と同じ挙動）。
+        private static string ResolveSystemLocale()
+        {
+            try
+            {
+                var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+                return lang == "ja" ? "ja-JP" : "en-US";
+            }
+            catch
+            {
+                return "en-US";
+            }
         }
 
         // 実行中に言語を切り替えるためリソースコンテキストを再構築する (#117)。
