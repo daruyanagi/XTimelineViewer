@@ -16,7 +16,7 @@
                     <FontIcon Glyph="&#xE70F;" FontFamily="Segoe Fluent Icons"/>
                 </controls:SettingsCard.HeaderIcon>
                 <ToggleSwitch x:Name="OpenComposerToggle"
-                              Toggled="OpenComposerToggle_Toggled"/>
+                              IsOn="{x:Bind VM.OpenComposerInBrowser, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
             <!-- Open Timestamp Links in External Browser -->
@@ -25,7 +25,7 @@
                     <FontIcon Glyph="&#xE71B;" FontFamily="Segoe Fluent Icons"/>
                 </controls:SettingsCard.HeaderIcon>
                 <ToggleSwitch x:Name="OpenTimestampToggle"
-                              Toggled="OpenTimestampToggle_Toggled"/>
+                              IsOn="{x:Bind VM.OpenTimestampInBrowser, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
             <!-- Auto-Activate Home Timeline -->
@@ -38,7 +38,7 @@
                            SmallChange="1" LargeChange="5"
                            SpinButtonPlacementMode="Inline"
                            Width="160"
-                           ValueChanged="AutoActivateBox_ValueChanged"/>
+                           Value="{x:Bind VM.AutoActivateMinutes, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
             <!-- Show Auto-Activate Status in Toolbar -->
@@ -47,7 +47,7 @@
                     <FontIcon Glyph="&#xE7B3;" FontFamily="Segoe Fluent Icons"/>
                 </controls:SettingsCard.HeaderIcon>
                 <ToggleSwitch x:Name="ShowAutoActivateLabelToggle"
-                              Toggled="ShowAutoActivateLabelToggle_Toggled"/>
+                              IsOn="{x:Bind VM.ShowAutoActivateLabel, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
             <!-- External Browser Section Header -->
@@ -62,7 +62,7 @@
                 </controls:SettingsCard.HeaderIcon>
                 <ComboBox x:Name="BrowserCombo"
                           MinWidth="200"
-                          SelectionChanged="BrowserCombo_SelectionChanged"/>
+                          SelectedIndex="{x:Bind VM.BrowserIndex, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
             <!-- Edge Profile -->
