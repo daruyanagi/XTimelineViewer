@@ -183,7 +183,8 @@ namespace XTimelineViewer.Views
             // URL label
             string displayText = cfg.Url;
             if (Uri.TryCreate(cfg.Url, UriKind.Absolute, out var uri))
-                displayText = uri.Host + uri.PathAndQuery;
+                // 検索クエリの %xx を人間が読めるようデコードする（既存の検索ロジックを再利用）
+                displayText = SearchQueryHelper.DecodeSearchPath(uri.Host + uri.PathAndQuery);
 
             var typeIcon = new FontIcon
             {
