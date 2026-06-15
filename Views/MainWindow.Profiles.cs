@@ -55,6 +55,7 @@ namespace XTimelineViewer.Views
                         _focusedHeaderGrid = null;
                 }
                 _paneToSetFocus.Remove(pane);
+                _paneUrlUpdaters.Remove(_configs[idx]);
                 TimelinePanel.Children.RemoveAt(idx);
                 _configs.RemoveAt(idx);
             }
