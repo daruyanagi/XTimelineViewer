@@ -348,44 +348,71 @@ namespace XTimelineViewer.Views
         }
 
         /// <summary>
-        /// ログイン中セッションから X のスクリーンネームを読み取り、プロファイルに未保存なら補完する。
-        /// 左ナビの「プロフィール」リンク（AppTabBar_Profile_Link）はセッション所有者のハンドルを指すため、
-        /// どの X ページでも取得できる。既に保存済みのプロファイルは触らない（不要な保存を避ける）。
+        /// 現在アクティブなアカウントの X スクリーンネームをセッションからライブ取得する。
+        /// 左ナビの「プロフィール」リンク（AppTabBar_Profile_Link）は委任アカウント切り替え後も
+        /// アクティブなアカウントを指す。SPA のため NavigationCompleted 後に遅延描画されるので、
+        /// 要素が現れるまで数回リトライする。取得できなければ（ログアウト等）null。
+        /// </summary>
+        private static async Task<string?> TryReadActiveScreenNameAsync(WebView2 webView, int attempts = 6)
+        {
+            for (int i = 0; i < attempts; i++)
+            {
+                try
+                {
+                    var result = await webView.CoreWebView2.ExecuteScriptAsync(
+                        "document.querySelector('[data-testid=\"AppTabBar_Profile_Link\"]')?.href?.split('/').pop() ?? null");
+                    if (result?.Trim('"') is { Length: > 0 } name && name != "null")
+                        return name;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[Profile] TryReadActiveScreenNameAsync failed: {ex.Message}");
+                    return null;
+                }
+                await Task.Delay(700);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// プロファイルの ScreenName が未保存なら、現在のセッションから補完する。
+        /// リスト URL 解決の正の情報源はライブ取得（<see cref="EnsureListsUrlAsync"/>）だが、
+        /// このキャッシュは初回ナビゲーションのちらつき低減用の初期推測として残している (#211)。
         /// </summary>
         private async Task BackfillScreenNameAsync(WebView2 webView, string profileId)
         {
             var profile = _profiles.FirstOrDefault(p => p.Id == profileId);
             if (profile is null || profile.ScreenName is { Length: > 0 }) return;
 
-            // 左ナビ（AppTabBar_Profile_Link）は SPA のため NavigationCompleted の後に描画される。
-            // /home では間に合うが、検索や /&lt;user&gt;/lists などでは遅延するため、
-            // 要素が現れるまで数回リトライする。
-            for (int attempt = 0; attempt < 6; attempt++)
+            var name = await TryReadActiveScreenNameAsync(webView);
+            if (name is { Length: > 0 } && profile.ScreenName is not { Length: > 0 })
             {
-                // 別ペインが先に解決済みなら終了（保存の重複も避ける）
-                if (profile.ScreenName is { Length: > 0 }) return;
-
-                try
-                {
-                    var result = await webView.CoreWebView2.ExecuteScriptAsync(
-                        "document.querySelector('[data-testid=\"AppTabBar_Profile_Link\"]')?.href?.split('/').pop() ?? null");
-                    if (result?.Trim('"') is { Length: > 0 } name && name != "null")
-                    {
-                        profile.ScreenName = name;
-                        SaveProfiles();
-                        Debug.WriteLine($"[Profile] ScreenName backfilled: {profile.Name} -> @{name} (attempt {attempt + 1})");
-                        return;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[Profile] BackfillScreenNameAsync failed: {ex.Message}");
-                    return;
-                }
-
-                await Task.Delay(700);
+                profile.ScreenName = name;
+                SaveProfiles();
+                Debug.WriteLine($"[Profile] ScreenName backfilled: {profile.Name} -> @{name}");
             }
-            Debug.WriteLine($"[Profile] ScreenName not found for {profile.Name} (nav link absent — logged out?)");
+        }
+
+        /// <summary>
+        /// リスト一覧タイムライン（<see cref="TimelineConfig.IsListsIndex"/>）の URL を、
+        /// 現在アクティブなアカウントのハンドルでライブ解決する。委任アカウント切り替えにも追従する。
+        /// 既に正しい URL ならナビゲートしない。
+        /// </summary>
+        private async Task EnsureListsUrlAsync(WebView2 webView, TimelineConfig cfg)
+        {
+            if (!cfg.IsListsIndex) return;
+
+            var handle = await TryReadActiveScreenNameAsync(webView);
+            if (handle is not { Length: > 0 }) return;  // ログアウト等は何もしない
+
+            var target = BuildListsUrl(handle);
+            if (UrlHelper.IsOnBaseUrl(webView.CoreWebView2.Source, target)) return;  // 既に正しい
+
+            cfg.Url = target;
+            if (_paneUrlUpdaters.TryGetValue(cfg, out var update)) update();
+            await SaveTimelinesAsync();
+            webView.Source = new Uri(target);
+            Debug.WriteLine($"[Lists] Resolved active lists URL: {target}");
         }
 
         private async Task InitWebViewAsync(WebView2 webView, TimelineConfig cfg)
@@ -496,8 +523,11 @@ namespace XTimelineViewer.Views
                     }
 
                     // プロファイルのスクリーンネームが未取得なら、ログイン中セッションから補完する
-                    // （旧バージョンで作成したプロファイルや、Name を編集したプロファイルの救済）。
+                    // （初期推測用のキャッシュ。リスト URL 解決の正は EnsureListsUrlAsync）。
                     await BackfillScreenNameAsync(webView, cfg.ProfileId);
+
+                    // リスト一覧はアクティブアカウントのハンドルでライブ解決する（委任アカウント対応 #211）
+                    await EnsureListsUrlAsync(webView, cfg);
                 }
             };
 

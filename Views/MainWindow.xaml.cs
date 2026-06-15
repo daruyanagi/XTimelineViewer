@@ -102,6 +102,8 @@ namespace XTimelineViewer.Views
         private List<ProfileConfig> _profiles = [];
         private readonly Dictionary<WebView2, Grid>            _webViewToPane  = [];
         private readonly Dictionary<Grid, Action>              _paneToSetFocus = [];
+        // cfg.Url の変更をヘッダー（URL ラベル・種別アイコン・ホーム判定）へ反映する更新子 (#211)
+        private readonly Dictionary<TimelineConfig, Action>    _paneUrlUpdaters = [];
         private readonly Dictionary<WebView2, DispatcherTimer>  _hardReloadTimers    = [];
         private readonly Dictionary<WebView2, DateTimeOffset>   _hardReloadStartTimes = [];
         private readonly Dictionary<WebView2, Action>           _hardReloadUiUpdaters = [];

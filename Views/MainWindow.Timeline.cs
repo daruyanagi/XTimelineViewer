@@ -123,13 +123,15 @@ namespace XTimelineViewer.Views
 
         private void AddListsTimelineItem_Click(object _, RoutedEventArgs __)
         {
-            // ハンドルが必要なため、URL を組み立てる名前付きプロファイルを先に決める
-            // （AddTimeline の既定割り当てと同じく最初の名前付きプロファイル）
+            // URL を組み立てる名前付きプロファイルを決める（AddTimeline の既定割り当てと同じ）
             var profile = _profiles.FirstOrDefault(p => p.Id != "default");
             if (profile is null) return;
 
+            // 初期 URL はキャッシュ済みハンドルの推測。実ハンドルはペイン読み込み時に
+            // EnsureListsUrlAsync がアクティブアカウントからライブ解決する (#211)。
             var cfg = CreateDefaultConfig(BuildListsUrl(ResolveProfileHandle(profile)));
-            cfg.ProfileId = profile.Id;
+            cfg.ProfileId    = profile.Id;
+            cfg.IsListsIndex = true;
             AddTimeline(cfg);
         }
 
@@ -273,6 +275,20 @@ namespace XTimelineViewer.Views
             TimelinePanel.Children.Add(pane);
             _webViews.Add(webView);
             _webViewToPane[webView] = pane;
+
+            // cfg.Url の変更をヘッダーへ反映する更新子（ベース URL 変更・リスト URL ライブ解決で再利用）
+            _paneUrlUpdaters[cfg] = () =>
+            {
+                urlLabel.Text = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var u)
+                    ? SearchQueryHelper.DecodeSearchPath(u.Host + u.PathAndQuery)
+                    : cfg.Url;
+                typeIcon.Glyph = UrlHelper.GetTimelineGlyph(cfg.Url);
+                AutomationProperties.SetName(webView, urlLabel.Text);
+                bool nowHome = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var hu)
+                            && hu.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase);
+                if (nowHome) _homeHeaderGrids.Add(headerGrid);
+                else         _homeHeaderGrids.Remove(headerGrid);
+            };
 
             // ── Focus ─────────────────────────────────────────────────────────
 
@@ -535,6 +551,7 @@ namespace XTimelineViewer.Views
                     }
                     _configs.Remove(cfg);
                     _paneToSetFocus.Remove(pane);
+                    _paneUrlUpdaters.Remove(cfg);
                     _headerRefreshers.Remove(refreshHeader);
                     if (_focusedHeaderGrid == headerGrid)
                     {
@@ -548,45 +565,23 @@ namespace XTimelineViewer.Views
                 }
                 else if (result == ContentDialogResult.Primary)
                 {
-                    // ヘッダーの URL 表示・種別アイコン・ホーム判定を cfg.Url に合わせて更新する
-                    void RefreshUrlChrome()
-                    {
-                        urlLabel.Text = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var u)
-                            ? SearchQueryHelper.DecodeSearchPath(u.Host + u.PathAndQuery)
-                            : cfg.Url;
-                        typeIcon.Glyph = UrlHelper.GetTimelineGlyph(cfg.Url);
-
-                        // ホームタイムライン判定を更新（自動アクティブ化の対象が変わる）
-                        bool nowHome = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var hu)
-                                    && hu.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase);
-                        if (nowHome) _homeHeaderGrids.Add(headerGrid);
-                        else         _homeHeaderGrids.Remove(headerGrid);
-                    }
-
                     // ベース URL の変更を反映 (#189)。プロファイル再生成より前に cfg.Url を
                     // 更新しておき、再生成時は新しいベース URL へ遷移させる。
                     bool baseUrlChanged = stagedBaseUrl is not null && stagedBaseUrl != cfg.Url;
                     if (baseUrlChanged)
                     {
                         cfg.Url = stagedBaseUrl!;
-                        RefreshUrlChrome();
-                        AutomationProperties.SetName(webView, urlLabel.Text);
+                        // 具体ページを明示的に固定したので、リスト一覧の自動追従は解除する (#211)
+                        cfg.IsListsIndex = false;
+                        _paneUrlUpdaters[cfg]();
                     }
 
                     var prevProfileId = cfg.ProfileId;
                     cfg.ProfileId = (profileBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "default";
 
-                    // リスト一覧はハンドル依存 URL のため、プロファイル切り替えに合わせて
-                    // URL のハンドルも新しいプロファイルに差し替える (#190)
-                    if (prevProfileId != cfg.ProfileId && UrlHelper.IsPerUserListsUrl(cfg.Url))
-                    {
-                        var newProfile = _profiles.FirstOrDefault(p => p.Id == cfg.ProfileId);
-                        if (newProfile is not null)
-                        {
-                            cfg.Url = BuildListsUrl(ResolveProfileHandle(newProfile));
-                            RefreshUrlChrome();
-                        }
-                    }
+                    // リスト一覧（IsListsIndex）はプロファイル切り替え後、再生成したペインの
+                    // 読み込み時に EnsureListsUrlAsync がアクティブアカウントのハンドルで
+                    // ライブ解決するため、ここでは URL を組み立てない (#211)
 
                     cfg.Width  = Math.Clamp(widthBox.Value, 100, 2000);
                     pane.Width = cfg.Width;
