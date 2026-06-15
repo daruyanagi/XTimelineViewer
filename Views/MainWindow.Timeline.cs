@@ -427,7 +427,40 @@ namespace XTimelineViewer.Views
                     .FirstOrDefault(i => (string)i.Tag == cfg.ProfileId)
                     ?? profileBox.Items.OfType<ComboBoxItem>().FirstOrDefault();
 
+                // ── ベース URL (#189) ──
+                // WebView2 の現在の表示 URL がベース URL と異なる（別ページを閲覧中）かつ
+                // X の URL のときだけ「現在のページをベース URL にする」を有効化する。
+                var currentSource = webView.CoreWebView2?.Source ?? cfg.Url;
+                string? stagedBaseUrl = null;  // ［適用］で確定する新しいベース URL
+
+                var baseUrlText = new TextBlock
+                {
+                    Text                   = SearchQueryHelper.DecodeSearchPath(cfg.Url),
+                    FontSize               = 12,
+                    Opacity                = 0.8,
+                    TextWrapping           = TextWrapping.Wrap,
+                    IsTextSelectionEnabled = true,
+                };
+
+                var setBaseUrlBtn = new Button
+                {
+                    Content             = R.Get("Timeline_SetBaseUrl"),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    IsEnabled           = UrlHelper.IsXUrl(currentSource)
+                                       && !UrlHelper.IsOnBaseUrl(currentSource, cfg.Url),
+                };
+                setBaseUrlBtn.Click += (_, _) =>
+                {
+                    stagedBaseUrl        = currentSource;
+                    baseUrlText.Text     = SearchQueryHelper.DecodeSearchPath(stagedBaseUrl);
+                    setBaseUrlBtn.IsEnabled = false;
+                };
+
                 var panel = new StackPanel { Spacing = 8 };
+                panel.Children.Add(new TextBlock { Text = R.Get("Timeline_BaseUrl") });
+                panel.Children.Add(baseUrlText);
+                panel.Children.Add(setBaseUrlBtn);
+                panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 8, 0, 0) });
                 panel.Children.Add(new TextBlock { Text = R.Get("Timeline_Profile") });
                 panel.Children.Add(profileBox);
                 panel.Children.Add(new TextBlock { Text = R.Get("Timeline_Width"), Margin = new Thickness(0, 8, 0, 0) });
@@ -494,6 +527,27 @@ namespace XTimelineViewer.Views
                 }
                 else if (result == ContentDialogResult.Primary)
                 {
+                    // ベース URL の変更を反映 (#189)。プロファイル再生成より前に cfg.Url を
+                    // 更新しておき、再生成時は新しいベース URL へ遷移させる。
+                    bool baseUrlChanged = stagedBaseUrl is not null && stagedBaseUrl != cfg.Url;
+                    if (baseUrlChanged)
+                    {
+                        cfg.Url = stagedBaseUrl!;
+
+                        // ヘッダーの URL ラベル・種別アイコンを更新
+                        urlLabel.Text = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var newUri)
+                            ? SearchQueryHelper.DecodeSearchPath(newUri.Host + newUri.PathAndQuery)
+                            : cfg.Url;
+                        typeIcon.Glyph = UrlHelper.GetTimelineGlyph(cfg.Url);
+                        AutomationProperties.SetName(webView, urlLabel.Text);
+
+                        // ホームタイムライン判定を更新（自動アクティブ化の対象が変わる）
+                        bool nowHome = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var hu)
+                                    && hu.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase);
+                        if (nowHome) _homeHeaderGrids.Add(headerGrid);
+                        else         _homeHeaderGrids.Remove(headerGrid);
+                    }
+
                     var prevProfileId = cfg.ProfileId;
                     cfg.ProfileId = (profileBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "default";
 
@@ -537,6 +591,14 @@ namespace XTimelineViewer.Views
                             await ApplyHideSidebarAsync(webView, cfg.HideSidebar);
                             await ApplyHideComposeAsync(webView, cfg.HideCompose);
                             await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
+                        }
+
+                        // ベース URL を現在のページに合わせたので乖離状態を解消し、
+                        // 定期ハードリロードの一時停止を再評価する
+                        if (baseUrlChanged)
+                        {
+                            _urlDivergedWebViews.Remove(webView);
+                            EvaluateHardReloadPause(webView);
                         }
                     }
 

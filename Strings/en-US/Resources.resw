@@ -73,6 +73,8 @@
 
   <!-- Timeline pane settings dialog -->
   <data name="Timeline_Settings_Title" xml:space="preserve"><value>Settings</value></data>
+  <data name="Timeline_BaseUrl" xml:space="preserve"><value>Base URL</value></data>
+  <data name="Timeline_SetBaseUrl" xml:space="preserve"><value>Set current page as base URL</value></data>
   <data name="Timeline_Profile" xml:space="preserve"><value>Profile</value></data>
   <data name="Timeline_Width" xml:space="preserve"><value>Timeline Width (px)</value></data>
   <data name="Timeline_Sidebar" xml:space="preserve"><value>X Sidebar</value></data>
