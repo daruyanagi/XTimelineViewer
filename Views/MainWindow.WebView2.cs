@@ -347,6 +347,47 @@ namespace XTimelineViewer.Views
             catch { /* ログ書き込み失敗は無視 */ }
         }
 
+        /// <summary>
+        /// ログイン中セッションから X のスクリーンネームを読み取り、プロファイルに未保存なら補完する。
+        /// 左ナビの「プロフィール」リンク（AppTabBar_Profile_Link）はセッション所有者のハンドルを指すため、
+        /// どの X ページでも取得できる。既に保存済みのプロファイルは触らない（不要な保存を避ける）。
+        /// </summary>
+        private async Task BackfillScreenNameAsync(WebView2 webView, string profileId)
+        {
+            var profile = _profiles.FirstOrDefault(p => p.Id == profileId);
+            if (profile is null || profile.ScreenName is { Length: > 0 }) return;
+
+            // 左ナビ（AppTabBar_Profile_Link）は SPA のため NavigationCompleted の後に描画される。
+            // /home では間に合うが、検索や /&lt;user&gt;/lists などでは遅延するため、
+            // 要素が現れるまで数回リトライする。
+            for (int attempt = 0; attempt < 6; attempt++)
+            {
+                // 別ペインが先に解決済みなら終了（保存の重複も避ける）
+                if (profile.ScreenName is { Length: > 0 }) return;
+
+                try
+                {
+                    var result = await webView.CoreWebView2.ExecuteScriptAsync(
+                        "document.querySelector('[data-testid=\"AppTabBar_Profile_Link\"]')?.href?.split('/').pop() ?? null");
+                    if (result?.Trim('"') is { Length: > 0 } name && name != "null")
+                    {
+                        profile.ScreenName = name;
+                        SaveProfiles();
+                        Debug.WriteLine($"[Profile] ScreenName backfilled: {profile.Name} -> @{name} (attempt {attempt + 1})");
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[Profile] BackfillScreenNameAsync failed: {ex.Message}");
+                    return;
+                }
+
+                await Task.Delay(700);
+            }
+            Debug.WriteLine($"[Profile] ScreenName not found for {profile.Name} (nav link absent — logged out?)");
+        }
+
         private async Task InitWebViewAsync(WebView2 webView, TimelineConfig cfg)
         {
             try
@@ -453,6 +494,10 @@ namespace XTimelineViewer.Views
                     {
                         await ApplyAutoShowNewPostsAsync(webView, cfg.Url);
                     }
+
+                    // プロファイルのスクリーンネームが未取得なら、ログイン中セッションから補完する
+                    // （旧バージョンで作成したプロファイルや、Name を編集したプロファイルの救済）。
+                    await BackfillScreenNameAsync(webView, cfg.ProfileId);
                 }
             };
 

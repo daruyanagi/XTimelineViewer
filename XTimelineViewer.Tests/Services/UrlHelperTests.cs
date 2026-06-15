@@ -37,7 +37,8 @@ public class UrlHelperTests
     [InlineData("https://x.com/search?q=test",     "\uE71E")] // Search
     [InlineData("https://x.com/explore",           "\uE71E")] // Search
     [InlineData("https://x.com/i/bookmarks",       "\uE734")] // Bookmark
-    [InlineData("https://x.com/i/lists/123",       "\uE71D")] // BulletedList
+    [InlineData("https://x.com/daruyanagi/lists",  "\uE71D")] // BulletedList (per-user lists index)
+    [InlineData("https://x.com/i/lists/123",       "\uE71D")] // BulletedList (individual list)
     [InlineData("https://x.com/messages",          "\uE8BD")] // Chat
     [InlineData("https://x.com/daruyanagi",        "\uE77B")] // Contact
     [InlineData("https://x.com/i/grok",            "\uE774")] // Globe (fallback)
@@ -60,6 +61,18 @@ public class UrlHelperTests
     [InlineData("not-a-url",                    false)]
     public void IsListHeaderApplicable_Works(string url, bool expected)
         => Assert.Equal(expected, UrlHelper.IsListHeaderApplicable(url));
+
+    // ── IsPerUserListsUrl ─────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("https://x.com/daruyanagi/lists", true)]
+    [InlineData("https://x.com/i/lists",          true)]   // /<seg>/lists にマッチ
+    [InlineData("https://x.com/i/lists/123",      false)]  // 個別リストは対象外
+    [InlineData("https://x.com/daruyanagi",       false)]  // プロフィール
+    [InlineData("https://x.com/home",             false)]
+    [InlineData("not-a-url",                      false)]
+    public void IsPerUserListsUrl_Works(string url, bool expected)
+        => Assert.Equal(expected, UrlHelper.IsPerUserListsUrl(url));
 
     // ── ParseUrlShortcut ──────────────────────────────────────────────────────
 
