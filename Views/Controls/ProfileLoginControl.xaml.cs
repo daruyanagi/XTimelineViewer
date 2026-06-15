@@ -19,6 +19,9 @@ namespace XTimelineViewer.Views.Controls
     {
         private readonly string _profileId = Guid.NewGuid().ToString("N");
 
+        // ログイン時に検出した X のスクリーンネーム。Name はユーザーが編集できるため別に保持する。
+        private string? _detectedScreenName;
+
         /// <summary>このコントロールが扱う新規プロファイルの ID。</summary>
         public string ProfileId => _profileId;
 
@@ -65,6 +68,7 @@ namespace XTimelineViewer.Views.Controls
                 if (!uri.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase)) return;
 
                 var screenName = await TryGetScreenNameAsync();
+                _detectedScreenName = screenName;
                 ShowConfirmPhase(screenName);
                 LoginDetected?.Invoke(screenName);
             };
@@ -104,7 +108,7 @@ namespace XTimelineViewer.Views.Controls
         {
             var name = ProfileNameBox.Text.Trim();
             if (string.IsNullOrEmpty(name)) return null;
-            return new ProfileConfig { Id = _profileId, Name = name };
+            return new ProfileConfig { Id = _profileId, Name = name, ScreenName = _detectedScreenName };
         }
     }
 }

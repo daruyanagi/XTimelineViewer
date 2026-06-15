@@ -95,6 +95,11 @@
                                         <FontIcon x:Name="AddBookmarksIcon" FontFamily="Segoe Fluent Icons"/>
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
+                                <MenuFlyoutItem x:Name="AddListsTimelineItem" Click="AddListsTimelineItem_Click">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon x:Name="AddListsIcon" FontFamily="Segoe Fluent Icons"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
                             </MenuFlyoutSubItem>
                             <MenuFlyoutSeparator/>
                             <MenuFlyoutSubItem x:Name="ThemeSubMenu">

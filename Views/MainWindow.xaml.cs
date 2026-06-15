@@ -263,10 +263,13 @@ namespace XTimelineViewer.Views
             AddHomeTimelineItem.Text          = R.Get("Timeline_Home");
             AddNotificationsTimelineItem.Text = R.Get("Timeline_Notifications");
             AddBookmarksTimelineItem.Text     = R.Get("Timeline_Bookmarks");
+            AddListsTimelineItem.Text         = R.Get("Timeline_Lists");
             // アイコンは既存ペインと同じく URL 種別から導出して一貫性を保つ
             AddHomeIcon.Glyph          = UrlHelper.GetTimelineGlyph(HomeTimelineUrl);
             AddNotificationsIcon.Glyph = UrlHelper.GetTimelineGlyph(NotificationsTimelineUrl);
             AddBookmarksIcon.Glyph     = UrlHelper.GetTimelineGlyph(BookmarksTimelineUrl);
+            // リスト URL はハンドル依存のため、アイコン導出には代表的な一覧パスを使う
+            AddListsIcon.Glyph         = UrlHelper.GetTimelineGlyph(BuildListsUrl("_"));
 
             SearchBox.PlaceholderText = R.Get("Search_Placeholder");
             ToolTipService.SetToolTip(SearchBox, R.Get("Search_Tooltip"));

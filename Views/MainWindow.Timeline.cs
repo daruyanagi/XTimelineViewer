@@ -103,6 +103,15 @@ namespace XTimelineViewer.Views
         internal const string NotificationsTimelineUrl = "https://x.com/notifications";
         internal const string BookmarksTimelineUrl     = "https://x.com/i/bookmarks";
 
+        // リスト一覧はアカウント依存の URL（https://x.com/&lt;handle&gt;/lists）。
+        // 実際に追加する URL はクリック時にプロファイルのハンドルから組み立てる。
+        internal static string BuildListsUrl(string handle) => $"https://x.com/{handle}/lists";
+
+        // ハンドル依存 URL の組み立てに使うスクリーンネームを解決する。
+        // Name はユーザーが編集できるため、検出済みの ScreenName を優先する。
+        private static string ResolveProfileHandle(ProfileConfig profile)
+            => profile.ScreenName is { Length: > 0 } sn ? sn : profile.Name;
+
         private void AddHomeTimelineItem_Click(object _, RoutedEventArgs __)
             => AddTimeline(CreateDefaultConfig(HomeTimelineUrl));
 
@@ -111,6 +120,18 @@ namespace XTimelineViewer.Views
 
         private void AddBookmarksTimelineItem_Click(object _, RoutedEventArgs __)
             => AddTimeline(CreateDefaultConfig(BookmarksTimelineUrl));
+
+        private void AddListsTimelineItem_Click(object _, RoutedEventArgs __)
+        {
+            // ハンドルが必要なため、URL を組み立てる名前付きプロファイルを先に決める
+            // （AddTimeline の既定割り当てと同じく最初の名前付きプロファイル）
+            var profile = _profiles.FirstOrDefault(p => p.Id != "default");
+            if (profile is null) return;
+
+            var cfg = CreateDefaultConfig(BuildListsUrl(ResolveProfileHandle(profile)));
+            cfg.ProfileId = profile.Id;
+            AddTimeline(cfg);
+        }
 
         // ── CreateDefaultConfig ───────────────────────────────────────────────
 
@@ -527,19 +548,13 @@ namespace XTimelineViewer.Views
                 }
                 else if (result == ContentDialogResult.Primary)
                 {
-                    // ベース URL の変更を反映 (#189)。プロファイル再生成より前に cfg.Url を
-                    // 更新しておき、再生成時は新しいベース URL へ遷移させる。
-                    bool baseUrlChanged = stagedBaseUrl is not null && stagedBaseUrl != cfg.Url;
-                    if (baseUrlChanged)
+                    // ヘッダーの URL 表示・種別アイコン・ホーム判定を cfg.Url に合わせて更新する
+                    void RefreshUrlChrome()
                     {
-                        cfg.Url = stagedBaseUrl!;
-
-                        // ヘッダーの URL ラベル・種別アイコンを更新
-                        urlLabel.Text = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var newUri)
-                            ? SearchQueryHelper.DecodeSearchPath(newUri.Host + newUri.PathAndQuery)
+                        urlLabel.Text = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var u)
+                            ? SearchQueryHelper.DecodeSearchPath(u.Host + u.PathAndQuery)
                             : cfg.Url;
                         typeIcon.Glyph = UrlHelper.GetTimelineGlyph(cfg.Url);
-                        AutomationProperties.SetName(webView, urlLabel.Text);
 
                         // ホームタイムライン判定を更新（自動アクティブ化の対象が変わる）
                         bool nowHome = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var hu)
@@ -548,8 +563,30 @@ namespace XTimelineViewer.Views
                         else         _homeHeaderGrids.Remove(headerGrid);
                     }
 
+                    // ベース URL の変更を反映 (#189)。プロファイル再生成より前に cfg.Url を
+                    // 更新しておき、再生成時は新しいベース URL へ遷移させる。
+                    bool baseUrlChanged = stagedBaseUrl is not null && stagedBaseUrl != cfg.Url;
+                    if (baseUrlChanged)
+                    {
+                        cfg.Url = stagedBaseUrl!;
+                        RefreshUrlChrome();
+                        AutomationProperties.SetName(webView, urlLabel.Text);
+                    }
+
                     var prevProfileId = cfg.ProfileId;
                     cfg.ProfileId = (profileBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "default";
+
+                    // リスト一覧はハンドル依存 URL のため、プロファイル切り替えに合わせて
+                    // URL のハンドルも新しいプロファイルに差し替える (#190)
+                    if (prevProfileId != cfg.ProfileId && UrlHelper.IsPerUserListsUrl(cfg.Url))
+                    {
+                        var newProfile = _profiles.FirstOrDefault(p => p.Id == cfg.ProfileId);
+                        if (newProfile is not null)
+                        {
+                            cfg.Url = BuildListsUrl(ResolveProfileHandle(newProfile));
+                            RefreshUrlChrome();
+                        }
+                    }
 
                     cfg.Width  = Math.Clamp(widthBox.Value, 100, 2000);
                     pane.Width = cfg.Width;
@@ -574,6 +611,7 @@ namespace XTimelineViewer.Views
                         pane.Children.Add(webView);
                         _webViews.Add(webView);
                         _webViewToPane[webView] = pane;
+                        AutomationProperties.SetName(webView, urlLabel.Text);
 
                         var newBadge = CreateProfileBadge(cfg.ProfileId);
                         Grid.SetColumn(newBadge, 1);

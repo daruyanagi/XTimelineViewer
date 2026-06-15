@@ -19,6 +19,14 @@ namespace XTimelineViewer.Services
                 && string.Equals(cur.AbsolutePath, @base.AbsolutePath, StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// アカウント依存のリスト一覧 URL（https://x.com/&lt;handle&gt;/lists）かどうか。
+        /// プロファイル切り替え時にハンドルを差し替える対象の判定に使う。
+        /// </summary>
+        internal static bool IsPerUserListsUrl(string url)
+            => Uri.TryCreate(url, UriKind.Absolute, out var u)
+               && Regex.IsMatch(u.AbsolutePath, @"^/[^/]+/lists$");
+
         // グリフは Segoe Fluent Icons の私用領域(PUA)コードポイント。
         // 生の PUA 文字を直書きするとエンコーディング事故で欠落するため (#122)、
         // 必ず "\uXXXX" エスケープ表記で記述すること。
@@ -31,7 +39,8 @@ namespace XTimelineViewer.Services
             if (p.StartsWith("/search") || p.StartsWith("/explore")) return "\uE71E"; // Search
             if (p == "/bookmarks" || p.StartsWith("/bookmarks/") ||
                 p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/")) return "\uE734"; // Bookmark
-            if (p.StartsWith("/i/lists/"))                            return "\uE71D"; // BulletedList
+            if (p == "/i/lists" || p.StartsWith("/i/lists/") ||
+                Regex.IsMatch(p, @"^/[^/]+/lists$"))                  return "\uE71D"; // BulletedList (lists index / individual)
             if (p.StartsWith("/messages"))                            return "\uE8BD"; // Chat
             if (Regex.IsMatch(p, @"^/[^/]+$"))                        return "\uE77B"; // Contact
             return "\uE774"; // Globe
