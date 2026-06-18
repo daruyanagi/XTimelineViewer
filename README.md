@@ -97,21 +97,27 @@ Edge で追加したい `x.com` ページを開き、アドレスバーのアイ
 
 ## リリース手順
 
-リリース成果物は `Release.ps1` で一括生成します（x64 / arm64 を逐次ビルドし、GitHub 配布用 ZIP と、Microsoft Store 用の単一 `.msixbundle` を `publish\release\` に出力）。
+役割分担:
+
+- **GitHub リリース（ZIP）と winget 公開**は CI（`.github/workflows/release.yml`）が `v*` タグの push をトリガーに自動で行う。
+- **Microsoft Store 用の `.msixbundle`** は CI 対象外なので `Release.ps1` でローカル生成する（x64 / arm64 を逐次ビルドし、単一バンドルにまとめて `publish\release\` に出力）。
 
 ```powershell
-# 現行バージョンのまま成果物を生成
+# 現行バージョンのまま Store 用 .msixbundle を生成
 .\Release.ps1
 
 # バージョンを上げて生成（csproj と Package.appxmanifest を一括更新）
 .\Release.ps1 -Version 1.6.1
+
+# ローカル検証用に ZIP も生成したいとき（本番 ZIP は CI が作る）
+.\Release.ps1 -WithZip
 ```
 
 生成後の流れ:
 
 1. バージョン更新分をコミット & PR → main にマージ
-2. `gh release create v<バージョン>` で GitHub リリースを作成し、ZIP 2 つを添付
-3. マイナー以上のバージョンアップでは、`.msixbundle` を Microsoft Store パートナーセンターにアップロード
+2. `v<バージョン>` タグを push（または `gh release create v<バージョン>`）→ CI が GitHub リリースの ZIP と winget 公開を自動実行
+3. マイナー以上のバージョンアップでは、`publish\release\` の `.msixbundle` を Microsoft Store パートナーセンターにアップロード
 
 ## ライセンス
 
