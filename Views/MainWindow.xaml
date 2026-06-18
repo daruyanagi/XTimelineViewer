@@ -5,7 +5,11 @@
     xmlns:local="using:XTimelineViewer.Views"
     Title="XTimelineViewer">
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <!-- KeyboardAcceleratorPlacementMode=Hidden: ルート Grid のグローバルアクセラレータ
+         （Ctrl+F / F3）の自動ツールチップが UI のあちこちに出るのを抑止する (#214)。
+         ショートカット自体は引き続き機能する。 -->
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+          KeyboardAcceleratorPlacementMode="Hidden">
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="FocusSearchBox_Invoked"/>
             <KeyboardAccelerator Key="F3" Invoked="FocusSearchBox_Invoked"/>
