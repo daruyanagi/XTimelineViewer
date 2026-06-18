@@ -1,36 +1,42 @@
 <#
 .SYNOPSIS
-    XTimelineViewer のリリース成果物を生成する（#216）。
+    XTimelineViewer の Microsoft Store 用リリース成果物を生成する（#216）。
 
 .DESCRIPTION
-    手作業のリリースフローで発生したミス（arm64 の RuntimeIdentifier 明示漏れ、
-    x64/arm64 の並行ビルドによる obj 衝突）を防ぐため、以下を逐次・自動で行う。
+    役割分担:
+      - GitHub 配布（ZIP）と winget 公開は CI（.github/workflows/release.yml）が
+        v* タグの push をトリガーに自動で行う。本スクリプトでは扱わない。
+      - 本スクリプトは CI が扱わない Microsoft Store 用の成果物を担当する。
+
+    手作業フローで発生したミス（arm64 の RuntimeIdentifier 明示漏れ、
+    x64/arm64 の並行ビルドによる obj 衝突）を防ぐため、逐次・自動で行う:
 
       1. （任意）csproj と Package.appxmanifest のバージョンを一括更新
-      2. GitHub 配布用 ZIP（自己完結・アンパッケージド）を x64 / arm64 で生成
-      3. Microsoft Store 用 MSIX を x64 / arm64 で生成（GenerateAppxPackageOnBuild）し、
+      2. Store 用 MSIX を x64 / arm64 で生成（GenerateAppxPackageOnBuild）し、
          winapp（makeappx）で 1 つの .msixbundle に束ねる（#216 経路B：小サイズ）
 
-    すべての成果物は publish\release\ に集約する。
+    成果物は publish\release\ に集約する。
 
 .PARAMETER Version
     新しいバージョン（例 1.6.1）。指定すると csproj と appxmanifest を更新する。
     省略時は csproj の現在値を使う（ファイルは変更しない）。
 
-.PARAMETER SkipZip
-    GitHub 用 ZIP の生成をスキップする。
+.PARAMETER WithZip
+    ローカル検証用に GitHub 配布相当の ZIP（自己完結・アンパッケージド）も生成する。
+    本番の GitHub リリース ZIP は CI が作るため通常は不要。
 
 .PARAMETER SkipBundle
-    Store 用 MSIX / バンドルの生成をスキップする。
+    Store 用 MSIX / バンドルの生成をスキップする（バージョン更新や ZIP だけ行いたい場合）。
 
 .EXAMPLE
-    .\Release.ps1 -Version 1.6.1
-    .\Release.ps1            # 現行バージョンのまま全成果物を生成
+    .\Release.ps1 -Version 1.6.1   # バージョン更新 + Store 用 .msixbundle を生成
+    .\Release.ps1                  # 現行バージョンのまま .msixbundle を生成
+    .\Release.ps1 -WithZip         # ローカル検証用に ZIP も生成
 #>
 [CmdletBinding()]
 param(
     [string] $Version,
-    [switch] $SkipZip,
+    [switch] $WithZip,
     [switch] $SkipBundle
 )
 
@@ -66,8 +72,8 @@ New-Item -ItemType Directory -Force $outDir | Out-Null
 # 実行中インスタンスがあるとビルドがファイルロックで失敗するため止める
 try { Stop-Process -Name XTimelineViewer -Force -ErrorAction Stop } catch {}
 
-# ── GitHub 用 ZIP（自己完結・アンパッケージド） ────────────────────────────────
-if (-not $SkipZip) {
+# ── ローカル検証用 ZIP（自己完結・アンパッケージド。本番は CI が生成） ─────────────
+if ($WithZip) {
     foreach ($rid in 'win-x64', 'win-arm64') {
         $plat = if ($rid -eq 'win-x64') { 'x64' } else { 'arm64' }
         Step "ZIP 発行: $rid"
@@ -121,9 +127,8 @@ Get-ChildItem $outDir | Select-Object Name, @{N='MB';E={[math]::Round($_.Length/
 Write-Host @"
 次の手順（手動）:
   1. バージョン更新分をコミット & PR → main にマージ
-  2. GitHub リリース作成（ZIP を添付）:
-       gh release create v$Version --title "v$Version" --notes "..." `
-         "publish\release\XTimelineViewer-$Version-win-x64.zip" `
-         "publish\release\XTimelineViewer-$Version-win-arm64.zip"
-  3. （マイナー以上）Microsoft Store パートナーセンターに .msixbundle をアップロード
+  2. v$Version タグを push（または gh release create v$Version）
+     → CI が GitHub リリースの ZIP と winget 公開を自動で行う
+  3. （マイナー以上）Microsoft Store パートナーセンターに
+     publish\release\XTimelineViewer-$Version.msixbundle をアップロード
 "@ -ForegroundColor Yellow
