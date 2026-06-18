@@ -55,7 +55,9 @@ if ($Version) {
     if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw "Version は x.y.z 形式で指定してください: $Version" }
     (Get-Content $proj -Raw) -replace '<Version>[\d.]+</Version>', "<Version>$Version</Version>" |
         Set-Content $proj -Encoding utf8 -NoNewline
-    (Get-Content $manifest -Raw) -replace 'Version="[\d.]+"', "Version=`"$Version.0`"" |
+    # Identity の Version のみを置換する。-creplace（大文字小文字を区別）で XML 宣言の
+    # 小文字 version="1.0" を除外し、ProcessorArchitecture への先読みで MinVersion 等を除外する。
+    (Get-Content $manifest -Raw) -creplace 'Version="[\d.]+"(?=\s+ProcessorArchitecture)', "Version=`"$Version.0`"" |
         Set-Content $manifest -Encoding utf8 -NoNewline
     Write-Host "csproj / appxmanifest を $Version に更新しました"
 } else {
