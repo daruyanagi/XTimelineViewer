@@ -141,6 +141,32 @@ namespace XTimelineViewer.ViewModels
             }
         }
 
+        /// <summary>ホーム自動更新（#207）の ON/OFF。</summary>
+        public bool HomeAutoLoadEnabled
+        {
+            get => _settings.HomeAutoLoadEnabled;
+            set
+            {
+                if (_settings.HomeAutoLoadEnabled == value) return;
+                _settings.HomeAutoLoadEnabled = value;
+                Notify(nameof(HomeAutoLoadEnabled));
+            }
+        }
+
+        /// <summary>ホーム自動更新の間隔（秒）。NumberBox.Value（double）にバインド。5–60 に丸める。</summary>
+        public double HomeAutoLoadIntervalSeconds
+        {
+            get => _settings.HomeAutoLoadIntervalSeconds;
+            set
+            {
+                if (double.IsNaN(value)) return;
+                var sec = (int)Math.Clamp(value, 5, 60);
+                if (_settings.HomeAutoLoadIntervalSeconds == sec) return;
+                _settings.HomeAutoLoadIntervalSeconds = sec;
+                Notify(nameof(HomeAutoLoadIntervalSeconds));
+            }
+        }
+
         public bool ShowAutoActivateLabel
         {
             get => _settings.ShowAutoActivateLabel;

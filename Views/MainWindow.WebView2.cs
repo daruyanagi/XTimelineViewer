@@ -100,29 +100,86 @@ namespace XTimelineViewer.Views
             await webView.CoreWebView2.ExecuteScriptAsync(BuildHideSidebarJs(hide));
         }
 
-        private static async Task ApplyAutoShowNewPostsAsync(WebView2 webView, string cfgUrl)
-        {
-            if (!Uri.TryCreate(cfgUrl, UriKind.Absolute, out var uri)) return;
-            if (!uri.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase)) return;
+        /// <summary>cfg がホームタイムラインかどうか。</summary>
+        private static bool IsHomeConfig(TimelineConfig cfg)
+            => Uri.TryCreate(cfg.Url, UriKind.Absolute, out var u)
+               && u.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase);
 
-            // 「（数字） 件のポストを表示」を含む button 要素を監視して自動でクリックするスクリプト
-            await webView.CoreWebView2.ExecuteScriptAsync("""
-                (function() {
-                    var observer = new MutationObserver(function(mutations) {
-                        mutations.forEach(function(mutation) {
-                            mutation.addedNodes.forEach(function(node) {
-                                if (node.nodeType === Node.ELEMENT_NODE) {
-                                    var btn = node.matches('button') ? node : node.querySelector('button');
-                                    if (btn && /件のポストを表示/.test(btn.textContent)) {
-                                        btn.click();
-                                    }
-                                }
-                            });
-                        });
-                    });
-                    observer.observe(document.body, { childList: true, subtree: true });
-                })();
-                """);
+        // ホームタイムライン自動更新（#207）。同梱拡張 TwitterTimelineLoader（TLLoader_main.js）の
+        // ロジックをできるだけ忠実に移植。/home でページ先頭にいるとき一定間隔で
+        // ホームタブ（a[data-testid="AppTabBar_Home_Link"]）を click して新着を取り込む。
+        // 変更点: chrome.storage 依存を撤去し、window._xtvHomeAutoLoadEnabled / _xtvHomeAutoLoadIntervalMs で制御。
+        //         状態（稼働中/一時停止/オフ）を postMessage('homeAutoLoad:...') でアプリに通知し、
+        //         ヘッダーのインジケーターへ反映する。参考: https://qiita.com/ryounagaoka/items/a48d3a4c4faf78a99ae5
+        private static readonly string HomeAutoLoadScript = """
+            (function () {
+                if (window._xtvTtlInit) return;
+                window._xtvTtlInit = true;
+
+                var g_ttlTopCount = 0;
+                var g_ttlTimerInterval = 1000;
+                var lastStatus = '';
+
+                function intervalMs() {
+                    var v = window._xtvHomeAutoLoadIntervalMs;
+                    return (typeof v === 'number' && v >= 1000) ? v : 8000;
+                }
+
+                function report(status) {
+                    if (status === lastStatus) return;
+                    lastStatus = status;
+                    try { window.chrome.webview.postMessage('homeAutoLoad:' + status); } catch (e) {}
+                }
+
+                function isHome() {
+                    return window.location.href == "https://twitter.com/home"
+                        || window.location.href == "https://x.com/home";
+                }
+
+                // 更新を控えるべき理由（下書き消失・誤操作の防止）。なければ null。
+                function suppressReason() {
+                    var searchCandidate = document.body.querySelectorAll('div[class="css-1dbjc4n r-13awgt0 r-bnwqim"]');
+                    if (searchCandidate.length > 0 && searchCandidate[0].innerHTML != "") return 'search';
+                    var fe = document.activeElement;
+                    if (fe && fe.tagName != "BODY") {
+                        var a = fe.getAttribute("data-testid");
+                        if (a != "tweet" && a != "AppTabBar_Home_Link") return 'input';
+                    }
+                    return null;
+                }
+
+                function tick() {
+                    if (!window._xtvHomeAutoLoadEnabled) { report('off'); return; }
+                    if (!isHome()) { report('idle'); return; }
+                    if (window.pageYOffset > 5.0) { g_ttlTopCount = intervalMs(); report('paused-scroll'); return; }
+                    var reason = suppressReason();
+                    if (reason) { report('paused-' + reason); return; }
+                    report('running');
+                    if (g_ttlTopCount >= intervalMs()) {
+                        var homeButton = document.body.querySelectorAll('a[data-testid="AppTabBar_Home_Link"]');
+                        if (homeButton.length > 0) homeButton[0].click();
+                        g_ttlTopCount = 0;
+                    }
+                    g_ttlTopCount += g_ttlTimerInterval;
+                }
+
+                setInterval(tick, g_ttlTimerInterval);
+            })();
+            """;
+
+        /// <summary>現在の設定（ON/OFF・間隔）を JS の制御変数へ反映するスニペット。</summary>
+        private string BuildHomeAutoLoadConfigJs()
+        {
+            var enabled = _appSettings.HomeAutoLoadEnabled ? "true" : "false";
+            var ms = Math.Max(5, _appSettings.HomeAutoLoadIntervalSeconds) * 1000;
+            return $"window._xtvHomeAutoLoadEnabled = {enabled}; window._xtvHomeAutoLoadIntervalMs = {ms};";
+        }
+
+        /// <summary>注入済みのホーム自動更新スクリプトへ現在の設定を即時反映する。</summary>
+        private async Task ApplyHomeAutoLoadAsync(WebView2 webView)
+        {
+            try { await webView.CoreWebView2.ExecuteScriptAsync(BuildHomeAutoLoadConfigJs()); }
+            catch { }
         }
 
         private static bool EffectiveHideCompose(TimelineConfig cfg, string currentUrl) =>
@@ -479,6 +536,12 @@ namespace XTimelineViewer.Views
             webView.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(KeyboardShortcutScript);
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(TimestampInterceptScript);
+            // ホーム自動更新（#207）。ホームペインにのみ注入し、設定で ON/OFF・間隔を制御する。
+            if (IsHomeConfig(cfg))
+            {
+                await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildHomeAutoLoadConfigJs());
+                await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(HomeAutoLoadScript);
+            }
             webView.CoreWebView2.WebMessageReceived += (s, e) =>
                 OnWebViewMessageReceived(webView, e.TryGetWebMessageAsString());
 
@@ -514,14 +577,6 @@ namespace XTimelineViewer.Views
                     var tsFlag = _appSettings.OpenTimestampInBrowser ? "true" : "false";
                     await webView.CoreWebView2.ExecuteScriptAsync(
                         $"window._xtvOpenTimestampInBrowser = {tsFlag};");
-
-                    // x.com/home の場合だけ新着ポスト自動表示機能を適用する
-                    // 【#207 切り分け実験】系統1（アプリ組み込み）を一時無効化して挙動を確認する
-                    //if (Uri.TryCreate(webView.CoreWebView2.Source, UriKind.Absolute, out var current) &&
-                    //    current.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase))
-                    //{
-                    //    await ApplyAutoShowNewPostsAsync(webView, cfg.Url);
-                    //}
 
                     // プロファイルのスクリーンネームが未取得なら、ログイン中セッションから補完する
                     // （初期推測用のキャッシュ。リスト URL 解決の正は EnsureListsUrlAsync）。

@@ -80,6 +80,14 @@ namespace XTimelineViewer.Views.Settings
             ListHeaderToggle.OnContent  = R.Get("Toggle_Show");
             ListHeaderToggle.OffContent = R.Get("Toggle_Hide");
 
+            // Home Timeline Auto-Refresh (#207)
+            HomeAutoLoadCard.Header      = R.Get("Settings_HomeAutoLoad");
+            HomeAutoLoadCard.Description = R.Get("Settings_HomeAutoLoad_Description");
+            HomeAutoLoadToggle.OnContent  = R.Get("Toggle_On");
+            HomeAutoLoadToggle.OffContent = R.Get("Toggle_Off");
+            HomeAutoLoadIntervalCard.Header      = R.Get("Settings_HomeAutoLoad_Interval");
+            HomeAutoLoadIntervalCard.Description = R.Get("Settings_HomeAutoLoad_Interval_Description");
+
             // ItemsSource 再設定で SelectedIndex が失われるため、バインディングを再評価して
             // ViewModel の値を反映し直す
             Bindings.Update();

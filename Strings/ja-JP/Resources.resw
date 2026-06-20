@@ -55,6 +55,16 @@
   <data name="Settings_OpenTimestampInBrowser_Description" xml:space="preserve"><value>タイムライン内で移動せず、外部ブラウザーでタイムスタンプリンクを開きます</value></data>
   <data name="Settings_AutoActivate" xml:space="preserve"><value>ホームタイムラインを定期的にアクティブ化（分、0 で無効）</value></data>
   <data name="Settings_AutoActivate_Description" xml:space="preserve"><value>定期的にホームタイムラインを前面に表示します</value></data>
+  <data name="Settings_HomeAutoLoad" xml:space="preserve"><value>ホームタイムラインの自動更新</value></data>
+  <data name="Settings_HomeAutoLoad_Description" xml:space="preserve"><value>オンにすると、ホームの先頭にいるとき新着ポストを定期的に自動で読み込みます。リプライや引用の入力中・検索中は読み込みを控えます。ページ全体を再読み込みする「定期ハードリロード」とは別の機能です。</value></data>
+  <data name="Settings_HomeAutoLoad_Interval" xml:space="preserve"><value>更新間隔（秒）</value></data>
+  <data name="Settings_HomeAutoLoad_Interval_Description" xml:space="preserve"><value>新着ポストを読み込む間隔。最小 5 秒。</value></data>
+  <data name="AutoLoad_Running" xml:space="preserve"><value>ホーム自動更新: 稼働中</value></data>
+  <data name="AutoLoad_Paused" xml:space="preserve"><value>ホーム自動更新: 一時停止中</value></data>
+  <data name="AutoLoad_Paused_Scroll" xml:space="preserve"><value>ホーム自動更新: 一時停止中（スクロール中）</value></data>
+  <data name="AutoLoad_Paused_Search" xml:space="preserve"><value>ホーム自動更新: 一時停止中（検索中）</value></data>
+  <data name="AutoLoad_Paused_Input" xml:space="preserve"><value>ホーム自動更新: 一時停止中（入力中）</value></data>
+  <data name="AutoLoad_Off" xml:space="preserve"><value>ホーム自動更新: オフ</value></data>
   <data name="Settings_ShowAutoActivateLabel_Description" xml:space="preserve"><value>ツールバーに自動アクティブ化のカウントダウンタイマーを表示します</value></data>
   <data name="Settings_ExternalBrowser_Description" xml:space="preserve"><value>外部リンクを開くブラウザーを選択します</value></data>
   <data name="Settings_EdgeProfile_Description" xml:space="preserve"><value>リンクを開く際に使用する Edge プロファイルを選択します</value></data>
@@ -182,4 +192,8 @@
   <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>
   <data name="About_License" xml:space="preserve"><value>ライセンス</value></data>
   <data name="About_Components" xml:space="preserve"><value>利用しているコンポーネント</value></data>
+  <data name="About_Acknowledgements" xml:space="preserve"><value>謝辞</value></data>
+  <data name="About_OpenLink" xml:space="preserve"><value>開く</value></data>
+  <data name="About_Ack_TTL" xml:space="preserve"><value>ホームタイムラインの自動更新機能は、この Chromium 拡張機能のアイデアと実装を参考に内製化しました。</value></data>
+  <data name="About_Ack_TTL_Article" xml:space="preserve"><value>実装の参考にした記事</value></data>
 </root>

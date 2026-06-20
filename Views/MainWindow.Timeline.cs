@@ -149,6 +149,29 @@ namespace XTimelineViewer.Views
             HideListHeader = _appSettings.DefaultHideListHeader,
         };
 
+        // ── ホーム自動更新インジケーター（#207）─────────────────────────────────
+        // JS から postMessage('homeAutoLoad:STATUS') された状態をアイコン＋ツールチップへ反映する。
+        // 状態を唯一の真実とし、設定値とアイコンがズレないようにする。
+        private void UpdateAutoLoadIndicator(Grid pane, string status)
+        {
+            if (!_autoLoadIndicators.TryGetValue(pane, out var ind)) return;
+
+            string glyph, tipKey;
+            double opacity;
+            switch (status)
+            {
+                case "running":       glyph = ""; tipKey = "AutoLoad_Running";       opacity = 0.8;  break; // Refresh
+                case "paused-scroll": glyph = ""; tipKey = "AutoLoad_Paused_Scroll"; opacity = 0.5;  break; // Pause
+                case "paused-search": glyph = ""; tipKey = "AutoLoad_Paused_Search"; opacity = 0.5;  break;
+                case "paused-input":  glyph = ""; tipKey = "AutoLoad_Paused_Input";  opacity = 0.5;  break;
+                case "off":           glyph = ""; tipKey = "AutoLoad_Off";           opacity = 0.35; break; // Cancel
+                default:              glyph = ""; tipKey = "AutoLoad_Paused";         opacity = 0.5;  break; // idle 等
+            }
+            ind.Icon.Glyph   = glyph;
+            ind.Icon.Opacity = opacity;
+            ind.Tip.Content  = R.Get(tipKey);
+        }
+
         // ── AddTimeline ───────────────────────────────────────────────────────
 
         private void AddTimeline(TimelineConfig cfg)
@@ -263,6 +286,23 @@ namespace XTimelineViewer.Views
             AutomationProperties.SetName(settingsBtn, R.Get("Pane_Settings_Tooltip"));
             AutomationProperties.SetName(webView, displayText);
 
+            // ホーム自動更新インジケーター（#207）。ホームペインのみ表示し、設定ギアの左に置く。
+            var autoLoadIcon = new FontIcon
+            {
+                Glyph             = "",
+                FontFamily        = new FontFamily("Segoe Fluent Icons"),
+                FontSize          = 14,
+                Opacity           = 0.8,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin            = new Thickness(0, 0, 2, 0),
+                Visibility        = IsHomeConfig(cfg) ? Visibility.Visible : Visibility.Collapsed
+            };
+            var autoLoadTip = new ToolTip { Content = R.Get("AutoLoad_Off") };
+            ToolTipService.SetToolTip(autoLoadIcon, autoLoadTip);
+            buttonPanel.Children.Add(autoLoadIcon);
+            _autoLoadIndicators[pane] = (autoLoadIcon, autoLoadTip);
+            UpdateAutoLoadIndicator(pane, _appSettings.HomeAutoLoadEnabled ? "running" : "off");
+
             buttonPanel.Children.Add(settingsBtn);
 
             headerGrid.Children.Add(typeIcon);
@@ -288,6 +328,7 @@ namespace XTimelineViewer.Views
                             && hu.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase);
                 if (nowHome) _homeHeaderGrids.Add(headerGrid);
                 else         _homeHeaderGrids.Remove(headerGrid);
+                autoLoadIcon.Visibility = nowHome ? Visibility.Visible : Visibility.Collapsed;
             };
 
             // ── Focus ─────────────────────────────────────────────────────────
@@ -552,6 +593,7 @@ namespace XTimelineViewer.Views
                     _configs.Remove(cfg);
                     _paneToSetFocus.Remove(pane);
                     _paneUrlUpdaters.Remove(cfg);
+                    _autoLoadIndicators.Remove(pane);
                     _headerRefreshers.Remove(refreshHeader);
                     if (_focusedHeaderGrid == headerGrid)
                     {

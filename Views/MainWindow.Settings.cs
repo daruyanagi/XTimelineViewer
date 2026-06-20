@@ -135,6 +135,15 @@ namespace XTimelineViewer.Views
                         _ = wv.CoreWebView2.ExecuteScriptAsync(
                             $"window._xtvOpenTimestampInBrowser = {tsFlag};");
 
+                // ホーム自動更新（#207）の ON/OFF・間隔を各ホームペインへ即時反映し、インジケーターも更新
+                foreach (var (homePane, _) in _autoLoadIndicators)
+                {
+                    if (homePane.Children.OfType<Microsoft.UI.Xaml.Controls.WebView2>()
+                            .FirstOrDefault() is { CoreWebView2: not null } hwv)
+                        _ = ApplyHomeAutoLoadAsync(hwv);
+                    UpdateAutoLoadIndicator(homePane, _appSettings.HomeAutoLoadEnabled ? "running" : "off");
+                }
+
                 // 言語変更の即時反映
                 var locale = _appSettings.Language == "system" ? null : _appSettings.Language;
                 R.Reload(locale);

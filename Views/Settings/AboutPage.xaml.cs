@@ -66,6 +66,9 @@ namespace XTimelineViewer.Views.Settings
 
             // ── 4. 利用しているコンポーネント ────────────────────────────────
             BuildComponentsExpander(edgeChannel, edgeVersion);
+
+            // ── 5. 謝辞 ──────────────────────────────────────────────────────
+            BuildAcknowledgementsExpander();
         }
 
         private void BuildHeaderCard(string versionStr, string versionInfoText)
@@ -264,8 +267,41 @@ namespace XTimelineViewer.Views.Settings
             };
             expander.Items.Add(webView2Card);
 
-            // TwitterTimelineLoader
-            var ttlLinkBtn = new HyperlinkButton
+            RootPanel.Children.Add(expander);
+        }
+
+        // 謝辞（#207）。同梱していた TwitterTimelineLoader を内製化したため、原作への謝辞を掲載する。
+        private void BuildAcknowledgementsExpander()
+        {
+            var expander = new CommunityToolkit.WinUI.Controls.SettingsExpander
+            {
+                Header     = R.Get("About_Acknowledgements"),
+                HeaderIcon = new FontIcon
+                {
+                    Glyph      = "\uE734",
+                    FontFamily = new FontFamily("Segoe Fluent Icons"),
+                },
+            };
+
+            // TwitterTimelineLoader（ホーム自動更新の元になった Chromium 拡張機能）
+            expander.Items.Add(BuildLinkCard(
+                "TwitterTimelineLoader",
+                R.Get("About_Ack_TTL"),
+                "https://chromewebstore.google.com/detail/twittertimelineloader/ipmgjpmedafkmmadinmeoannpofakpbh"));
+
+            // 実装の参考にした Qiita 記事
+            expander.Items.Add(BuildLinkCard(
+                R.Get("About_Ack_TTL_Article"),
+                "Qiita",
+                "https://qiita.com/ryounagaoka/items/a48d3a4c4faf78a99ae5"));
+
+            RootPanel.Children.Add(expander);
+        }
+
+        // リンクボタン付きの SettingsCard を作る（謝辞の各項目用）
+        private CommunityToolkit.WinUI.Controls.SettingsCard BuildLinkCard(string header, string description, string url)
+        {
+            var linkBtn = new HyperlinkButton
             {
                 Padding = new Thickness(0),
                 Content = new StackPanel
@@ -277,12 +313,12 @@ namespace XTimelineViewer.Views.Settings
                     {
                         new TextBlock
                         {
-                            Text              = "Chrome Web Store",
+                            Text              = R.Get("About_OpenLink"),
                             VerticalAlignment = VerticalAlignment.Center,
                         },
                         new FontIcon
                         {
-                            Glyph             = "",
+                            Glyph             = "\uE8A7",
                             FontFamily        = new FontFamily("Segoe Fluent Icons"),
                             FontSize          = 10,
                             Opacity           = 0.6,
@@ -291,23 +327,21 @@ namespace XTimelineViewer.Views.Settings
                     }
                 },
             };
-            ttlLinkBtn.Click += async (_, _) =>
+            linkBtn.Click += async (_, _) =>
             {
-                var uri = new Uri("https://chromewebstore.google.com/detail/twittertimelineloader/ipmgjpmedafkmmadinmeoannpofakpbh");
+                var uri = new Uri(url);
                 if (_parent?.LaunchUriAsync is not null)
                     await _parent.LaunchUriAsync(uri);
                 else
                     await Windows.System.Launcher.LaunchUriAsync(uri);
             };
 
-            var ttlCard = new CommunityToolkit.WinUI.Controls.SettingsCard
+            return new CommunityToolkit.WinUI.Controls.SettingsCard
             {
-                Header  = "TwitterTimelineLoader",
-                Content = ttlLinkBtn,
+                Header      = header,
+                Description = description,
+                Content     = linkBtn,
             };
-            expander.Items.Add(ttlCard);
-
-            RootPanel.Children.Add(expander);
         }
     }
 }
