@@ -516,11 +516,12 @@ namespace XTimelineViewer.Views
                         $"window._xtvOpenTimestampInBrowser = {tsFlag};");
 
                     // x.com/home の場合だけ新着ポスト自動表示機能を適用する
-                    if (Uri.TryCreate(webView.CoreWebView2.Source, UriKind.Absolute, out var current) &&
-                        current.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase))
-                    {
-                        await ApplyAutoShowNewPostsAsync(webView, cfg.Url);
-                    }
+                    // 【#207 切り分け実験】系統1（アプリ組み込み）を一時無効化して挙動を確認する
+                    //if (Uri.TryCreate(webView.CoreWebView2.Source, UriKind.Absolute, out var current) &&
+                    //    current.AbsolutePath.TrimEnd('/').Equals("/home", StringComparison.OrdinalIgnoreCase))
+                    //{
+                    //    await ApplyAutoShowNewPostsAsync(webView, cfg.Url);
+                    //}
 
                     // プロファイルのスクリーンネームが未取得なら、ログイン中セッションから補完する
                     // （初期推測用のキャッシュ。リスト URL 解決の正は EnsureListsUrlAsync）。
