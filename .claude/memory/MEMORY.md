@@ -7,3 +7,4 @@
 - [WinUI 3 unpackaged モードでの言語切り替え](feedback_winui3_language_switching.md) — PrimaryLanguageOverride は MSIX パッケージ ID 必須。unpackaged では resw ファイル直接パースを使う。
 - [イシューは daruyanagi にアサイン](feedback_assign_issues.md) — gh issue create に毎回 --assignee daruyanagi を付ける。
 - [イシュー解決前にコメントをすべて読む](feedback_read_issue_comments.md) — 実装前に gh issue view <number> --comments でコメントまで確認する。本文だけ読んで着手しない。
+- [デバッグ実行は生成直後の exe を起動](feedback_debug_run_fresh_exe.md) — ビルドした exe と起動する exe を一致させる。更新時刻を検証。debug-run スキルに従う。
