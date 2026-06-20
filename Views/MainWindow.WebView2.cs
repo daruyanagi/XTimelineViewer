@@ -140,11 +140,12 @@ namespace XTimelineViewer.Views
                 function suppressReason() {
                     var searchCandidate = document.body.querySelectorAll('div[class="css-1dbjc4n r-13awgt0 r-bnwqim"]');
                     if (searchCandidate.length > 0 && searchCandidate[0].innerHTML != "") return 'search';
+                    // 返信/引用/投稿などのモーダルが開いている間は下書き消失防止のため止める
+                    if (document.querySelector('[aria-modal="true"]')) return 'input';
+                    // 実際に編集可能な要素にフォーカスがあるときだけ止める（#232）。
+                    // リポスト/いいね等のボタンにフォーカスが移っても止めないようにする。
                     var fe = document.activeElement;
-                    if (fe && fe.tagName != "BODY") {
-                        var a = fe.getAttribute("data-testid");
-                        if (a != "tweet" && a != "AppTabBar_Home_Link") return 'input';
-                    }
+                    if (fe && (fe.isContentEditable || fe.tagName === 'TEXTAREA' || fe.tagName === 'INPUT')) return 'input';
                     return null;
                 }
 
