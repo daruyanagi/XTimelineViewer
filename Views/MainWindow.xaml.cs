@@ -121,6 +121,9 @@ namespace XTimelineViewer.Views
         // タイムライン番号バッジ（#225）。ペイン → 番号 TextBlock。表示順で 1..9 を振り直す。
         private readonly Dictionary<Grid, TextBlock> _paneNumberLabels = [];
 
+        // headerGrid → pane の対応（#227）。アクティブな headerGrid からペインを引くのに使う。
+        private readonly Dictionary<Grid, Grid> _headerGridToPane = [];
+
         // キーボードショートカット処理スクリプト（各 WebView2 に注入）
         private static readonly string KeyboardShortcutScript = """
             (function() {
@@ -175,6 +178,7 @@ namespace XTimelineViewer.Views
                         if (k === 'l' && ni)    { e.preventDefault(); actOnPost('like',     'unlike');         return; }
                     }
                     if (!c && !s && !a) {
+                        if (k === 'F3')              { e.preventDefault(); window.chrome.webview.postMessage('focusSearch'); return; } // #228
                         if (k === 'Home'      && ni) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
                         if (k === 'End'       && ni) { window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' }); return; }
                         if (k === 'F5')              { e.preventDefault(); location.reload(); return; }
