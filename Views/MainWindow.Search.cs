@@ -18,6 +18,14 @@ namespace XTimelineViewer.Views
             args.Handled = true;
         }
 
+        // Ctrl+1〜9（WebView2 非フォーカス時もカバー）。Number1..Number9 は連続なので差分で番号を得る。
+        private void FocusTimelineByNumber_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            int n = sender.Key - Windows.System.VirtualKey.Number1 + 1;
+            FocusTimelineByIndex(n);
+            args.Handled = true;
+        }
+
         private void SearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
         {
             if (args.ChosenSuggestion is string chosen)

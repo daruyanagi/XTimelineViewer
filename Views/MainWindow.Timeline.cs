@@ -172,6 +172,38 @@ namespace XTimelineViewer.Views
             ind.Tip.Content  = R.Get(tipKey);
         }
 
+        // ── タイムライン番号バッジ / 番号フォーカス（#225）──────────────────────
+        // 表示順（TimelinePanel の子の並び）に従って 1..9 を割り当てる。10 個目以降はバッジ非表示。
+        private void RefreshTimelineNumbers()
+        {
+            int n = 1;
+            foreach (var child in TimelinePanel.Children)
+            {
+                if (child is not Grid pane) continue;
+                if (!_paneNumberLabels.TryGetValue(pane, out var label)) continue;
+                if (n <= 9)
+                {
+                    label.Text       = $"{n}.";
+                    label.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    label.Text       = string.Empty;
+                    label.Visibility = Visibility.Collapsed;
+                }
+                n++;
+            }
+        }
+
+        // Ctrl+数字 で、表示順 oneBased 番目のタイムラインをアクティブ化する。
+        private void FocusTimelineByIndex(int oneBased)
+        {
+            var panes = TimelinePanel.Children.OfType<Grid>().ToList();
+            int i = oneBased - 1;
+            if (i < 0 || i >= panes.Count) return;
+            if (_paneToSetFocus.TryGetValue(panes[i], out var setFocus)) setFocus();
+        }
+
         // ── AddTimeline ───────────────────────────────────────────────────────
 
         private void AddTimeline(TimelineConfig cfg)
@@ -202,6 +234,7 @@ namespace XTimelineViewer.Views
 
             // Header
             var headerGrid = new Grid { Padding = new Thickness(8, 4, 4, 4) };
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // number (#225)
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // typeIcon
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // profileBadge
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // urlLabel
@@ -232,6 +265,19 @@ namespace XTimelineViewer.Views
                 // 検索クエリの %xx を人間が読めるようデコードする（既存の検索ロジックを再利用）
                 displayText = SearchQueryHelper.DecodeSearchPath(uri.Host + uri.PathAndQuery);
 
+            // 番号バッジ（#225）。左から 1, 2, … を割り当て、Ctrl+数字 のフォーカス切り替えと対応づける。
+            // 番号は表示順に依存するため、追加・削除・並び替え後に RefreshTimelineNumbers で振り直す。
+            var numberLabel = new TextBlock
+            {
+                FontSize          = 12,
+                FontWeight        = Microsoft.UI.Text.FontWeights.SemiBold,
+                Opacity           = 0.6,
+                Margin            = new Thickness(0, 0, 4, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(numberLabel, 0);
+            _paneNumberLabels[pane] = numberLabel;
+
             var typeIcon = new FontIcon
             {
                 Glyph             = UrlHelper.GetTimelineGlyph(cfg.Url),
@@ -241,13 +287,13 @@ namespace XTimelineViewer.Views
                 Margin            = new Thickness(0, 0, 8, 0),
                 VerticalAlignment = VerticalAlignment.Center
             };
-            Grid.SetColumn(typeIcon, 0);
+            Grid.SetColumn(typeIcon, 1);
             var hardReloadTooltip = new ToolTip();
             ToolTipService.SetToolTip(typeIcon, hardReloadTooltip);
 
             // Profile badge
             var profileBadge = CreateProfileBadge(cfg.ProfileId);
-            Grid.SetColumn(profileBadge, 1);
+            Grid.SetColumn(profileBadge, 2);
 
             var urlLabel = new TextBlock
             {
@@ -257,7 +303,7 @@ namespace XTimelineViewer.Views
                 VerticalAlignment = VerticalAlignment.Center,
                 Opacity           = 0.8
             };
-            Grid.SetColumn(urlLabel, 2);
+            Grid.SetColumn(urlLabel, 3);
 
             // WebView2
             var webView = new WebView2
@@ -274,7 +320,7 @@ namespace XTimelineViewer.Views
                 Spacing           = 4,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            Grid.SetColumn(buttonPanel, 3);
+            Grid.SetColumn(buttonPanel, 4);
 
             var settingsBtn = new Button
             {
@@ -305,6 +351,7 @@ namespace XTimelineViewer.Views
 
             buttonPanel.Children.Add(settingsBtn);
 
+            headerGrid.Children.Add(numberLabel);
             headerGrid.Children.Add(typeIcon);
             headerGrid.Children.Add(profileBadge);
             headerGrid.Children.Add(urlLabel);
@@ -315,6 +362,7 @@ namespace XTimelineViewer.Views
             TimelinePanel.Children.Add(pane);
             _webViews.Add(webView);
             _webViewToPane[webView] = pane;
+            RefreshTimelineNumbers();  // 番号バッジを振り直す（#225）
 
             // cfg.Url の変更をヘッダーへ反映する更新子（ベース URL 変更・リスト URL ライブ解決で再利用）
             _paneUrlUpdaters[cfg] = () =>
@@ -410,6 +458,7 @@ namespace XTimelineViewer.Views
                 _configs.RemoveAt(from);
                 _configs.Insert(to, cfg2);
 
+                RefreshTimelineNumbers();  // 並び替え後に番号を振り直す（#225）
                 _ = SaveTimelinesAsync();
                 dragging.Opacity = 1.0;
                 _draggingPane = null;
@@ -594,6 +643,7 @@ namespace XTimelineViewer.Views
                     _paneToSetFocus.Remove(pane);
                     _paneUrlUpdaters.Remove(cfg);
                     _autoLoadIndicators.Remove(pane);
+                    _paneNumberLabels.Remove(pane);
                     _headerRefreshers.Remove(refreshHeader);
                     if (_focusedHeaderGrid == headerGrid)
                     {
@@ -603,6 +653,7 @@ namespace XTimelineViewer.Views
                     await SaveTimelinesAsync();
 
                     TimelinePanel.Children.Remove(pane);
+                    RefreshTimelineNumbers();  // 削除後に番号を振り直す（#225）
                     ViewModel.HasTimelines = TimelinePanel.Children.Count > 0;
                 }
                 else if (result == ContentDialogResult.Primary)

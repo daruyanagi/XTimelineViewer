@@ -118,6 +118,9 @@ namespace XTimelineViewer.Views
         // ホーム自動更新（#207）のヘッダーインジケーター（ペイン → アイコン/ツールチップ）
         private readonly Dictionary<Grid, (FontIcon Icon, ToolTip Tip)> _autoLoadIndicators = [];
 
+        // タイムライン番号バッジ（#225）。ペイン → 番号 TextBlock。表示順で 1..9 を振り直す。
+        private readonly Dictionary<Grid, TextBlock> _paneNumberLabels = [];
+
         // キーボードショートカット処理スクリプト（各 WebView2 に注入）
         private static readonly string KeyboardShortcutScript = """
             (function() {
@@ -165,6 +168,8 @@ namespace XTimelineViewer.Views
                         if (k === 'ArrowUp')    { e.preventDefault(); navigatePosts(-1); return; }
                         if (k === 'ArrowDown')  { e.preventDefault(); navigatePosts(1);  return; }
                         if (k === 'f')          { e.preventDefault(); window.chrome.webview.postMessage('focusSearch'); return; }
+                        if (k >= '1' && k <= '9') { e.preventDefault(); window.chrome.webview.postMessage('focusIndex:' + k); return; } // #225
+
                         if (k === 'r' && ni)    { e.preventDefault(); actOnPost('retweet',  'unretweet');      return; }
                         if (k === 'b' && ni)    { e.preventDefault(); actOnPost('bookmark', 'removeBookmark'); return; }
                         if (k === 'l' && ni)    { e.preventDefault(); actOnPost('like',     'unlike');         return; }

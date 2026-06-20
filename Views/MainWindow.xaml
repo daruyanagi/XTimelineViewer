@@ -13,6 +13,16 @@
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="FocusSearchBox_Invoked"/>
             <KeyboardAccelerator Key="F3" Invoked="FocusSearchBox_Invoked"/>
+            <!-- Ctrl+1〜9 でタイムラインのフォーカス切り替え（WebView2 非フォーカス時もカバー）#225 -->
+            <KeyboardAccelerator Key="Number1" Modifiers="Control" Invoked="FocusTimelineByNumber_Invoked"/>
+            <KeyboardAccelerator Key="Number2" Modifiers="Control" Invoked="FocusTimelineByNumber_Invoked"/>
+            <KeyboardAccelerator Key="Number3" Modifiers="Control" Invoked="FocusTimelineByNumber_Invoked"/>
+            <KeyboardAccelerator Key="Number4" Modifiers="Control" Invoked="FocusTimelineByNumber_Invoked"/>
+            <KeyboardAccelerator Key="Number5" Modifiers="Control" Invoked="FocusTimelineByNumber_Invoked"/>
+            <KeyboardAccelerator Key="Number6" Modifiers="Control" Invoked="FocusTimelineByNumber_Invoked"/>
+            <KeyboardAccelerator Key="Number7" Modifiers="Control" Invoked="FocusTimelineByNumber_Invoked"/>
+            <KeyboardAccelerator Key="Number8" Modifiers="Control" Invoked="FocusTimelineByNumber_Invoked"/>
+            <KeyboardAccelerator Key="Number9" Modifiers="Control" Invoked="FocusTimelineByNumber_Invoked"/>
         </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
