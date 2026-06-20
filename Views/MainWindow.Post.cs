@@ -232,6 +232,13 @@ namespace XTimelineViewer.Views
                 return;
             }
 
+            if (message.StartsWith("focusIndex:") &&
+                int.TryParse(message["focusIndex:".Length..], out var tlIndex))
+            {
+                FocusTimelineByIndex(tlIndex);  // Ctrl+数字 で N 番目をアクティブ化（#225）
+                return;
+            }
+
             if (message.StartsWith("openTimestamp:") &&
                 Uri.TryCreate(message[14..], UriKind.Absolute, out var timestampUri))
             {
