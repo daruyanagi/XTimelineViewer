@@ -204,6 +204,27 @@ namespace XTimelineViewer.Views
             if (_paneToSetFocus.TryGetValue(panes[i], out var setFocus)) setFocus();
         }
 
+        // Ctrl+←/→（WebView2 非フォーカス時）。現在アクティブなペインを基準に隣へ移動する。
+        // 未フォーカス時は先頭（→）/末尾（←）を基準にフォールバック。端では止まる（ラップしない）。
+        private void FocusAdjacentFromActive(int direction)
+        {
+            var panes = TimelinePanel.Children.OfType<Grid>().ToList();
+            if (panes.Count == 0) return;
+
+            int cur = -1;
+            if (_focusedHeaderGrid is not null &&
+                _headerGridToPane.TryGetValue(_focusedHeaderGrid, out var curPane))
+                cur = panes.IndexOf(curPane);
+
+            int next = cur < 0 ? (direction > 0 ? 0 : panes.Count - 1) : cur + direction;
+            if (next < 0 || next >= panes.Count) return;
+            if (_paneToSetFocus.TryGetValue(panes[next], out var setFocus))
+            {
+                setFocus();
+                panes[next].StartBringIntoView();
+            }
+        }
+
         // ── AddTimeline ───────────────────────────────────────────────────────
 
         private void AddTimeline(TimelineConfig cfg)
@@ -362,6 +383,7 @@ namespace XTimelineViewer.Views
             TimelinePanel.Children.Add(pane);
             _webViews.Add(webView);
             _webViewToPane[webView] = pane;
+            _headerGridToPane[headerGrid] = pane;  // アクティブ判定用（#227）
             RefreshTimelineNumbers();  // 番号バッジを振り直す（#225）
 
             // cfg.Url の変更をヘッダーへ反映する更新子（ベース URL 変更・リスト URL ライブ解決で再利用）
@@ -644,6 +666,7 @@ namespace XTimelineViewer.Views
                     _paneUrlUpdaters.Remove(cfg);
                     _autoLoadIndicators.Remove(pane);
                     _paneNumberLabels.Remove(pane);
+                    _headerGridToPane.Remove(headerGrid);
                     _headerRefreshers.Remove(refreshHeader);
                     if (_focusedHeaderGrid == headerGrid)
                     {

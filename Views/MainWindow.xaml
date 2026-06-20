@@ -13,6 +13,9 @@
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="FocusSearchBox_Invoked"/>
             <KeyboardAccelerator Key="F3" Invoked="FocusSearchBox_Invoked"/>
+            <!-- Ctrl+←/→ で隣のタイムラインへフォーカス（WebView2 非フォーカス時もカバー）#227 -->
+            <KeyboardAccelerator Key="Left"  Modifiers="Control" Invoked="FocusAdjacentTimeline_Invoked"/>
+            <KeyboardAccelerator Key="Right" Modifiers="Control" Invoked="FocusAdjacentTimeline_Invoked"/>
             <!-- Ctrl+1〜9 でタイムラインのフォーカス切り替え（WebView2 非フォーカス時もカバー）#225 -->
             <KeyboardAccelerator Key="Number1" Modifiers="Control" Invoked="FocusTimelineByNumber_Invoked"/>
             <KeyboardAccelerator Key="Number2" Modifiers="Control" Invoked="FocusTimelineByNumber_Invoked"/>

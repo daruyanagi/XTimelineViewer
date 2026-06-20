@@ -26,6 +26,13 @@ namespace XTimelineViewer.Views
             args.Handled = true;
         }
 
+        // Ctrl+←/→（WebView2 非フォーカス時もカバー）#227
+        private void FocusAdjacentTimeline_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            FocusAdjacentFromActive(sender.Key == Windows.System.VirtualKey.Right ? +1 : -1);
+            args.Handled = true;
+        }
+
         private void SearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
         {
             if (args.ChosenSuggestion is string chosen)
