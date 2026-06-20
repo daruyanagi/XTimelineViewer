@@ -7,6 +7,8 @@ AppPackages/
 .claude/*
 !.claude/memory/
 !.claude/memory/**
+!.claude/skills/
+!.claude/skills/**
 *.user
 packages/
 test-cert.pfx
