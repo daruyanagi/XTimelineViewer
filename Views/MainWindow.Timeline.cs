@@ -201,7 +201,11 @@ namespace XTimelineViewer.Views
             var panes = TimelinePanel.Children.OfType<Grid>().ToList();
             int i = oneBased - 1;
             if (i < 0 || i >= panes.Count) return;
-            if (_paneToSetFocus.TryGetValue(panes[i], out var setFocus)) setFocus();
+            if (_paneToSetFocus.TryGetValue(panes[i], out var setFocus))
+            {
+                setFocus();
+                panes[i].StartBringIntoView();  // 視界外なら横スクロールして表示（#231）
+            }
         }
 
         // Ctrl+←/→（WebView2 非フォーカス時）。現在アクティブなペインを基準に隣へ移動する。
