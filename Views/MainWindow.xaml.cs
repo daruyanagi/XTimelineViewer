@@ -176,6 +176,17 @@ namespace XTimelineViewer.Views
                         if (k === 'Backspace' && ni) { e.preventDefault(); history.back(); return; }
                     }
                 }, true);
+
+                // マウスホイールでスクロールしたら、そのペインをアクティブ化する (#221)。
+                // ホイールはキーフォーカスを移さないため、Home/End 等が別ペインに効いてしまうのを防ぐ。
+                // 既にフォーカスがある（hasFocus）ときは何もしない。連打防止に 200ms スロットル。
+                var lastAct = 0;
+                document.addEventListener('wheel', function () {
+                    var now = Date.now();
+                    if (now - lastAct < 200) return;
+                    lastAct = now;
+                    if (!document.hasFocus()) window.chrome.webview.postMessage('activate');
+                }, { passive: true, capture: true });
             })();
             """;
 

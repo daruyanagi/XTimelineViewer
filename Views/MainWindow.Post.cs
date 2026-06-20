@@ -252,6 +252,12 @@ namespace XTimelineViewer.Views
                 case "focusSearch":
                     SearchBox.Focus(FocusState.Programmatic);
                     break;
+                case "activate":
+                    // ホイール操作したペインをアクティブ化（キーフォーカス移動）#221
+                    if (_webViewToPane.TryGetValue(senderWebView, out var actPane) &&
+                        _paneToSetFocus.TryGetValue(actPane, out var actSetFocus))
+                        actSetFocus();
+                    break;
             }
         }
 
