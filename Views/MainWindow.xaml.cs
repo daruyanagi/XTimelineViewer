@@ -115,6 +115,9 @@ namespace XTimelineViewer.Views
         private DateTimeOffset    _autoActivateStartTime;
         private readonly HashSet<Grid> _homeHeaderGrids = [];
 
+        // ホーム自動更新（#207）のヘッダーインジケーター（ペイン → アイコン/ツールチップ）
+        private readonly Dictionary<Grid, (FontIcon Icon, ToolTip Tip)> _autoLoadIndicators = [];
+
         // キーボードショートカット処理スクリプト（各 WebView2 に注入）
         private static readonly string KeyboardShortcutScript = """
             (function() {

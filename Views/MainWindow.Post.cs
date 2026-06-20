@@ -224,6 +224,14 @@ namespace XTimelineViewer.Views
 
         private void OnWebViewMessageReceived(WebView2 senderWebView, string message)
         {
+            if (message.StartsWith("homeAutoLoad:"))
+            {
+                var status = message["homeAutoLoad:".Length..];
+                if (_webViewToPane.TryGetValue(senderWebView, out var hp))
+                    UpdateAutoLoadIndicator(hp, status);
+                return;
+            }
+
             if (message.StartsWith("openTimestamp:") &&
                 Uri.TryCreate(message[14..], UriKind.Absolute, out var timestampUri))
             {

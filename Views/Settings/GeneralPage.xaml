@@ -53,6 +53,26 @@
                     </controls:SettingsCard>
                 </controls:SettingsExpander.Items>
             </controls:SettingsExpander>
+
+            <!-- Home Timeline Auto-Refresh (#207): toggle in header, interval hidden in expander -->
+            <controls:SettingsExpander x:Name="HomeAutoLoadCard">
+                <controls:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE72C;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsExpander.HeaderIcon>
+                <ToggleSwitch x:Name="HomeAutoLoadToggle"
+                              IsOn="{x:Bind VM.HomeAutoLoadEnabled, Mode=TwoWay}"
+                              MinWidth="0"/>
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard x:Name="HomeAutoLoadIntervalCard">
+                        <NumberBox x:Name="HomeAutoLoadIntervalBox"
+                                   Minimum="5" Maximum="60"
+                                   SmallChange="1" LargeChange="5"
+                                   SpinButtonPlacementMode="Inline"
+                                   Width="160"
+                                   Value="{x:Bind VM.HomeAutoLoadIntervalSeconds, Mode=TwoWay}"/>
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
         </StackPanel>
     </ScrollViewer>
 </Page>
