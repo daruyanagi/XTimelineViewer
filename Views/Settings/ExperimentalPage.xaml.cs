@@ -69,13 +69,16 @@ namespace XTimelineViewer.Views.Settings
             OpenTimestampToggle.OnContent  = R.Get("Toggle_On");
             OpenTimestampToggle.OffContent = R.Get("Toggle_Off");
 
+            // #222 非推奨: 定期アクティブ化と関連オプションを無効化＋グレーアウト（v2.0 で削除予定）
             AutoActivateCard.Header      = R.Get("Settings_AutoActivate");
-            AutoActivateCard.Description = R.Get("Settings_AutoActivate_Description");
+            AutoActivateCard.Description = R.Get("Settings_AutoActivate_Description") + "\n" + R.Get("Settings_Deprecated_Note");
+            AutoActivateCard.IsEnabled   = false;
 
             ShowAutoActivateLabelCard.Header      = R.Get("Settings_ShowAutoActivateLabel");
-            ShowAutoActivateLabelCard.Description = R.Get("Settings_ShowAutoActivateLabel_Description");
+            ShowAutoActivateLabelCard.Description = R.Get("Settings_ShowAutoActivateLabel_Description") + "\n" + R.Get("Settings_Deprecated_Note");
             ShowAutoActivateLabelToggle.OnContent  = R.Get("Toggle_On");
             ShowAutoActivateLabelToggle.OffContent = R.Get("Toggle_Off");
+            ShowAutoActivateLabelCard.IsEnabled   = false;
 
             ExternalBrowserHeader.Text = R.Get("Section_ExternalBrowser");
 
