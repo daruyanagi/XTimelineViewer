@@ -10,6 +10,18 @@
                        Style="{StaticResource TitleTextBlockStyle}"
                        Margin="0,0,0,16"/>
 
+            <!-- 拡張機能の状態と extensions フォルダーを開くボタン（#241）。常時表示 -->
+            <InfoBar x:Name="ExtensionsInfoBar"
+                     Severity="Informational"
+                     IsOpen="True"
+                     IsClosable="False"
+                     Margin="0,0,0,8">
+                <InfoBar.ActionButton>
+                    <Button x:Name="OpenExtensionsFolderBtn"
+                            Click="OpenExtensionsFolder_Click"/>
+                </InfoBar.ActionButton>
+            </InfoBar>
+
             <!-- 拡張機能カードはコードビハインドで動的に追加 -->
         </StackPanel>
     </ScrollViewer>

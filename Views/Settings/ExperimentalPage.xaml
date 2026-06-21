@@ -10,6 +10,13 @@
                        Style="{StaticResource TitleTextBlockStyle}"
                        Margin="0,0,0,16"/>
 
+            <!-- 注意喚起（#242）：ここの機能は予告なく変更・非推奨・削除されうる -->
+            <InfoBar x:Name="CautionBar"
+                     Severity="Warning"
+                     IsOpen="True"
+                     IsClosable="False"
+                     Margin="0,0,0,8"/>
+
             <!-- Auto-Activate Home Timeline -->
             <controls:SettingsCard x:Name="AutoActivateCard">
                 <controls:SettingsCard.HeaderIcon>

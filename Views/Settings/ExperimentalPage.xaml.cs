@@ -43,6 +43,7 @@ namespace XTimelineViewer.Views.Settings
         private void PopulateUI()
         {
             PageTitle.Text = R.Get("Nav_Experimental");
+            CautionBar.Message = R.Get("Experimental_Caution");  // #242
 
             // #222 非推奨: 定期アクティブ化と関連オプションを無効化＋グレーアウト（v2.0 で削除予定）
             AutoActivateCard.Header      = R.Get("Settings_AutoActivate");
