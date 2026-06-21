@@ -10,26 +10,6 @@
                        Style="{StaticResource TitleTextBlockStyle}"
                        Margin="0,0,0,16"/>
 
-            <!-- Theme -->
-            <controls:SettingsCard x:Name="ThemeCard">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE771;" FontFamily="Segoe Fluent Icons"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="ThemeCombo"
-                          MinWidth="160"
-                          SelectedIndex="{x:Bind VM.ThemeIndex, Mode=TwoWay}"/>
-            </controls:SettingsCard>
-
-            <!-- Language -->
-            <controls:SettingsCard x:Name="LanguageCard">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE8C1;" FontFamily="Segoe Fluent Icons"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="LanguageCombo"
-                          MinWidth="160"
-                          SelectedIndex="{x:Bind VM.LanguageIndex, Mode=TwoWay}"/>
-            </controls:SettingsCard>
-
             <!-- Timeline Defaults -->
             <controls:SettingsExpander x:Name="DefaultTimelineExpander">
                 <controls:SettingsExpander.HeaderIcon>
@@ -70,6 +50,46 @@
                                    SpinButtonPlacementMode="Inline"
                                    Width="160"
                                    Value="{x:Bind VM.HomeAutoLoadIntervalSeconds, Mode=TwoWay}"/>
+                    </controls:SettingsCard>
+                </controls:SettingsExpander.Items>
+            </controls:SettingsExpander>
+
+            <!-- External Browser Section（試験機能から卒業した外部ブラウザー関連をすべて集約）-->
+            <TextBlock x:Name="ExternalBrowserHeader"
+                       Style="{StaticResource BodyStrongTextBlockStyle}"
+                       Margin="0,20,0,4"/>
+
+            <!-- Open Composer in External Browser -->
+            <controls:SettingsCard x:Name="OpenComposerCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE70F;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="OpenComposerToggle"
+                              IsOn="{x:Bind VM.OpenComposerInBrowser, Mode=TwoWay}"/>
+            </controls:SettingsCard>
+
+            <!-- Open Timestamp Links in External Browser -->
+            <controls:SettingsCard x:Name="OpenTimestampCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE71B;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="OpenTimestampToggle"
+                              IsOn="{x:Bind VM.OpenTimestampInBrowser, Mode=TwoWay}"/>
+            </controls:SettingsCard>
+
+            <!-- Browser Selection（Edge プロファイルは従属オプションとして Expander 内に格納）-->
+            <controls:SettingsExpander x:Name="BrowserCard">
+                <controls:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE774;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsExpander.HeaderIcon>
+                <ComboBox x:Name="BrowserCombo"
+                          MinWidth="200"
+                          SelectedIndex="{x:Bind VM.BrowserIndex, Mode=TwoWay}"/>
+                <controls:SettingsExpander.Items>
+                    <controls:SettingsCard x:Name="EdgeProfileCard">
+                        <ComboBox x:Name="EdgeProfileCombo"
+                                  MinWidth="200"
+                                  SelectionChanged="EdgeProfileCombo_SelectionChanged"/>
                     </controls:SettingsCard>
                 </controls:SettingsExpander.Items>
             </controls:SettingsExpander>

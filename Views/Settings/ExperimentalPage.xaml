@@ -10,24 +10,6 @@
                        Style="{StaticResource TitleTextBlockStyle}"
                        Margin="0,0,0,16"/>
 
-            <!-- Open Composer in External Browser -->
-            <controls:SettingsCard x:Name="OpenComposerCard">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE70F;" FontFamily="Segoe Fluent Icons"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ToggleSwitch x:Name="OpenComposerToggle"
-                              IsOn="{x:Bind VM.OpenComposerInBrowser, Mode=TwoWay}"/>
-            </controls:SettingsCard>
-
-            <!-- Open Timestamp Links in External Browser -->
-            <controls:SettingsCard x:Name="OpenTimestampCard">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE71B;" FontFamily="Segoe Fluent Icons"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ToggleSwitch x:Name="OpenTimestampToggle"
-                              IsOn="{x:Bind VM.OpenTimestampInBrowser, Mode=TwoWay}"/>
-            </controls:SettingsCard>
-
             <!-- Auto-Activate Home Timeline -->
             <controls:SettingsCard x:Name="AutoActivateCard">
                 <controls:SettingsCard.HeaderIcon>
@@ -48,31 +30,6 @@
                 </controls:SettingsCard.HeaderIcon>
                 <ToggleSwitch x:Name="ShowAutoActivateLabelToggle"
                               IsOn="{x:Bind VM.ShowAutoActivateLabel, Mode=TwoWay}"/>
-            </controls:SettingsCard>
-
-            <!-- External Browser Section Header -->
-            <TextBlock x:Name="ExternalBrowserHeader"
-                       Style="{StaticResource BodyStrongTextBlockStyle}"
-                       Margin="0,20,0,4"/>
-
-            <!-- Browser Selection -->
-            <controls:SettingsCard x:Name="BrowserCard">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE774;" FontFamily="Segoe Fluent Icons"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="BrowserCombo"
-                          MinWidth="200"
-                          SelectedIndex="{x:Bind VM.BrowserIndex, Mode=TwoWay}"/>
-            </controls:SettingsCard>
-
-            <!-- Edge Profile -->
-            <controls:SettingsCard x:Name="EdgeProfileCard">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE716;" FontFamily="Segoe Fluent Icons"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ComboBox x:Name="EdgeProfileCombo"
-                          MinWidth="200"
-                          SelectionChanged="EdgeProfileCombo_SelectionChanged"/>
             </controls:SettingsCard>
         </StackPanel>
     </ScrollViewer>

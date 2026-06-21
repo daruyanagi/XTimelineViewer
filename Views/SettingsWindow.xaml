@@ -17,6 +17,11 @@
                         <FontIcon Glyph="&#xE790;" FontFamily="Segoe Fluent Icons"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem x:Name="NavUserInterface" Tag="UserInterface">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE771;" FontFamily="Segoe Fluent Icons"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem x:Name="NavData" Tag="Data">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEDA2;" FontFamily="Segoe Fluent Icons"/>
