@@ -185,11 +185,14 @@ namespace XTimelineViewer.Views
                 {
                     label.Text       = $"{n}.";
                     label.Visibility = Visibility.Visible;
+                    // ツールチップにアクティブ化ホットキーを表示（#237）
+                    ToolTipService.SetToolTip(label, string.Format(R.Get("Tooltip_ActivateHotkey"), n));
                 }
                 else
                 {
                     label.Text       = string.Empty;
                     label.Visibility = Visibility.Collapsed;
+                    ToolTipService.SetToolTip(label, null);
                 }
                 n++;
             }
