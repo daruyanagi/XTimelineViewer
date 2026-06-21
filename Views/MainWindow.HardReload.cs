@@ -34,9 +34,14 @@ namespace XTimelineViewer.Views
             _autoActivateTimer.Start();
         }
 
+        // #222 非推奨: 定期アクティブ化はホーム自動更新（#207）で役目を終えたため無効化。
+        // v2.0 でタイマー関連コードごと削除予定。それまでは保存値があっても発火させない。
+        private static readonly bool AutoActivateEnabled = false;
+
         private void ApplyAutoActivateTimer()
         {
             _autoActivateTimer?.Stop();
+            if (!AutoActivateEnabled) return;  // #222 非推奨
             if (_appSettings.AutoActivateMinutes <= 0) return;
 
             _autoActivateTimer = new DispatcherTimer
@@ -166,7 +171,7 @@ namespace XTimelineViewer.Views
 
         private void UpdateAutoActivateLabel()
         {
-            if (!_appSettings.ShowAutoActivateLabel)
+            if (!AutoActivateEnabled || !_appSettings.ShowAutoActivateLabel)  // #222 非推奨: ラベルを常に非表示
             {
                 AutoActivateLabel.Visibility = Visibility.Collapsed;
                 return;

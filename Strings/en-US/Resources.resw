@@ -55,6 +55,7 @@
   <data name="Settings_OpenTimestampInBrowser_Description" xml:space="preserve"><value>Open timestamp links in an external browser instead of navigating in the timeline</value></data>
   <data name="Settings_AutoActivate" xml:space="preserve"><value>Auto-activate Home Timeline (min, 0 to disable)</value></data>
   <data name="Settings_AutoActivate_Description" xml:space="preserve"><value>Periodically bring the Home timeline to the foreground</value></data>
+  <data name="Settings_Deprecated_Note" xml:space="preserve"><value>⚠ Deprecated: will be removed in a future version (use Home timeline auto-refresh instead).</value></data>
   <data name="Settings_HomeAutoLoad" xml:space="preserve"><value>Auto-refresh Home timeline</value></data>
   <data name="Settings_HomeAutoLoad_Description" xml:space="preserve"><value>When on, new posts are loaded automatically at regular intervals while you are at the top of Home. Loading is skipped while you are composing a reply/quote or searching. This is separate from Auto-Reload, which reloads the whole page.</value></data>
   <data name="Settings_HomeAutoLoad_Interval" xml:space="preserve"><value>Refresh interval (sec)</value></data>

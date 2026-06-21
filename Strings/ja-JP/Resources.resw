@@ -55,6 +55,7 @@
   <data name="Settings_OpenTimestampInBrowser_Description" xml:space="preserve"><value>タイムライン内で移動せず、外部ブラウザーでタイムスタンプリンクを開きます</value></data>
   <data name="Settings_AutoActivate" xml:space="preserve"><value>ホームタイムラインを定期的にアクティブ化（分、0 で無効）</value></data>
   <data name="Settings_AutoActivate_Description" xml:space="preserve"><value>定期的にホームタイムラインを前面に表示します</value></data>
+  <data name="Settings_Deprecated_Note" xml:space="preserve"><value>⚠ 非推奨: 次期バージョンで削除予定です（ホームタイムラインの自動更新をご利用ください）。</value></data>
   <data name="Settings_HomeAutoLoad" xml:space="preserve"><value>ホームタイムラインの自動更新</value></data>
   <data name="Settings_HomeAutoLoad_Description" xml:space="preserve"><value>オンにすると、ホームの先頭にいるとき新着ポストを定期的に自動で読み込みます。リプライや引用の入力中・検索中は読み込みを控えます。ページ全体を再読み込みする「定期ハードリロード」とは別の機能です。</value></data>
   <data name="Settings_HomeAutoLoad_Interval" xml:space="preserve"><value>更新間隔（秒）</value></data>
