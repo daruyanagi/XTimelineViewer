@@ -1,0 +1,34 @@
+<Page
+    x:Class="XTimelineViewer.Views.Settings.UserInterfacePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls">
+
+    <ScrollViewer Padding="24,16">
+        <StackPanel Spacing="4">
+            <TextBlock x:Name="PageTitle"
+                       Style="{StaticResource TitleTextBlockStyle}"
+                       Margin="0,0,0,16"/>
+
+            <!-- Theme -->
+            <controls:SettingsCard x:Name="ThemeCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE771;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ComboBox x:Name="ThemeCombo"
+                          MinWidth="160"
+                          SelectedIndex="{x:Bind VM.ThemeIndex, Mode=TwoWay}"/>
+            </controls:SettingsCard>
+
+            <!-- Language -->
+            <controls:SettingsCard x:Name="LanguageCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE8C1;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ComboBox x:Name="LanguageCombo"
+                          MinWidth="160"
+                          SelectedIndex="{x:Bind VM.LanguageIndex, Mode=TwoWay}"/>
+            </controls:SettingsCard>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

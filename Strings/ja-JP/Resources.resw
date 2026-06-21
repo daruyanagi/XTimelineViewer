@@ -113,6 +113,7 @@
 
   <!-- Settings window navigation -->
   <data name="Nav_General" xml:space="preserve"><value>全般</value></data>
+  <data name="Nav_UserInterface" xml:space="preserve"><value>ユーザーインターフェイス</value></data>
   <data name="Nav_Experimental" xml:space="preserve"><value>試験機能</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>拡張機能</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>プロファイル</value></data>
