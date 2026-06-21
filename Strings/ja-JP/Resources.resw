@@ -115,6 +115,7 @@
   <data name="Nav_General" xml:space="preserve"><value>全般</value></data>
   <data name="Nav_UserInterface" xml:space="preserve"><value>ユーザーインターフェイス</value></data>
   <data name="Nav_Experimental" xml:space="preserve"><value>試験機能</value></data>
+  <data name="Experimental_Caution" xml:space="preserve"><value>ここにリストアップされる機能は予告なく変更されたり、非推奨・削除されることがあります。</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>拡張機能</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>プロファイル</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>ユーザーデータ管理</value></data>
@@ -162,6 +163,9 @@
   <data name="ExtSettings_StoreLink" xml:space="preserve"><value>Chrome Web Store で開く</value></data>
   <data name="ExtSettings_OpenSettings" xml:space="preserve"><value>設定を開く</value></data>
   <data name="Extensions_Empty" xml:space="preserve"><value>拡張機能がインストールされていません</value></data>
+  <data name="Extensions_InfoBar_Empty" xml:space="preserve"><value>拡張機能はインストールされていません。extensions フォルダーに展開済みの拡張機能を置くと、起動時に読み込まれます。</value></data>
+  <data name="Extensions_InfoBar_Installed" xml:space="preserve"><value>extensions フォルダーに展開済みの拡張機能を置くと、起動時に読み込まれます。</value></data>
+  <data name="Extensions_OpenFolder" xml:space="preserve"><value>extensions フォルダーを開く</value></data>
   <data name="Extensions_Empty_Description" xml:space="preserve"><value>"extensions" フォルダーに拡張機能を配置してください。</value></data>
 
   <!-- Update check -->
