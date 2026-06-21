@@ -120,6 +120,7 @@
   <data name="Settings_RelatedSettings" xml:space="preserve"><value>Related settings</value></data>
   <data name="Nav_About" xml:space="preserve"><value>About</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>Settings</value></data>
+  <data name="Tooltip_ActivateHotkey" xml:space="preserve"><value>Activate with Ctrl+{0}</value></data>
   <data name="Pane_Delete" xml:space="preserve"><value>Remove This Timeline</value></data>
   <data name="DragCaption" xml:space="preserve"><value>Add Timeline</value></data>
 

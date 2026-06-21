@@ -120,6 +120,7 @@
   <data name="Settings_RelatedSettings" xml:space="preserve"><value>関連する設定</value></data>
   <data name="Nav_About" xml:space="preserve"><value>バージョン情報</value></data>
   <data name="Pane_Settings_Tooltip" xml:space="preserve"><value>設定</value></data>
+  <data name="Tooltip_ActivateHotkey" xml:space="preserve"><value>Ctrl+{0} でアクティブ化</value></data>
   <data name="Pane_Delete" xml:space="preserve"><value>このタイムラインを削除</value></data>
   <data name="DragCaption" xml:space="preserve"><value>タイムラインを追加</value></data>
 
