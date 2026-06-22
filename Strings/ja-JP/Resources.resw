@@ -150,6 +150,8 @@
 
   <!-- Compose profile selector -->
   <data name="Compose_Profile" xml:space="preserve"><value>投稿アカウント</value></data>
+  <data name="Compose_Cancel" xml:space="preserve"><value>キャンセルして閉じる</value></data>
+  <data name="Compose_Post" xml:space="preserve"><value>投稿する（Ctrl+Enter）</value></data>
 
   <!-- Error dialogs -->
   <data name="ExtLoadError_Title" xml:space="preserve"><value>拡張機能の読み込みに失敗しました</value></data>
