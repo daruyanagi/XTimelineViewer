@@ -116,6 +116,8 @@
   <data name="Nav_UserInterface" xml:space="preserve"><value>ユーザーインターフェイス</value></data>
   <data name="Nav_Experimental" xml:space="preserve"><value>試験機能</value></data>
   <data name="Experimental_Caution" xml:space="preserve"><value>ここにリストアップされる機能は予告なく変更されたり、非推奨・削除されることがあります。</value></data>
+  <data name="Settings_ComposePreload" xml:space="preserve"><value>投稿ウィンドウをプリロードする</value></data>
+  <data name="Settings_ComposePreload_Description" xml:space="preserve"><value>バックグラウンドで投稿画面を事前に読み込み、投稿ボタンを押してから入力できるまでの待ち時間を短縮します（最後に使ったプロファイル）。メモリ消費が増えます。</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>拡張機能</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>プロファイル</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>ユーザーデータ管理</value></data>

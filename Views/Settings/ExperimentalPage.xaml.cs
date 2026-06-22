@@ -45,6 +45,12 @@ namespace XTimelineViewer.Views.Settings
             PageTitle.Text = R.Get("Nav_Experimental");
             CautionBar.Message = R.Get("Experimental_Caution");  // #242
 
+            // 投稿ウィンドウのプリロード（#244 案B）
+            ComposePreloadCard.Header      = R.Get("Settings_ComposePreload");
+            ComposePreloadCard.Description = R.Get("Settings_ComposePreload_Description");
+            ComposePreloadToggle.OnContent  = R.Get("Toggle_On");
+            ComposePreloadToggle.OffContent = R.Get("Toggle_Off");
+
             // #222 非推奨: 定期アクティブ化と関連オプションを無効化＋グレーアウト（v2.0 で削除予定）
             AutoActivateCard.Header      = R.Get("Settings_AutoActivate");
             AutoActivateCard.Description = R.Get("Settings_AutoActivate_Description") + "\n" + R.Get("Settings_Deprecated_Note");

@@ -250,6 +250,7 @@ namespace XTimelineViewer.Views
             {
                 _hardReloadUiTimer?.Stop();
                 _autoActivateTimer?.Stop();
+                DisposeComposeWarm();  // 投稿プリロードの後始末（#244 案B）
                 foreach (var wv in _webViews.ToList())
                     CleanupWebView(wv);
                 await SaveTimelinesAsync();
