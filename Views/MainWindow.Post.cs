@@ -137,11 +137,41 @@ namespace XTimelineViewer.Views
 
             var dlg = new ContentDialog
             {
-                Content         = rootPanel,
-                CloseButtonText = R.Get("Button_Close"),
-                XamlRoot        = Content.XamlRoot,
+                Content  = rootPanel,
+                XamlRoot = Content.XamlRoot,
             };
             _activeComposeDialog = dlg;
+            // 表示されたら編集ボックスにフォーカス（プリロード済みは既にロード完了しているのでここで効く）#246
+            dlg.Opened += (_, _) => FocusComposeEditorDeferred(webView);
+
+            // ── フッター（#246）：左 ［キャンセルして閉じる］(ESC) / 右 ［投稿する］(Ctrl+Enter・強調色) ──
+            // 一般的な Windows 作法とは左右が逆だが、X の作法（投稿は右）に寄せる。
+            var cancelBtn = new Button
+            {
+                Content             = R.Get("Compose_Cancel"),
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+            cancelBtn.Click += (_, _) => dlg.Hide();
+            cancelBtn.KeyboardAccelerators.Add(
+                new Microsoft.UI.Xaml.Input.KeyboardAccelerator { Key = Windows.System.VirtualKey.Escape });
+
+            var postBtn = new Button
+            {
+                Content             = R.Get("Compose_Post"),  // 「投稿する（Ctrl+Enter）」
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Style               = (Style)Application.Current.Resources["AccentButtonStyle"],
+            };
+            // 投稿は WebView へ Ctrl+Enter を送信して X に任せる（成功時のクローズは #180 の監視に委譲）
+            postBtn.Click += async (_, _) => await TriggerComposePostAsync(webView);
+
+            var footer = new Grid { Margin = new Thickness(0, 4, 0, 0) };
+            footer.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            footer.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(cancelBtn, 0);
+            Grid.SetColumn(postBtn, 1);
+            footer.Children.Add(cancelBtn);
+            footer.Children.Add(postBtn);
+            rootPanel.Children.Add(footer);
 
             if (!currentIsWarm)
                 await AttachComposeBehavior(webView, selectedProfileId);
@@ -161,7 +191,7 @@ namespace XTimelineViewer.Views
 
                 webView = new WebView2 { Width = 500, MinHeight = 520 };
                 currentIsWarm = false;
-                rootPanel.Children.Add(webView);
+                rootPanel.Children.Insert(1, webView);  // profileCombo(0) / webView(1) / footer(2) の順を保つ
                 await AttachComposeBehavior(webView, selectedProfileId);
             };
 
@@ -203,6 +233,57 @@ namespace XTimelineViewer.Views
                 // 次回に備えて再プリロード（設定 ON のとき。同プロファイルなら no-op）
                 _ = WarmUpComposeAsync();
             }
+        }
+
+        // 「投稿する」ボタン（#246）：X の投稿ボタンを click して投稿させる。
+        // CSS で非表示にしていても .click() は有効。合成 KeyboardEvent(Ctrl+Enter) は
+        // X 側ハンドラが信頼イベントでないため効かないので、ボタン click 方式にする。
+        // （ユーザーがキーボードで Ctrl+Enter を押した場合は X がネイティブに投稿する。）
+        private static async Task TriggerComposePostAsync(WebView2 webView)
+        {
+            if (webView.CoreWebView2 is null) return;
+            await webView.CoreWebView2.ExecuteScriptAsync("""
+                (function () {
+                    var b = document.querySelector('[data-testid="tweetButton"]')
+                         || document.querySelector('[data-testid="tweetButtonInline"]');
+                    if (b) b.click();
+                })();
+                """);
+        }
+
+        // ダイアログ表示時に編集ボックス（X のコンポーザー）へフォーカスする（#246）。
+        // ContentDialog が開いた直後に自前要素へフォーカスを移すため、低優先度で遅延実行する。
+        // X エディタは直後は focus を受け付けないことがあるので JS 側で短時間リトライする。
+        private void FocusComposeEditorDeferred(WebView2 webView)
+        {
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
+            {
+                if (webView.CoreWebView2 is null) return;
+                // ダイアログ表示直後は WebView の document に OS フォーカスが来ないことがあるため、
+                // コントロール/ウィンドウ/要素のフォーカスを document.hasFocus が立つまでリトライする。
+                for (int i = 0; i < 12; i++)
+                {
+                    webView.Focus(FocusState.Programmatic);
+                    string r;
+                    try
+                    {
+                        r = await webView.CoreWebView2.ExecuteScriptAsync("""
+                            (function () {
+                                try { window.focus(); } catch (_) {}
+                                var el = document.querySelector('.public-DraftEditor-content')
+                                      || document.querySelector('[role="textbox"]')
+                                      || document.querySelector('[data-testid="tweetTextarea_0"]');
+                                if (el) el.focus();
+                                var a = document.activeElement;
+                                return JSON.stringify({ hf: document.hasFocus(), ok: !!el && (a === el || el.contains(a)) });
+                            })();
+                            """);
+                    }
+                    catch { return; }
+                    if (r.Contains("\"ok\":true")) return;  // フォーカス成功
+                    await Task.Delay(80);
+                }
+            });
         }
 
         /// <summary>投稿に使用するプロファイル ID を決定する。</summary>
@@ -281,6 +362,13 @@ namespace XTimelineViewer.Views
             var env = await GetOrCreateProfileEnvAsync(profileId);
             await webView.EnsureCoreWebView2Async(env);
 
+            // ESC でダイアログを閉じる（WebView 内 JS からの通知。#246）
+            webView.CoreWebView2.WebMessageReceived += (s, e) =>
+            {
+                if (e.TryGetWebMessageAsString() == "composeCancel")
+                    DispatcherQueue.TryEnqueue(() => _activeComposeDialog?.Hide());
+            };
+
             // テーマを適用
             var root = (FrameworkElement)Content;
             var scheme = root.ActualTheme switch
@@ -290,6 +378,27 @@ namespace XTimelineViewer.Views
                 _                  => CoreWebView2PreferredColorScheme.Auto,
             };
             webView.CoreWebView2.Profile.PreferredColorScheme = scheme;
+
+            // 離脱確認（beforeunload）の抑止（#246）。キャンセルやリセット時の再ナビゲートで
+            // 「サイトから移動しますか?」が出ないよう、X より先（document 作成時）に
+            // キャプチャ段階の beforeunload リスナーを登録して伝播を止める。
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync("""
+                (function () {
+                    window.addEventListener('beforeunload', function (e) {
+                        e.stopImmediatePropagation();
+                        delete e['returnValue'];
+                    }, true);
+                    // ESC はアプリ側でダイアログを閉じる。X に渡すと compose から SPA 遷移して
+                    // 黒画面になるため、ここで捕捉して伝播を止める（#246）。
+                    window.addEventListener('keydown', function (e) {
+                        if (e.key === 'Escape') {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                            try { window.chrome.webview.postMessage('composeCancel'); } catch (_) {}
+                        }
+                    }, true);
+                })();
+                """);
 
             _composeReadyViews.Remove(webView);
 
@@ -307,11 +416,20 @@ namespace XTimelineViewer.Views
                             '[data-testid="primaryColumn"],' +
                             '[data-testid="sidebarColumn"],' +
                             'header[role="banner"],' +
-                            '[data-testid="modalBackdrop"]' +
+                            '[data-testid="modalBackdrop"],' +
+                            // compose 上部バー（戻る・下書き・ポストする）を隠し、WinUI フッターに一本化 (#246)
+                            '[data-testid="app-bar-close"],' +
+                            '[data-testid="tweetButton"],' +
+                            'div:has(> [data-testid="app-bar-close"]),' +
+                            'div:has(> div > [data-testid="app-bar-close"])' +
                             '{display:none!important}';
                         document.head.appendChild(s);
                     })();
                     """);
+
+                // オンデマンド生成時：ダイアログ表示中ならロード完了後に編集ボックスへフォーカス（#246）
+                if (_activeComposeDialog is not null)
+                    FocusComposeEditorDeferred(webView);
             };
 
             webView.CoreWebView2.NavigationStarting += (s, args) =>
