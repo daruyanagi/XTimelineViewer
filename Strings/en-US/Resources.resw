@@ -149,7 +149,7 @@
   <data name="Button_Skip" xml:space="preserve"><value>Skip and exit</value></data>
 
   <!-- Compose profile selector -->
-  <data name="Compose_Profile" xml:space="preserve"><value>Post as</value></data>
+  <data name="Compose_Profile" xml:space="preserve"><value>Post as (Ctrl+P to switch)</value></data>
   <data name="Compose_Cancel" xml:space="preserve"><value>Cancel &amp; close</value></data>
   <data name="Compose_Post" xml:space="preserve"><value>Post (Ctrl+Enter)</value></data>
 

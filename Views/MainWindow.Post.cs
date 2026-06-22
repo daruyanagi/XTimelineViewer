@@ -30,6 +30,7 @@ namespace XTimelineViewer.Views
         private WebView2? _composeWarmWebView;
         private string?   _composeWarmProfileId;
         private ContentDialog? _activeComposeDialog;             // 現在開いている投稿ダイアログ（自動クローズ用）
+        private Action? _composeCycleProfile;                     // 次の投稿アカウントへ切り替える（#247。Ctrl+P）
         private readonly HashSet<WebView2> _composeReadyViews = []; // compose/post ロード完了済みのビュー
 
         internal async Task WarmUpComposeAsync()
@@ -111,6 +112,14 @@ namespace XTimelineViewer.Views
             var profileCombo = BuildProfileComboBox(selectedProfileId);
             var rootPanel = new StackPanel { Spacing = 8 };
             rootPanel.Children.Add(profileCombo);
+
+            // Ctrl+P（#247）：次の投稿アカウントへ巡回。コンボの選択を進めると SelectionChanged が
+            // 発火してプロファイルが切り替わる。
+            _composeCycleProfile = () =>
+            {
+                if (profileCombo.Items.Count <= 1) return;
+                profileCombo.SelectedIndex = (profileCombo.SelectedIndex + 1) % profileCombo.Items.Count;
+            };
 
             // プリロード済み（warm）が同じプロファイルで使えるなら、移し替えて即表示（#244 案A）
             WebView2 webView;
@@ -206,6 +215,7 @@ namespace XTimelineViewer.Views
             finally
             {
                 _activeComposeDialog = null;
+                _composeCycleProfile = null;
 
                 // 後始末：warm はホストへ戻して再利用、オンデマンドは破棄
                 if (currentIsWarm) ReturnWarmToHost(webView, rootPanel, selectedProfileId);
@@ -362,11 +372,21 @@ namespace XTimelineViewer.Views
             var env = await GetOrCreateProfileEnvAsync(profileId);
             await webView.EnsureCoreWebView2Async(env);
 
-            // ESC でダイアログを閉じる（WebView 内 JS からの通知。#246）
+            // ブラウザー既定アクセラレータ（Ctrl+P の印刷など）を無効化し、JS で拾えるようにする（#247）
+            webView.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
+
+            // WebView 内 JS からの通知を処理（#246 ESC / #247 アカウント切替）
             webView.CoreWebView2.WebMessageReceived += (s, e) =>
             {
-                if (e.TryGetWebMessageAsString() == "composeCancel")
-                    DispatcherQueue.TryEnqueue(() => _activeComposeDialog?.Hide());
+                switch (e.TryGetWebMessageAsString())
+                {
+                    case "composeCancel":
+                        DispatcherQueue.TryEnqueue(() => _activeComposeDialog?.Hide());
+                        break;
+                    case "composeNextProfile":
+                        DispatcherQueue.TryEnqueue(() => _composeCycleProfile?.Invoke());
+                        break;
+                }
             };
 
             // テーマを適用
@@ -395,6 +415,13 @@ namespace XTimelineViewer.Views
                             e.preventDefault();
                             e.stopImmediatePropagation();
                             try { window.chrome.webview.postMessage('composeCancel'); } catch (_) {}
+                            return;
+                        }
+                        // Ctrl+P で次の投稿アカウントへ切り替える（#247）。印刷ダイアログは抑止。
+                        if (e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === 'p' || e.key === 'P')) {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                            try { window.chrome.webview.postMessage('composeNextProfile'); } catch (_) {}
                         }
                     }, true);
                 })();
