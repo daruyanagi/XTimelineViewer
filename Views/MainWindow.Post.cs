@@ -23,16 +23,117 @@ namespace XTimelineViewer.Views
                 await OpenPostDialogAsync();
         }
 
+        // ── 投稿ウィンドウのプリロード（試験機能 #244 案A）─────────────────────────
+        // 最後に使ったプロファイルの compose 画面を非表示ホストで実サイズまで完成させておき、
+        // 投稿ボタン押下時はその「生成済みインスタンス」をダイアログへ移し替えて即表示する。
+        // 閉じたらホストへ戻し、compose/post へ再ナビゲートして下書きをリセットし次回に備える。
+        private WebView2? _composeWarmWebView;
+        private string?   _composeWarmProfileId;
+        private ContentDialog? _activeComposeDialog;             // 現在開いている投稿ダイアログ（自動クローズ用）
+        private readonly HashSet<WebView2> _composeReadyViews = []; // compose/post ロード完了済みのビュー
+
+        internal async Task WarmUpComposeAsync()
+        {
+            if (!_appSettings.ComposePreloadEnabled) { DisposeComposeWarm(); return; }
+
+            var profileId = ResolveComposeProfileId();
+            // 同じプロファイルで準備済みなら何もしない
+            if (_composeWarmWebView is not null && _composeWarmProfileId == profileId) return;
+            DisposeComposeWarm();
+
+            try
+            {
+                var wv = CreateHiddenComposeHost();
+                ((Grid)Content).Children.Add(wv);
+                await AttachComposeBehavior(wv, profileId);  // env 生成 + ハンドラ + compose/post ナビゲート
+                _composeWarmWebView   = wv;
+                _composeWarmProfileId = profileId;
+            }
+            catch (Exception ex)
+            {
+                LogError("WarmUpComposeAsync", ex);
+            }
+        }
+
+        // 非表示ホスト用に compose 実サイズで生成（表示時の再レイアウトを避けるため 1x1 にはしない）
+        private static WebView2 CreateHiddenComposeHost()
+        {
+            var wv = new WebView2
+            {
+                Width  = 500,
+                MinHeight = 520,
+                Opacity = 0,
+                IsHitTestVisible = false,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment   = VerticalAlignment.Top,
+            };
+            Canvas.SetZIndex(wv, -1);
+            Grid.SetRow(wv, 1);  // コンテンツ行（Star）に置き、Auto 高のツールバー行を押し広げないようにする
+            return wv;
+        }
+
+        private void DisposeComposeWarm()
+        {
+            if (_composeWarmWebView is null) return;
+            try
+            {
+                _composeReadyViews.Remove(_composeWarmWebView);
+                ((Grid)Content).Children.Remove(_composeWarmWebView);
+                _composeWarmWebView.Close();
+            }
+            catch { /* 破棄失敗は無視 */ }
+            _composeWarmWebView   = null;
+            _composeWarmProfileId = null;
+        }
+
+        // 借りていた warm WebView2 を非表示ホストへ戻し、下書きをリセットして次回に備える
+        private void ReturnWarmToHost(WebView2 wv, StackPanel rootPanel, string profileId)
+        {
+            try { rootPanel.Children.Remove(wv); } catch { }
+            wv.Opacity             = 0;
+            wv.IsHitTestVisible    = false;
+            wv.HorizontalAlignment = HorizontalAlignment.Left;
+            wv.VerticalAlignment   = VerticalAlignment.Top;
+            Canvas.SetZIndex(wv, -1);
+            Grid.SetRow(wv, 1);
+            ((Grid)Content).Children.Add(wv);
+            _composeReadyViews.Remove(wv);
+            try { wv.Source = new Uri("https://x.com/compose/post"); } catch { }  // 下書きリセット
+            _composeWarmWebView   = wv;
+            _composeWarmProfileId = profileId;
+        }
+
         private async Task OpenPostDialogAsync(WebView2? senderWebView = null)
         {
             // ── プロファイルセレクターの構築 ──
             var selectedProfileId = ResolveComposeProfileId();
 
             var profileCombo = BuildProfileComboBox(selectedProfileId);
-            var webView = new WebView2 { Width = 500, MinHeight = 520 };
             var rootPanel = new StackPanel { Spacing = 8 };
             rootPanel.Children.Add(profileCombo);
-            rootPanel.Children.Add(webView);
+
+            // プリロード済み（warm）が同じプロファイルで使えるなら、移し替えて即表示（#244 案A）
+            WebView2 webView;
+            bool currentIsWarm;
+            if (_appSettings.ComposePreloadEnabled &&
+                _composeWarmWebView is not null &&
+                _composeWarmProfileId == selectedProfileId)
+            {
+                webView = _composeWarmWebView;
+                _composeWarmWebView = null;        // 借用中（閉じる時にホストへ戻す）
+                currentIsWarm = true;
+                ((Grid)Content).Children.Remove(webView);
+                webView.Opacity          = 1;
+                webView.IsHitTestVisible = true;
+                Canvas.SetZIndex(webView, 0);
+                rootPanel.Children.Add(webView);
+            }
+            else
+            {
+                webView = new WebView2 { Width = 500, MinHeight = 520 };
+                currentIsWarm = false;
+                rootPanel.Children.Add(webView);
+            }
 
             var dlg = new ContentDialog
             {
@@ -40,26 +141,28 @@ namespace XTimelineViewer.Views
                 CloseButtonText = R.Get("Button_Close"),
                 XamlRoot        = Content.XamlRoot,
             };
+            _activeComposeDialog = dlg;
 
-            // ── WebView2 初期化 ──
-            await InitComposeWebView(webView, selectedProfileId, dlg);
+            if (!currentIsWarm)
+                await AttachComposeBehavior(webView, selectedProfileId);
 
-            // ── プロファイル切り替え ──
+            // ── プロファイル切り替え（切替後は常にオンデマンド生成）──
             profileCombo.SelectionChanged += async (s, args) =>
             {
                 if (profileCombo.SelectedItem is not ComboBoxItem item) return;
                 var newProfileId = item.Tag as string ?? "default";
                 if (newProfileId == selectedProfileId) return;
+                var prevProfileId = selectedProfileId;
                 selectedProfileId = newProfileId;
 
-                // 古い WebView2 を破棄して新しいものに差し替え
-                var oldWebView = webView;
-                webView = new WebView2 { Width = 500, MinHeight = 520 };
-                rootPanel.Children.Remove(oldWebView);
-                rootPanel.Children.Add(webView);
-                try { oldWebView.Close(); } catch { }
+                // 現在の WebView2 を退避：warm は破棄せずホストへ戻す／オンデマンドは破棄
+                if (currentIsWarm) ReturnWarmToHost(webView, rootPanel, prevProfileId);
+                else { rootPanel.Children.Remove(webView); try { webView.Close(); } catch { } }
 
-                await InitComposeWebView(webView, selectedProfileId, dlg);
+                webView = new WebView2 { Width = 500, MinHeight = 520 };
+                currentIsWarm = false;
+                rootPanel.Children.Add(webView);
+                await AttachComposeBehavior(webView, selectedProfileId);
             };
 
             // WebView2 の Win32 HWND は XAML Popup より常に前面に描画されるため、
@@ -72,6 +175,12 @@ namespace XTimelineViewer.Views
             }
             finally
             {
+                _activeComposeDialog = null;
+
+                // 後始末：warm はホストへ戻して再利用、オンデマンドは破棄
+                if (currentIsWarm) ReturnWarmToHost(webView, rootPanel, selectedProfileId);
+                else { try { rootPanel.Children.Remove(webView); webView.Close(); } catch { } }
+
                 foreach (var wv in _webViews)
                     wv.Visibility = Visibility.Visible;
 
@@ -90,6 +199,9 @@ namespace XTimelineViewer.Views
                 {
                     setFocus();
                 }
+
+                // 次回に備えて再プリロード（設定 ON のとき。同プロファイルなら no-op）
+                _ = WarmUpComposeAsync();
             }
         }
 
@@ -159,8 +271,12 @@ namespace XTimelineViewer.Views
             return combo;
         }
 
-        /// <summary>投稿用 WebView2 を初期化して compose/post へナビゲートする。</summary>
-        private async Task InitComposeWebView(WebView2 webView, string profileId, ContentDialog dlg)
+        /// <summary>
+        /// 投稿用 WebView2 を初期化してハンドラを取り付け、compose/post へナビゲートする。
+        /// 自動クローズは現在開いている投稿ダイアログ（<see cref="_activeComposeDialog"/>）に対して行う。
+        /// プリロード（warm）でも投稿ダイアログでも同じ振る舞いを共有する（#244 案A）。
+        /// </summary>
+        private async Task AttachComposeBehavior(WebView2 webView, string profileId)
         {
             var env = await GetOrCreateProfileEnvAsync(profileId);
             await webView.EnsureCoreWebView2Async(env);
@@ -175,12 +291,12 @@ namespace XTimelineViewer.Views
             };
             webView.CoreWebView2.Profile.PreferredColorScheme = scheme;
 
-            bool composerReady = false;
+            _composeReadyViews.Remove(webView);
 
             webView.CoreWebView2.NavigationCompleted += async (s, args) =>
             {
                 if (!args.IsSuccess) return;
-                composerReady = true;
+                _composeReadyViews.Add(webView);
                 await webView.CoreWebView2.ExecuteScriptAsync("""
                     (function() {
                         var id = 'xtv-compose-style';
@@ -200,20 +316,20 @@ namespace XTimelineViewer.Views
 
             webView.CoreWebView2.NavigationStarting += (s, args) =>
             {
-                if (composerReady && !args.Uri.Contains("/compose/post"))
-                    dlg.Hide();
+                if (_composeReadyViews.Contains(webView) && !args.Uri.Contains("/compose/post"))
+                    _activeComposeDialog?.Hide();
             };
 
             // SPA 遷移では NavigationStarting が発火しないため、
             // 投稿 API のレスポンスを監視して自動で閉じる (#180)
             webView.CoreWebView2.WebResourceResponseReceived += (s, args) =>
             {
-                if (!composerReady) return;
+                if (!_composeReadyViews.Contains(webView)) return;
                 var uri = args.Request.Uri;
                 if (uri.Contains("/CreateTweet", StringComparison.OrdinalIgnoreCase) &&
                     args.Response.StatusCode >= 200 && args.Response.StatusCode < 300)
                 {
-                    dlg.DispatcherQueue.TryEnqueue(() => dlg.Hide());
+                    DispatcherQueue.TryEnqueue(() => _activeComposeDialog?.Hide());
                 }
             };
 

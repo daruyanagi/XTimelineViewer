@@ -17,6 +17,15 @@
                      IsClosable="False"
                      Margin="0,0,0,8"/>
 
+            <!-- Compose Window Preload（#244 案B）-->
+            <controls:SettingsCard x:Name="ComposePreloadCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE70F;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="ComposePreloadToggle"
+                              IsOn="{x:Bind VM.ComposePreloadEnabled, Mode=TwoWay}"/>
+            </controls:SettingsCard>
+
             <!-- Auto-Activate Home Timeline -->
             <controls:SettingsCard x:Name="AutoActivateCard">
                 <controls:SettingsCard.HeaderIcon>

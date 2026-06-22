@@ -167,6 +167,18 @@ namespace XTimelineViewer.ViewModels
             }
         }
 
+        /// <summary>投稿ウィンドウのプリロード（試験機能 #244 案B）。</summary>
+        public bool ComposePreloadEnabled
+        {
+            get => _settings.ComposePreloadEnabled;
+            set
+            {
+                if (_settings.ComposePreloadEnabled == value) return;
+                _settings.ComposePreloadEnabled = value;
+                Notify(nameof(ComposePreloadEnabled));
+            }
+        }
+
         public bool ShowAutoActivateLabel
         {
             get => _settings.ShowAutoActivateLabel;

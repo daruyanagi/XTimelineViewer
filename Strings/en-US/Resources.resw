@@ -116,6 +116,8 @@
   <data name="Nav_UserInterface" xml:space="preserve"><value>User Interface</value></data>
   <data name="Nav_Experimental" xml:space="preserve"><value>Experimental</value></data>
   <data name="Experimental_Caution" xml:space="preserve"><value>Features listed here may change, be deprecated, or be removed without notice.</value></data>
+  <data name="Settings_ComposePreload" xml:space="preserve"><value>Preload the compose window</value></data>
+  <data name="Settings_ComposePreload_Description" xml:space="preserve"><value>Loads the compose page in the background so there is less wait between pressing Post and being able to type (last used profile). Uses more memory.</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>Extensions</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>Profiles</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>User Data</value></data>

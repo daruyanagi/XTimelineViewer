@@ -17,6 +17,9 @@ namespace XTimelineViewer.Views
             await RestoreTimelinesAsync();
             UpdateHasNamedProfiles();
 
+            // 投稿ウィンドウのプリロード（#244 案B）。設定 OFF のときは内部で何もしない。
+            _ = WarmUpComposeAsync();
+
             if (!HasNamedProfiles())
             {
                 // XamlRoot が利用可能になるまで待つ（Content.Loaded は Activate() 後に発火）
