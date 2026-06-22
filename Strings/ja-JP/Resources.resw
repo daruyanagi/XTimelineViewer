@@ -149,7 +149,7 @@
   <data name="Button_Skip" xml:space="preserve"><value>スキップしてアプリを終了</value></data>
 
   <!-- Compose profile selector -->
-  <data name="Compose_Profile" xml:space="preserve"><value>投稿アカウント</value></data>
+  <data name="Compose_Profile" xml:space="preserve"><value>投稿アカウント（Ctrl+P で切り替え）</value></data>
   <data name="Compose_Cancel" xml:space="preserve"><value>キャンセルして閉じる</value></data>
   <data name="Compose_Post" xml:space="preserve"><value>投稿する（Ctrl+Enter）</value></data>
 
