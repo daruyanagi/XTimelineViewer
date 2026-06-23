@@ -62,9 +62,9 @@
   <data name="Settings_HomeAutoLoad_Interval_Description" xml:space="preserve"><value>新着ポストを読み込む間隔。最小 5 秒。</value></data>
   <data name="AutoLoad_Running" xml:space="preserve"><value>ホーム自動更新: 稼働中</value></data>
   <data name="AutoLoad_Paused" xml:space="preserve"><value>ホーム自動更新: 一時停止中</value></data>
-  <data name="AutoLoad_Paused_Scroll" xml:space="preserve"><value>ホーム自動更新: 一時停止中（スクロール中）</value></data>
+  <data name="AutoLoad_Paused_Scroll" xml:space="preserve"><value>ホーム自動更新: 一時停止中（スクロール中。先頭に戻ると再開します）</value></data>
   <data name="AutoLoad_Paused_Search" xml:space="preserve"><value>ホーム自動更新: 一時停止中（検索中）</value></data>
-  <data name="AutoLoad_Paused_Input" xml:space="preserve"><value>ホーム自動更新: 一時停止中（入力中）</value></data>
+  <data name="AutoLoad_Paused_Away" xml:space="preserve"><value>ホーム自動更新: 一時停止中（ホーム以外を表示中）</value></data>
   <data name="AutoLoad_Off" xml:space="preserve"><value>ホーム自動更新: オフ</value></data>
   <data name="Settings_ShowAutoActivateLabel_Description" xml:space="preserve"><value>ツールバーに自動アクティブ化のカウントダウンタイマーを表示します</value></data>
   <data name="Settings_ExternalBrowser_Description" xml:space="preserve"><value>外部リンクを開くブラウザーを選択します</value></data>
