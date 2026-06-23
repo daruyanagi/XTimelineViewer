@@ -530,8 +530,31 @@ namespace XTimelineViewer.Views
                     if (_webViewToPane.TryGetValue(senderWebView, out var actPane) &&
                         _paneToSetFocus.TryGetValue(actPane, out var actSetFocus))
                         actSetFocus();
+                    // webView.Focus() だけでは document に実フォーカスが移らず Home 等が効かない
+                    // ことがあるため、document.hasFocus が立つまでリトライして確実にする（#251）
+                    EnsureWebViewKeyboardFocus(senderWebView);
                     break;
             }
+        }
+
+        // WebView2 コンテンツに実際のキーボードフォーカスを確実に当てる（#251）。
+        // webView.Focus() は true を返しても document.hasFocus が立たないことがあるため、
+        // window.focus() と併せて document.hasFocus が true になるまで短時間リトライする。
+        private void EnsureWebViewKeyboardFocus(WebView2 webView)
+        {
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
+            {
+                if (webView.CoreWebView2 is null) return;
+                for (int i = 0; i < 10; i++)
+                {
+                    webView.Focus(FocusState.Programmatic);
+                    string r;
+                    try { r = await webView.CoreWebView2.ExecuteScriptAsync("(function(){try{window.focus();}catch(e){} return document.hasFocus();})()"); }
+                    catch { return; }
+                    if (r == "true") return;  // フォーカス確定
+                    await Task.Delay(60);
+                }
+            });
         }
 
         private void FocusAdjacentTimeline(WebView2 senderWebView, int direction)
