@@ -157,8 +157,15 @@ namespace XTimelineViewer.Views
 
                 function actOnPost(id, alt) {
                     var ps = getPosts();
-                    if (fi < 0 || fi >= ps.length) return;
-                    var b = ps[fi].querySelector('[data-testid="' + id + '"]' + (alt ? ',[data-testid="' + alt + '"]' : ''));
+                    if (!ps.length) return;
+                    var idx = fi;
+                    if (idx < 0 || idx >= ps.length) {
+                        // タイムラインでは Ctrl+↑/↓ での選択が必要（案C）。
+                        // ただし個別ツイート（/status/）ページでは未選択でも主ツイート（先頭）に作用する（#254）。
+                        if (/\/status\/\d+/.test(location.pathname)) idx = 0;
+                        else return;
+                    }
+                    var b = ps[idx].querySelector('[data-testid="' + id + '"]' + (alt ? ',[data-testid="' + alt + '"]' : ''));
                     b?.click();
                 }
 
