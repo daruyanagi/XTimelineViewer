@@ -62,9 +62,9 @@
   <data name="Settings_HomeAutoLoad_Interval_Description" xml:space="preserve"><value>How often to load new posts. Minimum 5 seconds.</value></data>
   <data name="AutoLoad_Running" xml:space="preserve"><value>Home auto-refresh: Running</value></data>
   <data name="AutoLoad_Paused" xml:space="preserve"><value>Home auto-refresh: Paused</value></data>
-  <data name="AutoLoad_Paused_Scroll" xml:space="preserve"><value>Home auto-refresh: Paused (scrolled)</value></data>
+  <data name="AutoLoad_Paused_Scroll" xml:space="preserve"><value>Home auto-refresh: Paused (scrolled down; resumes at top)</value></data>
   <data name="AutoLoad_Paused_Search" xml:space="preserve"><value>Home auto-refresh: Paused (searching)</value></data>
-  <data name="AutoLoad_Paused_Input" xml:space="preserve"><value>Home auto-refresh: Paused (composing)</value></data>
+  <data name="AutoLoad_Paused_Away" xml:space="preserve"><value>Home auto-refresh: Paused (not on Home)</value></data>
   <data name="AutoLoad_Off" xml:space="preserve"><value>Home auto-refresh: Off</value></data>
   <data name="Settings_ShowAutoActivateLabel_Description" xml:space="preserve"><value>Show the auto-activate countdown timer in the toolbar</value></data>
   <data name="Settings_ExternalBrowser_Description" xml:space="preserve"><value>Choose which browser to use for opening external links</value></data>
