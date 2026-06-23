@@ -30,7 +30,7 @@ namespace XTimelineViewer.Views
         private WebView2? _composeWarmWebView;
         private string?   _composeWarmProfileId;
         private ContentDialog? _activeComposeDialog;             // 現在開いている投稿ダイアログ（自動クローズ用）
-        private Action? _composeCycleProfile;                     // 次の投稿アカウントへ切り替える（#247。Ctrl+P）
+        private Action<int>? _composeCycleProfile;               // 投稿アカウントを巡回（#247 Ctrl+P=+1 / #252 Ctrl+Shift+P=-1）
         private readonly HashSet<WebView2> _composeReadyViews = []; // compose/post ロード完了済みのビュー
 
         internal async Task WarmUpComposeAsync()
@@ -113,12 +113,13 @@ namespace XTimelineViewer.Views
             var rootPanel = new StackPanel { Spacing = 8 };
             rootPanel.Children.Add(profileCombo);
 
-            // Ctrl+P（#247）：次の投稿アカウントへ巡回。コンボの選択を進めると SelectionChanged が
-            // 発火してプロファイルが切り替わる。
-            _composeCycleProfile = () =>
+            // Ctrl+P（#247）次へ / Ctrl+Shift+P（#252）前へ。コンボの選択を進める/戻すと
+            // SelectionChanged が発火してプロファイルが切り替わる。
+            _composeCycleProfile = dir =>
             {
-                if (profileCombo.Items.Count <= 1) return;
-                profileCombo.SelectedIndex = (profileCombo.SelectedIndex + 1) % profileCombo.Items.Count;
+                int count = profileCombo.Items.Count;
+                if (count <= 1) return;
+                profileCombo.SelectedIndex = (profileCombo.SelectedIndex + dir + count) % count;
             };
 
             // プリロード済み（warm）が同じプロファイルで使えるなら、移し替えて即表示（#244 案A）
@@ -384,7 +385,10 @@ namespace XTimelineViewer.Views
                         DispatcherQueue.TryEnqueue(() => _activeComposeDialog?.Hide());
                         break;
                     case "composeNextProfile":
-                        DispatcherQueue.TryEnqueue(() => _composeCycleProfile?.Invoke());
+                        DispatcherQueue.TryEnqueue(() => _composeCycleProfile?.Invoke(+1));
+                        break;
+                    case "composePrevProfile":  // #252
+                        DispatcherQueue.TryEnqueue(() => _composeCycleProfile?.Invoke(-1));
                         break;
                 }
             };
@@ -417,11 +421,12 @@ namespace XTimelineViewer.Views
                             try { window.chrome.webview.postMessage('composeCancel'); } catch (_) {}
                             return;
                         }
-                        // Ctrl+P で次の投稿アカウントへ切り替える（#247）。印刷ダイアログは抑止。
-                        if (e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === 'p' || e.key === 'P')) {
+                        // Ctrl+P で次／Ctrl+Shift+P で前の投稿アカウントへ（#247 / #252）。印刷ダイアログは抑止。
+                        if (e.ctrlKey && !e.altKey && (e.key === 'p' || e.key === 'P')) {
                             e.preventDefault();
                             e.stopImmediatePropagation();
-                            try { window.chrome.webview.postMessage('composeNextProfile'); } catch (_) {}
+                            var msg = e.shiftKey ? 'composePrevProfile' : 'composeNextProfile';
+                            try { window.chrome.webview.postMessage(msg); } catch (_) {}
                         }
                     }, true);
                 })();
