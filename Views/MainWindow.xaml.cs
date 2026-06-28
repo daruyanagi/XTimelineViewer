@@ -121,6 +121,9 @@ namespace XTimelineViewer.Views
         // タイムライン番号バッジ（#225）。ペイン → 番号 TextBlock。表示順で 1..9 を振り直す。
         private readonly Dictionary<Grid, TextBlock> _paneNumberLabels = [];
 
+        // 編集中（リプライ/引用）の WebView 集合（#258）。いずれかが編集中ならホーム自動更新を止める。
+        private readonly HashSet<WebView2> _composingWebViews = [];
+
         // headerGrid → pane の対応（#227）。アクティブな headerGrid からペインを引くのに使う。
         private readonly Dictionary<Grid, Grid> _headerGridToPane = [];
 

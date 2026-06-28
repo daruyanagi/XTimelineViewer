@@ -498,6 +498,15 @@ namespace XTimelineViewer.Views
                 return;
             }
 
+            if (message.StartsWith("editing:"))  // #258: いずれかのペインの編集状態
+            {
+                bool on = message == "editing:true";
+                bool changed = on ? _composingWebViews.Add(senderWebView)
+                                  : _composingWebViews.Remove(senderWebView);
+                if (changed) UpdateAnyComposing();
+                return;
+            }
+
             if (message.StartsWith("focusIndex:") &&
                 int.TryParse(message["focusIndex:".Length..], out var tlIndex))
             {
