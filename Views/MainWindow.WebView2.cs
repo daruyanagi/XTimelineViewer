@@ -100,6 +100,32 @@ namespace XTimelineViewer.Views
             await webView.CoreWebView2.ExecuteScriptAsync(BuildHideSidebarJs(hide));
         }
 
+        // 編集状態レポーター（#258）。全ペインに注入し、編集中（モーダル表示／編集要素フォーカス）に
+        // なったら postMessage('editing:true'/'editing:false') で C# に通知する。C# 側は「いずれかの
+        // ペインが編集中」を集約してホーム自動更新を一時停止する（別ペインの下書き消失を防ぐ）。
+        private static readonly string EditStateReporterScript = """
+            (function () {
+                if (window._xtvEditWatch) return;
+                window._xtvEditWatch = true;
+                var last = null;
+                function isEditing() {
+                    if (document.querySelector('[aria-modal="true"]')) return true;
+                    var fe = document.activeElement;
+                    return !!(fe && (fe.isContentEditable || fe.tagName === 'TEXTAREA' || fe.tagName === 'INPUT'));
+                }
+                function report() {
+                    var v = isEditing();
+                    if (v === last) return;
+                    last = v;
+                    try { window.chrome.webview.postMessage('editing:' + v); } catch (e) {}
+                }
+                document.addEventListener('focusin', report, true);
+                document.addEventListener('focusout', function () { setTimeout(report, 0); }, true);
+                setInterval(report, 1000);  // モーダル開閉など focus 変化を伴わないケースのバックストップ
+                report();
+            })();
+            """;
+
         /// <summary>cfg がホームタイムラインかどうか。</summary>
         private static bool IsHomeConfig(TimelineConfig cfg)
             => Uri.TryCreate(cfg.Url, UriKind.Absolute, out var u)
@@ -155,6 +181,7 @@ namespace XTimelineViewer.Views
                     if (window.pageYOffset > 5.0) { g_ttlTopCount = intervalMs(); report('paused-scroll'); return; }
                     var reason = suppressReason();
                     if (reason) { report('paused-' + reason); return; }
+                    if (window._xtvAnyComposing) { report('paused-elsewhere'); return; }  // 他ペインで編集中（#258）
                     report('running');
                     if (g_ttlTopCount >= intervalMs()) {
                         var homeButton = document.body.querySelectorAll('a[data-testid="AppTabBar_Home_Link"]');
@@ -181,6 +208,15 @@ namespace XTimelineViewer.Views
         {
             try { await webView.CoreWebView2.ExecuteScriptAsync(BuildHomeAutoLoadConfigJs()); }
             catch { }
+        }
+
+        /// <summary>いずれかのペインが編集中かを全ペインの JS（window._xtvAnyComposing）へ反映する（#258）。</summary>
+        private void UpdateAnyComposing()
+        {
+            var any = _composingWebViews.Count > 0 ? "true" : "false";
+            foreach (var wv in _webViews)
+                if (wv.CoreWebView2 is not null)
+                    _ = wv.CoreWebView2.ExecuteScriptAsync($"window._xtvAnyComposing = {any};");
         }
 
         private static bool EffectiveHideCompose(TimelineConfig cfg, string currentUrl) =>
@@ -537,6 +573,8 @@ namespace XTimelineViewer.Views
             webView.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(KeyboardShortcutScript);
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(TimestampInterceptScript);
+            // 編集状態レポーター（#258）：全ペインに注入し、編集中（リプライ/引用）を C# へ通知する。
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(EditStateReporterScript);
             // ホーム自動更新（#207）。ホームペインにのみ注入し、設定で ON/OFF・間隔を制御する。
             if (IsHomeConfig(cfg))
             {
