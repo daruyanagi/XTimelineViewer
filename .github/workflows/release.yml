@@ -34,6 +34,14 @@ jobs:
           -p:WindowsPackageType=None -p:SelfContained=true
           -o publish/arm64
 
+      - name: Add launcher (xtv.exe)
+        shell: pwsh
+        run: |
+          # コマンドライン起動用の小さなネイティブランチャーを各 ZIP に同梱する（#264）。
+          # ビルド済みの成果物をコミットしてあるためここでは再ビルドしない。
+          Copy-Item tools/launcher/xtv.exe publish/x64/xtv.exe   -Force
+          Copy-Item tools/launcher/xtv.exe publish/arm64/xtv.exe -Force
+
       - name: Create ZIP archives
         shell: pwsh
         run: |

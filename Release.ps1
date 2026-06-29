@@ -82,6 +82,8 @@ if ($WithZip) {
         $pubDir = Join-Path $root "publish\$rid"
         dotnet publish $proj -c Release -r $rid -p:PlatformTarget=$plat -p:WindowsPackageType=None -o $pubDir
         if ($LASTEXITCODE -ne 0) { throw "publish 失敗: $rid" }
+        # コマンドライン起動用ランチャーを同梱（#264。CI の release.yml と揃える）
+        Copy-Item (Join-Path $root 'tools\launcher\xtv.exe') (Join-Path $pubDir 'xtv.exe') -Force
         $zip = Join-Path $outDir "XTimelineViewer-$Version-$rid.zip"
         Compress-Archive -Path "$pubDir\*" -DestinationPath $zip -Force
         Write-Host "→ $zip"
