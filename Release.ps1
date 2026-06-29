@@ -80,7 +80,9 @@ if ($WithZip) {
         $plat = if ($rid -eq 'win-x64') { 'x64' } else { 'arm64' }
         Step "ZIP 発行: $rid"
         $pubDir = Join-Path $root "publish\$rid"
-        dotnet publish $proj -c Release -r $rid -p:PlatformTarget=$plat -p:WindowsPackageType=None -o $pubDir
+        # EffectivePlatform を明示しないと、WebView2 SDK がビルドホストの RID(win-x64) を見て
+        # x64 の Microsoft.Web.WebView2.Core.dll を arm64 出力に混入させ、arm64 で BadImageFormat になる。
+        dotnet publish $proj -c Release -r $rid -p:PlatformTarget=$plat -p:EffectivePlatform=$plat -p:WindowsPackageType=None -o $pubDir
         if ($LASTEXITCODE -ne 0) { throw "publish 失敗: $rid" }
         # コマンドライン起動用ランチャーを同梱（#264。CI の release.yml と揃える）
         Copy-Item (Join-Path $root 'tools\launcher\xtv.exe') (Join-Path $pubDir 'xtv.exe') -Force
@@ -96,9 +98,11 @@ if (-not $SkipBundle) {
     foreach ($plat in 'x64', 'arm64') {
         $rid = "win-$plat"
         Step "MSIX ビルド: $plat"
-        # arm64 は RuntimeIdentifier を明示しないと NETSDK1032（RID win-x64 と PlatformTarget arm64 の不一致）になる
+        # arm64 は RuntimeIdentifier を明示しないと NETSDK1032（RID win-x64 と PlatformTarget arm64 の不一致）になる。
+        # EffectivePlatform を明示しないと、WebView2 SDK がビルドホストの RID(win-x64) を見て x64 の
+        # Microsoft.Web.WebView2.Core.dll を arm64 パッケージに混入させ、arm64 で BadImageFormat になる。
         dotnet build $proj -c Release -p:Platform=$plat -p:PlatformTarget=$plat `
-            -p:RuntimeIdentifier=$rid -p:GenerateAppxPackageOnBuild=true
+            -p:RuntimeIdentifier=$rid -p:EffectivePlatform=$plat -p:GenerateAppxPackageOnBuild=true
         if ($LASTEXITCODE -ne 0) { throw "MSIX ビルド失敗: $plat" }
 
         $msix = Get-ChildItem (Join-Path $root "bin\$plat\Release\$tfm\$rid\AppPackages") `

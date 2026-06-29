@@ -20,17 +20,19 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      # EffectivePlatform を明示しないと、WebView2 SDK がビルドホストの RID(win-x64) を見て
+      # x64 の Microsoft.Web.WebView2.Core.dll を arm64 出力に混入させ、arm64 で BadImageFormat になる。
       - name: Build x64
         run: >
           dotnet publish XTimelineViewer.csproj
-          -c Release -r win-x64 -p:Platform=x64
+          -c Release -r win-x64 -p:Platform=x64 -p:EffectivePlatform=x64
           -p:WindowsPackageType=None -p:SelfContained=true
           -o publish/x64
 
       - name: Build arm64
         run: >
           dotnet publish XTimelineViewer.csproj
-          -c Release -r win-arm64 -p:Platform=arm64 -p:PlatformTarget=arm64
+          -c Release -r win-arm64 -p:Platform=arm64 -p:PlatformTarget=arm64 -p:EffectivePlatform=arm64
           -p:WindowsPackageType=None -p:SelfContained=true
           -o publish/arm64
 
