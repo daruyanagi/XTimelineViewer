@@ -20,9 +20,21 @@
 ## 動作要件
 
 - Windows 10 バージョン 19041 以降（Windows 11 推奨）
-- [Microsoft Edge Dev](https://www.microsoft.com/ja-jp/edge/download/insider) チャンネル（`C:\Program Files (x86)\Microsoft\Edge Dev\Application` にインストール済みであること）
 
 ## 使い方
+
+## ダウンロード
+
+実行ファイル一式は [Releases](https://github.com/daruyanagi/XTimelineViewer/releases) から ZIP 形式で入手できます。
+
+推奨は winget でインストールする方法です。自動アップデートがサポートされます。
+
+```
+winget install daruyanagi.XTimelineViewer
+```
+
+> [!CAUTION]
+> Microsoft Store への提出は、諸事情により終了しました。すでにインストールしている場合は、アンインストールしてください。
 
 ### タイムラインの追加
 
@@ -85,18 +97,6 @@ Edge で追加したい `x.com` ページを開き、アドレスバーのアイ
 設定の保存先は、アプリの形式（ZIP/MSIX）によって異なります。
 
 タイトルバーで確認するか、設定のエクスポートメニューからエクスプローラーを開いてアクセスしてください。
-
-## ダウンロード
-
-[Releases · daruyanagi/XTimelineViewer](https://github.com/daruyanagi/XTimelineViewer/releases) から ZIP を入手できます。
-
-winget でもインストールできます:
-
-```
-winget install daruyanagi.XTimelineViewer
-```
-
-手元では Windows 11 Pro （Retail）で動作を確認しています。
 
 ## コマンドラインから起動
 
