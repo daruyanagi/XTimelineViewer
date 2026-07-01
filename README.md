@@ -88,11 +88,13 @@ Edge で追加したい `x.com` ページを開き、アドレスバーのアイ
 
 ## ダウンロード
 
-[Releases · daruyanagi/XTimelineViewer](https://github.com/daruyanagi/XTimelineViewer/releases)
+[Releases · daruyanagi/XTimelineViewer](https://github.com/daruyanagi/XTimelineViewer/releases) から ZIP を入手できます。
 
-<a href="https://get.microsoft.com/installer/download/9P308HB5BLJ1?referrer=appbadge" target="_self" >
-	<img src="https://get.microsoft.com/images/ja%20dark.svg" width="200"/>
-</a>
+winget でもインストールできます:
+
+```
+winget install daruyanagi.XTimelineViewer
+```
 
 手元では Windows 11 Pro （Retail）で動作を確認しています。
 
@@ -111,19 +113,13 @@ ZIP を手動展開した場合は、フォルダ内の `xtv.exe` を直接ダ�
 
 ## リリース手順
 
-役割分担:
-
-- **GitHub リリース（ZIP）と winget 公開**は CI（`.github/workflows/release.yml`）が `v*` タグの push をトリガーに自動で行う。
-- **Microsoft Store 用の `.msixbundle`** は CI 対象外なので `Release.ps1` でローカル生成する（x64 / arm64 を逐次ビルドし、単一バンドルにまとめて `publish\release\` に出力）。
+**GitHub リリース（ZIP）と winget 公開**は CI（`.github/workflows/release.yml`）が `v*` タグの push をトリガーに自動で行う。
 
 ```powershell
-# 現行バージョンのまま Store 用 .msixbundle を生成
-.\Release.ps1
+# バージョンを上げる（csproj と Package.appxmanifest を一括更新）
+.\Release.ps1 -Version 1.9.0
 
-# バージョンを上げて生成（csproj と Package.appxmanifest を一括更新）
-.\Release.ps1 -Version 1.6.1
-
-# ローカル検証用に ZIP も生成したいとき（本番 ZIP は CI が作る）
+# ローカル検証用に ZIP を生成したいとき（本番 ZIP は CI が作る）
 .\Release.ps1 -WithZip
 ```
 
@@ -131,7 +127,8 @@ ZIP を手動展開した場合は、フォルダ内の `xtv.exe` を直接ダ�
 
 1. バージョン更新分をコミット & PR → main にマージ
 2. `v<バージョン>` タグを push（または `gh release create v<バージョン>`）→ CI が GitHub リリースの ZIP と winget 公開を自動実行
-3. マイナー以上のバージョンアップでは、`publish\release\` の `.msixbundle` を Microsoft Store パートナーセンターにアップロード
+
+> Microsoft Store での配布は行っていません（[#272](https://github.com/daruyanagi/XTimelineViewer/issues/272)）。
 
 ## ライセンス
 
