@@ -26,8 +26,6 @@
 - Windows 10 バージョン 19041 以降（Windows 11 推奨）
 - x64/arm64 対応
 
-## 使い方
-
 ## ダウンロード
 
 実行ファイル一式は [Releases](https://github.com/daruyanagi/XTimelineViewer/releases) から ZIP 形式で入手できます。
