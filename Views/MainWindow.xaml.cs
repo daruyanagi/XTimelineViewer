@@ -250,7 +250,7 @@ namespace XTimelineViewer.Views
             AppWindow.Resize(new SizeInt32(1400, 900));
             var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
             if (File.Exists(iconPath)) AppWindow.SetIcon(iconPath);
-            Title = "XTimelineViewer";
+            Title = "XTimelineViewer (xTV)";
             RefreshUIText();
             Closed += async (s, e) =>
             {

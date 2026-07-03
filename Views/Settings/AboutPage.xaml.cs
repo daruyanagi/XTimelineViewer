@@ -34,7 +34,7 @@ namespace XTimelineViewer.Views.Settings
             var versionStr = currentVersion.ToString(3);
             var edgeChannel = R.Get("EdgeChannel_Runtime");
             var edgeVersion = _parent?.EdgeVersion ?? R.Get("Version_Unknown");
-            var versionInfoText = $"XTimelineViewer v{versionStr}\r\n{edgeChannel} {edgeVersion}";
+            var versionInfoText = $"XTimelineViewer (xTV) v{versionStr}\r\n{edgeChannel} {edgeVersion}";
 
             var repoUrl = "https://github.com/daruyanagi/XTimelineViewer";
             var fallbackUrl = repoUrl + "/releases/latest";
@@ -78,7 +78,7 @@ namespace XTimelineViewer.Views.Settings
             var textStack = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
             textStack.Children.Add(new TextBlock
             {
-                Text       = "XTimelineViewer",
+                Text       = "XTimelineViewer (xTV)",
                 FontSize   = 20,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
             });
