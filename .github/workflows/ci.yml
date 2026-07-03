@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      # 本体（WinUI 3）の x64 ビルド。XAML/コンパイルのリグレッションを PR で検知する。
+      - name: Build app (x64)
+        run: >
+          dotnet build XTimelineViewer.csproj
+          -c Release -p:Platform=x64 -p:EffectivePlatform=x64 --nologo
+
+      # ユニットテスト（UI 非依存の net8.0 テストプロジェクト）。
+      - name: Test
+        run: dotnet test XTimelineViewer.Tests/XTimelineViewer.Tests.csproj -c Release --nologo
