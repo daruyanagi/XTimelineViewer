@@ -8,8 +8,10 @@
 //
 // ビルド（一度だけ・成果物 xtv.exe をリポジトリにコミットする。CI では再ビルドしない）:
 //   "%ProgramFiles%\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
-//   cl /nologo /O1 /MT /EHsc /DUNICODE /D_UNICODE xtv.cpp /Fe:xtv.exe /link /SUBSYSTEM:WINDOWS Shell32.lib
-//   （/MT で CRT を静的リンク＝VC ランタイム DLL 非依存。/SUBSYSTEM:WINDOWS でコンソール窓を出さない）
+//   rc /nologo /fo xtv.res xtv.rc
+//   cl /nologo /utf-8 /O1 /MT /EHsc /DUNICODE /D_UNICODE xtv.cpp xtv.res /Fe:xtv.exe /link /SUBSYSTEM:WINDOWS Shell32.lib
+//   （rc で xtv.rc のアイコン(#270)を埋め込む。/MT で CRT を静的リンク＝VC ランタイム DLL 非依存。
+//    /SUBSYSTEM:WINDOWS でコンソール窓を出さない）
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
