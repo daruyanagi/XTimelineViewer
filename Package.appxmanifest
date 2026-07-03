@@ -13,7 +13,7 @@
     ProcessorArchitecture="neutral" />
 
   <Properties>
-    <DisplayName>XTimelineViewer</DisplayName>
+    <DisplayName>XTimelineViewer (xTV)</DisplayName>
     <PublisherDisplayName>だるやなぎ</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -36,7 +36,7 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="XTimelineViewer"
+        DisplayName="XTimelineViewer (xTV)"
         Description="X のタイムラインを横並びで表示するビューアー"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
