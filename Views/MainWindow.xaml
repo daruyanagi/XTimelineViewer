@@ -78,11 +78,6 @@
                         Spacing="4"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center">
-                <TextBlock x:Name="AutoActivateLabel"
-                           FontSize="11"
-                           VerticalAlignment="Center"
-                           Opacity="0.8"
-                           Visibility="Collapsed"/>
                 <Grid>
                 <Button x:Name="AppMenuBtn" Width="32" Height="32" Padding="0" FontSize="14">
                     <FontIcon Glyph="&#xE700;" FontFamily="Segoe Fluent Icons" FontSize="14"/>

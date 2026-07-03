@@ -53,9 +53,6 @@
   <data name="Settings_OpenComposerInBrowser_Description" xml:space="preserve"><value>Open new posts in an external browser instead of the built-in composer</value></data>
   <data name="Settings_OpenTimestampInBrowser" xml:space="preserve"><value>Open Timestamp Links in External Browser</value></data>
   <data name="Settings_OpenTimestampInBrowser_Description" xml:space="preserve"><value>Open timestamp links in an external browser instead of navigating in the timeline</value></data>
-  <data name="Settings_AutoActivate" xml:space="preserve"><value>Auto-activate Home Timeline (min, 0 to disable)</value></data>
-  <data name="Settings_AutoActivate_Description" xml:space="preserve"><value>Periodically bring the Home timeline to the foreground</value></data>
-  <data name="Settings_Deprecated_Note" xml:space="preserve"><value>⚠ Deprecated: will be removed in a future version (use Home timeline auto-refresh instead).</value></data>
   <data name="Settings_HomeAutoLoad" xml:space="preserve"><value>Auto-refresh Home timeline</value></data>
   <data name="Settings_HomeAutoLoad_Description" xml:space="preserve"><value>When on, new posts are loaded automatically at regular intervals while you are at the top of Home. Loading is skipped while you are composing a reply/quote or searching. This is separate from Auto-Reload, which reloads the whole page.</value></data>
   <data name="Settings_HomeAutoLoad_Interval" xml:space="preserve"><value>Refresh interval (sec)</value></data>
@@ -67,7 +64,6 @@
   <data name="AutoLoad_Paused_Away" xml:space="preserve"><value>Home auto-refresh: Paused (not on Home)</value></data>
   <data name="AutoLoad_Paused_Elsewhere" xml:space="preserve"><value>Home auto-refresh: Paused (editing in another timeline)</value></data>
   <data name="AutoLoad_Off" xml:space="preserve"><value>Home auto-refresh: Off</value></data>
-  <data name="Settings_ShowAutoActivateLabel_Description" xml:space="preserve"><value>Show the auto-activate countdown timer in the toolbar</value></data>
   <data name="Settings_ExternalBrowser_Description" xml:space="preserve"><value>Choose which browser to use for opening external links</value></data>
   <data name="Settings_EdgeProfile_Description" xml:space="preserve"><value>Select the Edge profile to use when opening links</value></data>
 
@@ -98,12 +94,6 @@
   <data name="HardReload_Paused" xml:space="preserve"><value>⏸ Auto-Reload Paused</value></data>
   <data name="HardReload_Paused_Nav" xml:space="preserve"><value>⏸ Browsing — Auto-Reload Paused</value></data>
   <data name="HardReload_Disabled" xml:space="preserve"><value>⏹ Auto-Reload Off</value></data>
-  <data name="AutoActivate_Active" xml:space="preserve"><value>🏠 On: ⏱ {0}:{1} remaining</value></data>
-  <data name="AutoActivate_Paused" xml:space="preserve"><value>⏸ Paused</value></data>
-  <data name="AutoActivate_Paused_Nav" xml:space="preserve"><value>⏸ Browsing (paused)</value></data>
-  <data name="AutoActivate_Disabled" xml:space="preserve"><value>⏹ Auto-Activate Off</value></data>
-  <data name="AutoActivateLabel_Format" xml:space="preserve"><value>Home Timeline Auto-Activate: {0}</value></data>
-  <data name="Settings_ShowAutoActivateLabel" xml:space="preserve"><value>Show auto-activate status in toolbar</value></data>
 
   <!-- External browser settings -->
   <data name="Section_ExternalBrowser" xml:space="preserve"><value>External Browser</value></data>

@@ -32,12 +32,11 @@ public class SettingsServiceTests : IDisposable
     public void LoadSettings_ValidJson_ReturnsCorrectValues()
     {
         File.WriteAllText(At("settings.json"),
-            """{"Theme":"Dark","Language":"ja-JP","AutoActivateMinutes":5}""");
+            """{"Theme":"Dark","Language":"ja-JP"}""");
 
         var s = SettingsService.LoadSettings(At("settings.json"));
         Assert.Equal("Dark",  s.Theme);
         Assert.Equal("ja-JP", s.Language);
-        Assert.Equal(5,       s.AutoActivateMinutes);
     }
 
     [Fact]
@@ -68,7 +67,7 @@ public class SettingsServiceTests : IDisposable
         var path = At("settings.json");
         var original = new AppSettings
         {
-            Theme = "Light", Language = "en-US", AutoActivateMinutes = 10
+            Theme = "Light", Language = "en-US"
         };
 
         SettingsService.SaveSettings(path, original);
@@ -76,7 +75,6 @@ public class SettingsServiceTests : IDisposable
 
         Assert.Equal("Light",  loaded.Theme);
         Assert.Equal("en-US",  loaded.Language);
-        Assert.Equal(10,       loaded.AutoActivateMinutes);
     }
 
     // ── 後方互換 ──────────────────────────────────────────────────────────────
@@ -122,13 +120,11 @@ public class SettingsServiceTests : IDisposable
             OpenComposerInBrowser  = true,
             OpenTimestampInBrowser = true,
             Theme                  = "Dark",
-            AutoActivateMinutes    = 15,
             Language               = "en-US",
             CachedLatestVersion    = "v9.9.9",
             DefaultHideSidebar     = true,
             DefaultHideCompose     = false,
             DefaultHideListHeader  = true,
-            ShowAutoActivateLabel  = true,
             ExternalBrowser        = "edge",
             EdgeProfileDirectory   = "Profile 1",
             LastUsedProfileId      = "abc123",
@@ -141,13 +137,11 @@ public class SettingsServiceTests : IDisposable
         Assert.True(loaded.OpenComposerInBrowser);
         Assert.True(loaded.OpenTimestampInBrowser);
         Assert.Equal("Dark",      loaded.Theme);
-        Assert.Equal(15,          loaded.AutoActivateMinutes);
         Assert.Equal("en-US",     loaded.Language);
         Assert.Equal("v9.9.9",    loaded.CachedLatestVersion);
         Assert.True(loaded.DefaultHideSidebar);
         Assert.False(loaded.DefaultHideCompose);
         Assert.True(loaded.DefaultHideListHeader);
-        Assert.True(loaded.ShowAutoActivateLabel);
         Assert.Equal("edge",      loaded.ExternalBrowser);
         Assert.Equal("Profile 1", loaded.EdgeProfileDirectory);
         Assert.Equal("abc123",    loaded.LastUsedProfileId);

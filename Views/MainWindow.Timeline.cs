@@ -404,8 +404,6 @@ namespace XTimelineViewer.Views
                 AutomationProperties.SetName(webView, urlLabel.Text);
                 bool nowHome = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var hu)
                             && hu.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase);
-                if (nowHome) _homeHeaderGrids.Add(headerGrid);
-                else         _homeHeaderGrids.Remove(headerGrid);
                 autoLoadIcon.Visibility = nowHome ? Visibility.Visible : Visibility.Collapsed;
             };
 
@@ -416,8 +414,6 @@ namespace XTimelineViewer.Views
 
             void SetFocus()
             {
-                if (_focusedHeaderGrid is not null && _homeHeaderGrids.Contains(_focusedHeaderGrid) && !_homeHeaderGrids.Contains(headerGrid))
-                    RestartAutoActivateTimer();  // ホームから別タイムラインへ
                 _focusedHeaderGrid = headerGrid;
                 foreach (var r in _headerRefreshers) r();
                 webView.Focus(FocusState.Programmatic);
@@ -432,8 +428,6 @@ namespace XTimelineViewer.Views
             };
             webView.GotFocus   += (s, e) =>
             {
-                if (_focusedHeaderGrid is not null && _homeHeaderGrids.Contains(_focusedHeaderGrid) && !_homeHeaderGrids.Contains(headerGrid))
-                    RestartAutoActivateTimer();  // ホームから別タイムラインへ
                 _focusedHeaderGrid = headerGrid;
                 foreach (var r in _headerRefreshers) r();
             };
@@ -442,12 +436,7 @@ namespace XTimelineViewer.Views
             {
                 _pointerOverWebViews.Remove(webView);
                 EvaluateHardReloadPause(webView);
-                if (_pointerOverWebViews.Count == 0) RestartAutoActivateTimer();
             };
-
-            bool isHomeTimeline = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var cfgUri)
-                               && cfgUri.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase);
-            if (isHomeTimeline) _homeHeaderGrids.Add(headerGrid);
 
             _hardReloadUiUpdaters[webView] = () => UpdateHardReloadTooltip(webView, hardReloadTooltip);
             EnsureHardReloadUiTimer();

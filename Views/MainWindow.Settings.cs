@@ -126,7 +126,6 @@ namespace XTimelineViewer.Views
                 SaveSettings();
                 ApplySavedTheme();
                 UpdateThemeRadioState();
-                ApplyAutoActivateTimer();
                 _ = WarmUpComposeAsync();  // 投稿プリロードの ON/OFF を即時反映（#244 案B）
 
                 // WebView のタイムスタンプ設定を即時反映

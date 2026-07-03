@@ -25,28 +25,6 @@
                 <ToggleSwitch x:Name="ComposePreloadToggle"
                               IsOn="{x:Bind VM.ComposePreloadEnabled, Mode=TwoWay}"/>
             </controls:SettingsCard>
-
-            <!-- Auto-Activate Home Timeline -->
-            <controls:SettingsCard x:Name="AutoActivateCard">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE787;" FontFamily="Segoe Fluent Icons"/>
-                </controls:SettingsCard.HeaderIcon>
-                <NumberBox x:Name="AutoActivateBox"
-                           Minimum="0" Maximum="60"
-                           SmallChange="1" LargeChange="5"
-                           SpinButtonPlacementMode="Inline"
-                           Width="160"
-                           Value="{x:Bind VM.AutoActivateMinutes, Mode=TwoWay}"/>
-            </controls:SettingsCard>
-
-            <!-- Show Auto-Activate Status in Toolbar -->
-            <controls:SettingsCard x:Name="ShowAutoActivateLabelCard">
-                <controls:SettingsCard.HeaderIcon>
-                    <FontIcon Glyph="&#xE7B3;" FontFamily="Segoe Fluent Icons"/>
-                </controls:SettingsCard.HeaderIcon>
-                <ToggleSwitch x:Name="ShowAutoActivateLabelToggle"
-                              IsOn="{x:Bind VM.ShowAutoActivateLabel, Mode=TwoWay}"/>
-            </controls:SettingsCard>
         </StackPanel>
     </ScrollViewer>
 </Page>
