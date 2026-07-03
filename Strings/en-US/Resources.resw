@@ -157,11 +157,9 @@
   <data name="ExtSettings_Homepage" xml:space="preserve"><value>Open Homepage</value></data>
   <data name="ExtSettings_StoreLink" xml:space="preserve"><value>Open in Chrome Web Store</value></data>
   <data name="ExtSettings_OpenSettings" xml:space="preserve"><value>Open Settings</value></data>
-  <data name="Extensions_Empty" xml:space="preserve"><value>No extensions installed</value></data>
   <data name="Extensions_InfoBar_Empty" xml:space="preserve"><value>No extensions are installed. Place an unpacked extension in the extensions folder to load it at startup.</value></data>
   <data name="Extensions_InfoBar_Installed" xml:space="preserve"><value>Place an unpacked extension in the extensions folder to load it at startup.</value></data>
   <data name="Extensions_OpenFolder" xml:space="preserve"><value>Open extensions folder</value></data>
-  <data name="Extensions_Empty_Description" xml:space="preserve"><value>Place extension folders in the "extensions" directory to add them.</value></data>
 
   <!-- Update check -->
   <data name="CheckUpdate_Btn" xml:space="preserve"><value>Check for Updates</value></data>
