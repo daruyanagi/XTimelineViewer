@@ -27,13 +27,16 @@ VS の x64 ネイティブツール環境で:
 
 ```bat
 call "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
-cl /nologo /utf-8 /O1 /MT /EHsc /DUNICODE /D_UNICODE xtv.cpp /Fe:xtv.exe /link /SUBSYSTEM:WINDOWS Shell32.lib
+rc /nologo /fo xtv.res xtv.rc
+cl /nologo /utf-8 /O1 /MT /EHsc /DUNICODE /D_UNICODE xtv.cpp xtv.res /Fe:xtv.exe /link /SUBSYSTEM:WINDOWS Shell32.lib
 ```
 
+- `rc`：`xtv.rc`（`../../Assets/AppIcon.ico` を参照）からアイコンリソース `xtv.res` を生成し、exe に埋め込む（#270）。エクスプローラー／タスクバーで本体と同じアイコンが出る。
 - `/MT`：CRT を静的リンク＝VC ランタイム DLL に非依存。
 - `/SUBSYSTEM:WINDOWS`：コンソール窓を出さない。
 - `/utf-8`：日本語コメントを含むソースを正しく読ませる。
 - 依存は `SHELL32.dll` / `KERNEL32.dll`（いずれも OS 標準）のみ。
+- 中間生成物 `xtv.res` / `xtv.obj` はコミットしない（成果物は `xtv.exe` のみ）。
 
 ## アーキテクチャ
 
