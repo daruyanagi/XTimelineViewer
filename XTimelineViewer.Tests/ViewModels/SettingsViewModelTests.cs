@@ -135,34 +135,6 @@ public class SettingsViewModelTests
         Assert.True(s.DefaultHideListHeader);
     }
 
-    // ── 試験機能 ──────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void AutoActivateMinutes_ClampsToRange()
-    {
-        var s = new AppSettings();
-        var vm = new SettingsViewModel(s);
-
-        vm.AutoActivateMinutes = 999;
-        Assert.Equal(60, s.AutoActivateMinutes);
-
-        vm.AutoActivateMinutes = -5;
-        Assert.Equal(0, s.AutoActivateMinutes);
-    }
-
-    [Fact]
-    public void AutoActivateMinutes_NaN_Ignored()
-    {
-        var s = new AppSettings { AutoActivateMinutes = 10 };
-        var notified = 0;
-        var vm = new SettingsViewModel(s, () => notified++);
-
-        vm.AutoActivateMinutes = double.NaN;
-
-        Assert.Equal(10, s.AutoActivateMinutes);
-        Assert.Equal(0, notified);
-    }
-
     [Theory]
     [InlineData("system", 0, false)]
     [InlineData("edge",   1, true)]
@@ -198,11 +170,9 @@ public class SettingsViewModelTests
 
         vm.OpenComposerInBrowser  = true;
         vm.OpenTimestampInBrowser = true;
-        vm.ShowAutoActivateLabel  = true;
 
         Assert.True(s.OpenComposerInBrowser);
         Assert.True(s.OpenTimestampInBrowser);
-        Assert.True(s.ShowAutoActivateLabel);
     }
 
     [Fact]

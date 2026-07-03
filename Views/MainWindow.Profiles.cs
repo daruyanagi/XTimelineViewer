@@ -50,7 +50,6 @@ namespace XTimelineViewer.Views
                 var headerGrid = pane.Children.OfType<Grid>().FirstOrDefault();
                 if (headerGrid != null)
                 {
-                    _homeHeaderGrids.Remove(headerGrid);
                     if (_focusedHeaderGrid == headerGrid)
                         _focusedHeaderGrid = null;
                 }

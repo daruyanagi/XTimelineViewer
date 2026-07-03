@@ -525,9 +525,6 @@ namespace XTimelineViewer.Views
                     else
                     {
                         _urlDivergedWebViews.Remove(webView);
-                        if (Uri.TryCreate(cfg.Url, UriKind.Absolute, out var cfgU) &&
-                            cfgU.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase))
-                            RestartAutoActivateTimer();
                     }
                     EvaluateHardReloadPause(webView);
                 };

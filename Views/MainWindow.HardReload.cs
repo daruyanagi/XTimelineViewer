@@ -26,54 +26,6 @@ namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
     {
-        private void RestartAutoActivateTimer()
-        {
-            if (_autoActivateTimer is null) return;
-            _autoActivateTimer.Stop();
-            _autoActivateStartTime = DateTimeOffset.Now;
-            _autoActivateTimer.Start();
-        }
-
-        // #222 非推奨: 定期アクティブ化はホーム自動更新（#207）で役目を終えたため無効化。
-        // v2.0 でタイマー関連コードごと削除予定。それまでは保存値があっても発火させない。
-        private static readonly bool AutoActivateEnabled = false;
-
-        private void ApplyAutoActivateTimer()
-        {
-            _autoActivateTimer?.Stop();
-            if (!AutoActivateEnabled) return;  // #222 非推奨
-            if (_appSettings.AutoActivateMinutes <= 0) return;
-
-            _autoActivateTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMinutes(_appSettings.AutoActivateMinutes)
-            };
-            _autoActivateStartTime = DateTimeOffset.Now;
-            _autoActivateTimer.Tick += (_, _) =>
-            {
-                _autoActivateStartTime = DateTimeOffset.Now;
-                if (_pointerOverWebViews.Count > 0)                 return;  // ① ポインターオーバー中
-                if (_dialogOpenCount > 0)                           return;  // ② ダイアログ表示中
-                if (_focusedHeaderGrid is not null && _homeHeaderGrids.Contains(_focusedHeaderGrid))  return;  // ④ ホームにフォーカス中
-
-                foreach (var wv in _webViews)
-                {
-                    if (wv.CoreWebView2 is null) continue;
-                    if (!Uri.TryCreate(wv.CoreWebView2.Source, UriKind.Absolute, out var src)) continue;
-                    if (!src.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase)) continue;
-                    if (_urlDivergedWebViews.Contains(wv)) continue;  // ③ 別ページ閲覧中
-
-                    if (_webViewToPane.TryGetValue(wv, out var pane) &&
-                        _paneToSetFocus.TryGetValue(pane, out var setFocus))
-                    {
-                        setFocus();
-                        break;
-                    }
-                }
-            };
-            _autoActivateTimer.Start();
-        }
-
         private void StartHardReloadTimer(WebView2 wv, TimelineConfig cfg)
         {
             StopHardReloadTimer(wv);
@@ -134,20 +86,6 @@ namespace XTimelineViewer.Views
             }
         }
 
-        private string GetAutoActivateTooltipText(WebView2 wv)
-        {
-            if (_autoActivateTimer is null)
-                return R.Get("AutoActivate_Disabled");
-            if (_pointerOverWebViews.Count > 0 || _dialogOpenCount > 0)
-                return R.Get("AutoActivate_Paused");
-            if (_urlDivergedWebViews.Contains(wv))
-                return R.Get("AutoActivate_Paused_Nav");
-            var remaining = _autoActivateTimer.Interval - (DateTimeOffset.Now - _autoActivateStartTime);
-            return remaining > TimeSpan.Zero
-                ? string.Format(R.Get("AutoActivate_Active"), (int)remaining.TotalMinutes, remaining.Seconds.ToString("D2"))
-                : string.Empty;
-        }
-
         private string GetHardReloadTooltipText(WebView2 wv)
         {
             if (!_hardReloadTimers.TryGetValue(wv, out var t))
@@ -170,36 +108,6 @@ namespace XTimelineViewer.Views
             tooltip.Content = GetHardReloadTooltipText(wv) is { Length: > 0 } text ? text : null;
         }
 
-        private void UpdateAutoActivateLabel()
-        {
-            if (!AutoActivateEnabled || !_appSettings.ShowAutoActivateLabel)  // #222 非推奨: ラベルを常に非表示
-            {
-                AutoActivateLabel.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            var homeWv = _webViews.FirstOrDefault(wv =>
-                wv.CoreWebView2 is not null &&
-                Uri.TryCreate(wv.CoreWebView2.Source, UriKind.Absolute, out var u) &&
-                u.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase));
-
-            if (homeWv is null)
-            {
-                AutoActivateLabel.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            var state = GetAutoActivateTooltipText(homeWv);
-            if (string.IsNullOrEmpty(state))
-            {
-                AutoActivateLabel.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            AutoActivateLabel.Text       = string.Format(R.Get("AutoActivateLabel_Format"), state);
-            AutoActivateLabel.Visibility = Visibility.Visible;
-        }
-
         private void EnsureHardReloadUiTimer()
         {
             if (_hardReloadUiTimer is not null) return;
@@ -207,7 +115,6 @@ namespace XTimelineViewer.Views
             _hardReloadUiTimer.Tick += (_, _) =>
             {
                 foreach (var (wv, update) in _hardReloadUiUpdaters) update();
-                UpdateAutoActivateLabel();
             };
             _hardReloadUiTimer.Start();
         }

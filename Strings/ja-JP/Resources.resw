@@ -53,9 +53,6 @@
   <data name="Settings_OpenComposerInBrowser_Description" xml:space="preserve"><value>内蔵のコンポーザーの代わりに外部ブラウザーで新規投稿を開きます</value></data>
   <data name="Settings_OpenTimestampInBrowser" xml:space="preserve"><value>タイムスタンプリンクを外部ブラウザーで開く</value></data>
   <data name="Settings_OpenTimestampInBrowser_Description" xml:space="preserve"><value>タイムライン内で移動せず、外部ブラウザーでタイムスタンプリンクを開きます</value></data>
-  <data name="Settings_AutoActivate" xml:space="preserve"><value>ホームタイムラインを定期的にアクティブ化（分、0 で無効）</value></data>
-  <data name="Settings_AutoActivate_Description" xml:space="preserve"><value>定期的にホームタイムラインを前面に表示します</value></data>
-  <data name="Settings_Deprecated_Note" xml:space="preserve"><value>⚠ 非推奨: 次期バージョンで削除予定です（ホームタイムラインの自動更新をご利用ください）。</value></data>
   <data name="Settings_HomeAutoLoad" xml:space="preserve"><value>ホームタイムラインの自動更新</value></data>
   <data name="Settings_HomeAutoLoad_Description" xml:space="preserve"><value>オンにすると、ホームの先頭にいるとき新着ポストを定期的に自動で読み込みます。リプライや引用の入力中・検索中は読み込みを控えます。ページ全体を再読み込みする「定期ハードリロード」とは別の機能です。</value></data>
   <data name="Settings_HomeAutoLoad_Interval" xml:space="preserve"><value>更新間隔（秒）</value></data>
@@ -67,7 +64,6 @@
   <data name="AutoLoad_Paused_Away" xml:space="preserve"><value>ホーム自動更新: 一時停止中（ホーム以外を表示中）</value></data>
   <data name="AutoLoad_Paused_Elsewhere" xml:space="preserve"><value>ホーム自動更新: 一時停止中（他のタイムラインで編集中）</value></data>
   <data name="AutoLoad_Off" xml:space="preserve"><value>ホーム自動更新: オフ</value></data>
-  <data name="Settings_ShowAutoActivateLabel_Description" xml:space="preserve"><value>ツールバーに自動アクティブ化のカウントダウンタイマーを表示します</value></data>
   <data name="Settings_ExternalBrowser_Description" xml:space="preserve"><value>外部リンクを開くブラウザーを選択します</value></data>
   <data name="Settings_EdgeProfile_Description" xml:space="preserve"><value>リンクを開く際に使用する Edge プロファイルを選択します</value></data>
 
@@ -98,12 +94,6 @@
   <data name="HardReload_Paused" xml:space="preserve"><value>⏸ 定期ハードリロード一時停止中</value></data>
   <data name="HardReload_Paused_Nav" xml:space="preserve"><value>⏸ ページ閲覧中（定期ハードリロード停止）</value></data>
   <data name="HardReload_Disabled" xml:space="preserve"><value>⏹ 定期ハードリロード無効</value></data>
-  <data name="AutoActivate_Active" xml:space="preserve"><value>🏠 有効: ⏱ 残り {0}:{1}</value></data>
-  <data name="AutoActivate_Paused" xml:space="preserve"><value>⏸ 一時停止中</value></data>
-  <data name="AutoActivate_Paused_Nav" xml:space="preserve"><value>⏸ ページ閲覧中（停止）</value></data>
-  <data name="AutoActivate_Disabled" xml:space="preserve"><value>⏹ 自動アクティブ化 無効</value></data>
-  <data name="AutoActivateLabel_Format" xml:space="preserve"><value>ホームタイムラインの自動アクティブ化: {0}</value></data>
-  <data name="Settings_ShowAutoActivateLabel" xml:space="preserve"><value>ツールバーに自動アクティブ化の状態を表示する</value></data>
 
   <!-- External browser settings -->
   <data name="Section_ExternalBrowser" xml:space="preserve"><value>外部ブラウザー</value></data>

@@ -127,20 +127,6 @@ namespace XTimelineViewer.ViewModels
             }
         }
 
-        /// <summary>NumberBox.Value（double）にバインドする。NaN（空欄）は無視し、0–60 に丸める。</summary>
-        public double AutoActivateMinutes
-        {
-            get => _settings.AutoActivateMinutes;
-            set
-            {
-                if (double.IsNaN(value)) return;
-                var minutes = (int)Math.Clamp(value, 0, 60);
-                if (_settings.AutoActivateMinutes == minutes) return;
-                _settings.AutoActivateMinutes = minutes;
-                Notify(nameof(AutoActivateMinutes));
-            }
-        }
-
         /// <summary>ホーム自動更新（#207）の ON/OFF。</summary>
         public bool HomeAutoLoadEnabled
         {
@@ -176,17 +162,6 @@ namespace XTimelineViewer.ViewModels
                 if (_settings.ComposePreloadEnabled == value) return;
                 _settings.ComposePreloadEnabled = value;
                 Notify(nameof(ComposePreloadEnabled));
-            }
-        }
-
-        public bool ShowAutoActivateLabel
-        {
-            get => _settings.ShowAutoActivateLabel;
-            set
-            {
-                if (_settings.ShowAutoActivateLabel == value) return;
-                _settings.ShowAutoActivateLabel = value;
-                Notify(nameof(ShowAutoActivateLabel));
             }
         }
 

@@ -110,10 +110,6 @@ namespace XTimelineViewer.Views
         private readonly HashSet<WebView2>                       _pointerOverWebViews  = [];
         private readonly HashSet<WebView2>                       _urlDivergedWebViews  = [];
         private DispatcherTimer?  _hardReloadUiTimer;
-        private DispatcherTimer?  _autoActivateTimer;
-        private int               _dialogOpenCount      = 0;
-        private DateTimeOffset    _autoActivateStartTime;
-        private readonly HashSet<Grid> _homeHeaderGrids = [];
 
         // ホーム自動更新（#207）のヘッダーインジケーター（ペイン → アイコン/ツールチップ）
         private readonly Dictionary<Grid, (FontIcon Icon, ToolTip Tip)> _autoLoadIndicators = [];
@@ -259,7 +255,6 @@ namespace XTimelineViewer.Views
             Closed += async (s, e) =>
             {
                 _hardReloadUiTimer?.Stop();
-                _autoActivateTimer?.Stop();
                 DisposeComposeWarm();  // 投稿プリロードの後始末（#244 案B）
                 foreach (var wv in _webViews.ToList())
                     CleanupWebView(wv);
@@ -270,7 +265,6 @@ namespace XTimelineViewer.Views
             LoadProfiles();
             CleanupOrphanedProfiles();
             ApplySavedTheme();
-            ApplyAutoActivateTimer();
             UpdateMenuUpdateBadge();
             _ = InitializeAsync();
             _ = CheckForUpdatesInBackgroundAsync();
@@ -316,14 +310,7 @@ namespace XTimelineViewer.Views
         {
             // すべてのダイアログに現在のテーマを自動適用して設定漏れを防ぐ (#126)
             dlg.RequestedTheme = ((FrameworkElement)Content).ActualTheme;
-
-            _dialogOpenCount++;
-            try   { return await dlg.ShowAsync(); }
-            finally
-            {
-                _dialogOpenCount--;
-                if (_dialogOpenCount == 0) RestartAutoActivateTimer();
-            }
+            return await dlg.ShowAsync();
         }
 
         /// <summary>
