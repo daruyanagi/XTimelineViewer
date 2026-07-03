@@ -157,11 +157,9 @@
   <data name="ExtSettings_Homepage" xml:space="preserve"><value>ホームページを開く</value></data>
   <data name="ExtSettings_StoreLink" xml:space="preserve"><value>Chrome Web Store で開く</value></data>
   <data name="ExtSettings_OpenSettings" xml:space="preserve"><value>設定を開く</value></data>
-  <data name="Extensions_Empty" xml:space="preserve"><value>拡張機能がインストールされていません</value></data>
   <data name="Extensions_InfoBar_Empty" xml:space="preserve"><value>拡張機能はインストールされていません。extensions フォルダーに展開済みの拡張機能を置くと、起動時に読み込まれます。</value></data>
   <data name="Extensions_InfoBar_Installed" xml:space="preserve"><value>extensions フォルダーに展開済みの拡張機能を置くと、起動時に読み込まれます。</value></data>
   <data name="Extensions_OpenFolder" xml:space="preserve"><value>extensions フォルダーを開く</value></data>
-  <data name="Extensions_Empty_Description" xml:space="preserve"><value>"extensions" フォルダーに拡張機能を配置してください。</value></data>
 
   <!-- Update check -->
   <data name="CheckUpdate_Btn" xml:space="preserve"><value>更新を確認</value></data>
