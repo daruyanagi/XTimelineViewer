@@ -225,10 +225,17 @@ namespace XTimelineViewer.Views
                 foreach (var wv in _webViews)
                     wv.Visibility = Visibility.Visible;
 
-                // 選択プロファイルを保存
-                if (_appSettings.LastUsedProfileId != selectedProfileId)
+                // 投稿アカウントの記憶。#285: 有効時は誤爆防止のため、次回はプライマリへ戻す。
+                var nextProfileId = selectedProfileId;
+                if (_appSettings.ComposeResetToPrimaryEnabled)
                 {
-                    _appSettings.LastUsedProfileId = selectedProfileId;
+                    var primary = _profiles.FirstOrDefault(p => p.IsPrimary)
+                                  ?? _profiles.FirstOrDefault(p => p.Id != "default");
+                    if (primary is not null) nextProfileId = primary.Id;
+                }
+                if (_appSettings.LastUsedProfileId != nextProfileId)
+                {
+                    _appSettings.LastUsedProfileId = nextProfileId;
                     SaveSettings();
                 }
 

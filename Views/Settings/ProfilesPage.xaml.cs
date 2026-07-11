@@ -146,9 +146,42 @@ namespace XTimelineViewer.Views.Settings
                 Content = badgeTextBox,
             };
 
+            // ── プライマリプロフィール（#285）──
+            var primaryToggle = new ToggleSwitch
+            {
+                IsOn       = profile.IsPrimary,
+                OnContent  = R.Get("Toggle_On"),
+                OffContent = R.Get("Toggle_Off"),
+            };
+            var capturedForPrimary = profile;
+            primaryToggle.Toggled += (_, _) =>
+            {
+                if (primaryToggle.IsOn)
+                {
+                    // 単一プライマリ制約: 他プロフィールの指定を解除する
+                    foreach (var p in _parent?.Profiles ?? []) p.IsPrimary = false;
+                    capturedForPrimary.IsPrimary = true;
+                    _parent?.ProfilesModified?.Invoke();
+                    // 他カードのトグル表示を同期（イベント中の再入を避けて遅延実行）
+                    DispatcherQueue.TryEnqueue(PopulateUI);
+                }
+                else
+                {
+                    capturedForPrimary.IsPrimary = false;
+                    _parent?.ProfilesModified?.Invoke();
+                }
+            };
+            var primaryCard = new CommunityToolkit.WinUI.Controls.SettingsCard
+            {
+                Header      = R.Get("Profiles_Primary"),
+                Description = R.Get("Profiles_Primary_Description"),
+                Content     = primaryToggle,
+            };
+
             expander.Items.Add(nameCard);
             expander.Items.Add(colorCard);
             expander.Items.Add(badgeTextCard);
+            expander.Items.Add(primaryCard);
 
             // ── 削除ボタン（Expander 内の末尾に配置 #178） ──
             var deleteBtn = new Button

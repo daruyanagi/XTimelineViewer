@@ -25,6 +25,15 @@
                 <ToggleSwitch x:Name="ComposePreloadToggle"
                               IsOn="{x:Bind VM.ComposePreloadEnabled, Mode=TwoWay}"/>
             </controls:SettingsCard>
+
+            <!-- 投稿後にプライマリプロフィールへ戻す（#285）-->
+            <controls:SettingsCard x:Name="ComposeResetToPrimaryCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE77B;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="ComposeResetToPrimaryToggle"
+                              IsOn="{x:Bind VM.ComposeResetToPrimaryEnabled, Mode=TwoWay}"/>
+            </controls:SettingsCard>
         </StackPanel>
     </ScrollViewer>
 </Page>

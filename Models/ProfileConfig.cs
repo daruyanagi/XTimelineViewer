@@ -15,5 +15,8 @@ namespace XTimelineViewer.Models
         /// 作成時に検出し、ペイン読み込み時にも補完する。
         /// </summary>
         public string? ScreenName     { get; set; }
+
+        /// <summary>投稿ダイアログの既定（プライマリ）プロフィール（#285）。単一のみ true にする。</summary>
+        public bool    IsPrimary       { get; set; }
     }
 }

@@ -165,6 +165,18 @@ namespace XTimelineViewer.ViewModels
             }
         }
 
+        /// <summary>投稿後にプライマリプロフィールへ戻す（試験機能 #285）。</summary>
+        public bool ComposeResetToPrimaryEnabled
+        {
+            get => _settings.ComposeResetToPrimaryEnabled;
+            set
+            {
+                if (_settings.ComposeResetToPrimaryEnabled == value) return;
+                _settings.ComposeResetToPrimaryEnabled = value;
+                Notify(nameof(ComposeResetToPrimaryEnabled));
+            }
+        }
+
         public int BrowserIndex
         {
             get => Math.Max(0, Array.IndexOf(BrowserValues, _settings.ExternalBrowser));

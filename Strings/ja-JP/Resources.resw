@@ -109,6 +109,8 @@
   <data name="Experimental_Caution" xml:space="preserve"><value>ここにリストアップされる機能は予告なく変更されたり、非推奨・削除されることがあります。</value></data>
   <data name="Settings_ComposePreload" xml:space="preserve"><value>投稿ウィンドウをプリロードする</value></data>
   <data name="Settings_ComposePreload_Description" xml:space="preserve"><value>バックグラウンドで投稿画面を事前に読み込み、投稿ボタンを押してから入力できるまでの待ち時間を短縮します（最後に使ったプロファイル）。メモリ消費が増えます。</value></data>
+  <data name="Settings_ComposeResetToPrimary" xml:space="preserve"><value>投稿後にプライマリプロフィールへ戻す</value></data>
+  <data name="Settings_ComposeResetToPrimary_Description" xml:space="preserve"><value>アカウントを切り替えて投稿したあと、次回の投稿ウィンドウをプライマリプロフィールに戻します。誤ったアカウントでの投稿を防ぎます。プライマリは［プロファイル］ページで指定します。</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>拡張機能</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>プロファイル</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>ユーザーデータ管理</value></data>
@@ -125,6 +127,8 @@
   <data name="Profile_DeleteConfirmBody" xml:space="preserve"><value>このプロファイルを使用している {0} 個のタイムラインも削除されます。</value></data>
   <data name="Profile_DeleteConfirm" xml:space="preserve"><value>削除する</value></data>
   <data name="Profiles_Name" xml:space="preserve"><value>名前</value></data>
+  <data name="Profiles_Primary" xml:space="preserve"><value>プライマリプロフィール</value></data>
+  <data name="Profiles_Primary_Description" xml:space="preserve"><value>投稿ウィンドウの既定アカウントとして使います。</value></data>
   <data name="Profiles_BadgeColor" xml:space="preserve"><value>バッジの色</value></data>
   <data name="Profiles_BadgeText" xml:space="preserve"><value>バッジテキスト</value></data>
   <data name="Profiles_DefaultDescription" xml:space="preserve"><value>アプリケーションが利用する内部プロファイルです</value></data>

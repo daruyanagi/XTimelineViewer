@@ -19,5 +19,6 @@ namespace XTimelineViewer.Models
         public bool    HomeAutoLoadEnabled   { get; set; } = true;       // ホーム自動更新（#207）の ON/OFF
         public int     HomeAutoLoadIntervalSeconds { get; set; } = 8;    // ホーム自動更新の間隔（秒, 最小 5）
         public bool    ComposePreloadEnabled { get; set; } = false;     // 投稿ウィンドウのプリロード（試験機能 #244 案B）
+        public bool    ComposeResetToPrimaryEnabled { get; set; } = false; // 投稿後にプライマリへ戻す（試験機能 #285）
     }
 }
