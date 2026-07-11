@@ -21,5 +21,6 @@ namespace XTimelineViewer.Models
         public bool    ComposePreloadEnabled { get; set; } = false;     // 投稿ウィンドウのプリロード（試験機能 #244 案B）
         public bool    ComposeResetToPrimaryEnabled { get; set; } = false; // 投稿後にプライマリへ戻す（試験機能 #285）
         public bool    MediaEnlargeEnabled   { get; set; } = false;     // 画像表示中のペインを一時拡大（試験機能 #287）
+        public bool    VideoEnlargeEnabled   { get; set; } = false;     // 動画の全画面ボタンでペインを一時拡大（試験機能 #289）
     }
 }
