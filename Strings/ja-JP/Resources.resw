@@ -113,6 +113,8 @@
   <data name="Settings_ComposeResetToPrimary_Description" xml:space="preserve"><value>アカウントを切り替えて投稿したあと、次回の投稿ウィンドウをプライマリプロフィールに戻します。誤ったアカウントでの投稿を防ぎます。プライマリは［プロファイル］ページで指定します。</value></data>
   <data name="Settings_MediaEnlarge" xml:space="preserve"><value>画像表示中はペインを拡大する</value></data>
   <data name="Settings_MediaEnlarge_Description" xml:space="preserve"><value>タイムラインが画像（.../status/&lt;id&gt;/photo/1 など）へ遷移したとき、そのペインを一時的にウィンドウいっぱいに拡大します。画像から離れると元に戻ります。</value></data>
+  <data name="Settings_VideoEnlarge" xml:space="preserve"><value>動画再生中はペインを拡大する</value></data>
+  <data name="Settings_VideoEnlarge_Description" xml:space="preserve"><value>タイムライン内の動画のミュートを解除して再生すると、そのペインを一時的にウィンドウいっぱいに拡大します。一時停止・終了すると元に戻ります。スクロール中のミュート自動プレビューは対象外です。</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>拡張機能</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>プロファイル</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>ユーザーデータ管理</value></data>

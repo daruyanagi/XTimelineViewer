@@ -122,6 +122,39 @@ namespace XTimelineViewer.Views
             })();
             """;
 
+        // 動画再生状態レポーター（試験機能 #289）。全ペインに注入し、動画を「本当に視聴中」と
+        // 判断できたら postMessage('videoPlaying:true'/'videoPlaying:false') で C# に通知する。
+        // X はスクロール中に動画をミュートで自動プレビュー再生するため、素直に play イベントだけを
+        // 見ると誤検知（スクロールしただけで拡大）になる。ブラウザーの仕様上「ミュートされていない
+        // 動画」は自動再生できない（ユーザー操作なしの unmuted autoplay はブロックされる）ため、
+        // 「一時停止しておらず、かつミュートされていない動画が 1 本でもあるか」を判定に使う。
+        private static readonly string VideoStateReporterScript = """
+            (function () {
+                if (window._xtvVideoWatch) return;
+                window._xtvVideoWatch = true;
+                var last = null;
+                function isWatchingVideo() {
+                    var vids = document.querySelectorAll('video');
+                    for (var i = 0; i < vids.length; i++) {
+                        var v = vids[i];
+                        if (!v.paused && !v.muted) return true;
+                    }
+                    return false;
+                }
+                function report() {
+                    var v = isWatchingVideo();
+                    if (v === last) return;
+                    last = v;
+                    try { window.chrome.webview.postMessage('videoPlaying:' + v); } catch (e) {}
+                }
+                // play/pause/volumechange はバブリングしないため capture フェーズで拾う。
+                document.addEventListener('play', report, true);
+                document.addEventListener('pause', report, true);
+                document.addEventListener('volumechange', report, true);
+                document.addEventListener('ended', report, true);
+            })();
+            """;
+
         /// <summary>cfg がホームタイムラインかどうか。</summary>
         private static bool IsHomeConfig(TimelineConfig cfg)
             => Uri.TryCreate(cfg.Url, UriKind.Absolute, out var u)
@@ -524,11 +557,12 @@ namespace XTimelineViewer.Views
                     }
                     EvaluateHardReloadPause(webView);
 
-                    // 画像表示中はペインを一時拡大する（試験機能 #287）
-                    if (_appSettings.MediaEnlargeEnabled &&
-                        _webViewToPane.TryGetValue(webView, out var pane))
+                    // 画像表示中はペインを一時拡大する（試験機能 #287）。トリガーは設定でゲートするが、
+                    // 復元はページ遷移で常に働かせる（動画視聴中に他ページへ移動した場合の保険。
+                    // 動画の主な復元は再生状態レポーター #289 の pause/ended 通知で行う）。
+                    if (_webViewToPane.TryGetValue(webView, out var pane))
                     {
-                        if (UrlHelper.IsMediaPhotoUrl(webView.CoreWebView2.Source))
+                        if (_appSettings.MediaEnlargeEnabled && UrlHelper.IsMediaPhotoUrl(webView.CoreWebView2.Source))
                             EnlargePane(pane);
                         else if (_enlargedPane == pane)
                             RestorePaneSize();
@@ -578,6 +612,8 @@ namespace XTimelineViewer.Views
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(TimestampInterceptScript);
             // 編集状態レポーター（#258）：全ペインに注入し、編集中（リプライ/引用）を C# へ通知する。
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(EditStateReporterScript);
+            // 動画再生状態レポーター（試験機能 #289）：全ペインに注入し、動画視聴中を C# へ通知する。
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(VideoStateReporterScript);
             // ホーム自動更新（#207）。ホームペインにのみ注入し、設定で ON/OFF・間隔を制御する。
             if (IsHomeConfig(cfg))
             {

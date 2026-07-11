@@ -63,6 +63,12 @@ namespace XTimelineViewer.Views.Settings
             MediaEnlargeToggle.OnContent  = R.Get("Toggle_On");
             MediaEnlargeToggle.OffContent = R.Get("Toggle_Off");
 
+            // 動画再生中のペインを一時拡大（#289）
+            VideoEnlargeCard.Header      = R.Get("Settings_VideoEnlarge");
+            VideoEnlargeCard.Description = R.Get("Settings_VideoEnlarge_Description");
+            VideoEnlargeToggle.OnContent  = R.Get("Toggle_On");
+            VideoEnlargeToggle.OffContent = R.Get("Toggle_Off");
+
             // ItemsSource 再設定で SelectedIndex が失われるため、バインディングを再評価する
             Bindings.Update();
         }

@@ -127,7 +127,10 @@ namespace XTimelineViewer.Views
                 ApplySavedTheme();
                 UpdateThemeRadioState();
                 _ = WarmUpComposeAsync();  // 投稿プリロードの ON/OFF を即時反映（#244 案B）
-                if (!_appSettings.MediaEnlargeEnabled) RestorePaneSize();  // トグル OFF を即時反映（#287）
+                // 画像・動画拡大（#287/#289）: 両方 OFF になったときだけ即座に復元する
+                // （どちらか一方が有効なままなら、もう片方のトグルだけで現在の拡大表示を消さない）。
+                if (!_appSettings.MediaEnlargeEnabled && !_appSettings.VideoEnlargeEnabled)
+                    RestorePaneSize();
 
                 // WebView のタイムスタンプ設定を即時反映
                 var tsFlag = _appSettings.OpenTimestampInBrowser ? "true" : "false";

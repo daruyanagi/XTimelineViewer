@@ -514,6 +514,18 @@ namespace XTimelineViewer.Views
                 return;
             }
 
+            if (message.StartsWith("videoPlaying:"))  // 試験機能 #289: 動画視聴中のペインを一時拡大
+            {
+                bool playing = message == "videoPlaying:true";
+                if (_appSettings.VideoEnlargeEnabled &&
+                    _webViewToPane.TryGetValue(senderWebView, out var vPane))
+                {
+                    if (playing) EnlargePane(vPane);
+                    else if (_enlargedPane == vPane) RestorePaneSize();
+                }
+                return;
+            }
+
             if (message.StartsWith("focusIndex:") &&
                 int.TryParse(message["focusIndex:".Length..], out var tlIndex))
             {
