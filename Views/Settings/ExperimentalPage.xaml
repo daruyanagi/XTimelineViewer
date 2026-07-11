@@ -34,6 +34,15 @@
                 <ToggleSwitch x:Name="ComposeResetToPrimaryToggle"
                               IsOn="{x:Bind VM.ComposeResetToPrimaryEnabled, Mode=TwoWay}"/>
             </controls:SettingsCard>
+
+            <!-- 画像表示中のペインを一時拡大（#287）-->
+            <controls:SettingsCard x:Name="MediaEnlargeCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE740;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="MediaEnlargeToggle"
+                              IsOn="{x:Bind VM.MediaEnlargeEnabled, Mode=TwoWay}"/>
+            </controls:SettingsCard>
         </StackPanel>
     </ScrollViewer>
 </Page>

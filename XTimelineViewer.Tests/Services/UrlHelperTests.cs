@@ -74,6 +74,19 @@ public class UrlHelperTests
     public void IsPerUserListsUrl_Works(string url, bool expected)
         => Assert.Equal(expected, UrlHelper.IsPerUserListsUrl(url));
 
+    // ── IsMediaPhotoUrl ───────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("https://x.com/shibayan/status/2075804532337172744/photo/1",  true)]
+    [InlineData("https://x.com/shibayan/status/2075804532337172744/photo/4/", true)]  // 末尾スラッシュ許容
+    [InlineData("https://twitter.com/foo/status/123/photo/1",                 true)]
+    [InlineData("https://x.com/shibayan/status/2075804532337172744",          false)] // 個別ツイート本体
+    [InlineData("https://x.com/shibayan/status/2075804532337172744/video/1",  false)] // 動画は対象外（#287 段階1）
+    [InlineData("https://x.com/home",                                        false)]
+    [InlineData("not-a-url",                                                 false)]
+    public void IsMediaPhotoUrl_Works(string url, bool expected)
+        => Assert.Equal(expected, UrlHelper.IsMediaPhotoUrl(url));
+
     // ── ParseUrlShortcut ──────────────────────────────────────────────────────
 
     [Fact]

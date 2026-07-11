@@ -111,6 +111,8 @@
   <data name="Settings_ComposePreload_Description" xml:space="preserve"><value>Loads the compose page in the background so there is less wait between pressing Post and being able to type (last used profile). Uses more memory.</value></data>
   <data name="Settings_ComposeResetToPrimary" xml:space="preserve"><value>Return to primary profile after posting</value></data>
   <data name="Settings_ComposeResetToPrimary_Description" xml:space="preserve"><value>After you switch accounts and post, the compose window returns to your primary profile next time. Helps avoid posting from the wrong account. Set the primary profile on the Profiles page.</value></data>
+  <data name="Settings_MediaEnlarge" xml:space="preserve"><value>Enlarge pane when viewing a photo</value></data>
+  <data name="Settings_MediaEnlarge_Description" xml:space="preserve"><value>When a timeline navigates to a photo (e.g. .../status/&lt;id&gt;/photo/1), temporarily enlarges that pane to fill the window. Returns to normal when you leave the photo.</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>Extensions</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>Profiles</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>User Data</value></data>

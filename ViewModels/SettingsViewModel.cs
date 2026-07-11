@@ -177,6 +177,18 @@ namespace XTimelineViewer.ViewModels
             }
         }
 
+        /// <summary>画像表示中のペインを一時拡大する（試験機能 #287）。</summary>
+        public bool MediaEnlargeEnabled
+        {
+            get => _settings.MediaEnlargeEnabled;
+            set
+            {
+                if (_settings.MediaEnlargeEnabled == value) return;
+                _settings.MediaEnlargeEnabled = value;
+                Notify(nameof(MediaEnlargeEnabled));
+            }
+        }
+
         public int BrowserIndex
         {
             get => Math.Max(0, Array.IndexOf(BrowserValues, _settings.ExternalBrowser));

@@ -178,7 +178,8 @@
                           HorizontalScrollMode="Enabled"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollMode="Disabled"
-                          VerticalScrollBarVisibility="Hidden">
+                          VerticalScrollBarVisibility="Hidden"
+                          SizeChanged="TimelineScroll_SizeChanged">
                 <StackPanel x:Name="TimelinePanel"
                             Orientation="Horizontal"
                             Padding="4"/>

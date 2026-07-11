@@ -42,6 +42,7 @@ namespace XTimelineViewer.Views
                 var idx = indices[i];
                 if (idx >= TimelinePanel.Children.Count) continue;
                 var pane = (Grid)TimelinePanel.Children[idx];
+                if (_enlargedPane == pane) RestorePaneSize();  // 拡大中のペイン削除に備える（#287）
                 var wv = pane.Children.OfType<WebView2>().FirstOrDefault();
                 if (wv != null)
                 {
@@ -55,6 +56,7 @@ namespace XTimelineViewer.Views
                 }
                 _paneToSetFocus.Remove(pane);
                 _paneUrlUpdaters.Remove(_configs[idx]);
+                _paneToConfig.Remove(pane);
                 TimelinePanel.Children.RemoveAt(idx);
                 _configs.RemoveAt(idx);
             }

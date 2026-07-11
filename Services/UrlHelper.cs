@@ -27,6 +27,14 @@ namespace XTimelineViewer.Services
             => Uri.TryCreate(url, UriKind.Absolute, out var u)
                && Regex.IsMatch(u.AbsolutePath, @"^/[^/]+/lists$");
 
+        /// <summary>
+        /// 個別ツイートの画像表示 URL（https://x.com/&lt;handle&gt;/status/&lt;id&gt;/photo/&lt;n&gt;）かどうか。
+        /// クリックでライトボックスが開いた状態を検知し、ペインの一時拡大（#287）のトリガーに使う。
+        /// </summary>
+        internal static bool IsMediaPhotoUrl(string url)
+            => Uri.TryCreate(url, UriKind.Absolute, out var u)
+               && Regex.IsMatch(u.AbsolutePath, @"^/[^/]+/status/\d+/photo/\d+/?$");
+
         // グリフは Segoe Fluent Icons の私用領域(PUA)コードポイント。
         // 生の PUA 文字を直書きするとエンコーディング事故で欠落するため (#122)、
         // 必ず "\uXXXX" エスケープ表記で記述すること。

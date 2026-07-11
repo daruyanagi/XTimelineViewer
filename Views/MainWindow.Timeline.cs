@@ -392,6 +392,7 @@ namespace XTimelineViewer.Views
             _webViews.Add(webView);
             _webViewToPane[webView] = pane;
             _headerGridToPane[headerGrid] = pane;  // アクティブ判定用（#227）
+            _paneToConfig[pane] = cfg;  // ペイン一時拡大からの幅復元用（#287）
             RefreshTimelineNumbers();  // 番号バッジを振り直す（#225）
 
             // cfg.Url の変更をヘッダーへ反映する更新子（ベース URL 変更・リスト URL ライブ解決で再利用）
@@ -652,6 +653,7 @@ namespace XTimelineViewer.Views
 
                 if (shouldDelete)
                 {
+                    if (_enlargedPane == pane) RestorePaneSize();  // 拡大中のペイン削除に備える（#287）
                     CleanupWebView(webView);
                     if (_hardReloadUiUpdaters.Count == 0)
                     {
@@ -664,6 +666,7 @@ namespace XTimelineViewer.Views
                     _autoLoadIndicators.Remove(pane);
                     _paneNumberLabels.Remove(pane);
                     _headerGridToPane.Remove(headerGrid);
+                    _paneToConfig.Remove(pane);
                     _headerRefreshers.Remove(refreshHeader);
                     if (_focusedHeaderGrid == headerGrid)
                     {
