@@ -123,6 +123,10 @@ namespace XTimelineViewer.Views
         // headerGrid → pane の対応（#227）。アクティブな headerGrid からペインを引くのに使う。
         private readonly Dictionary<Grid, Grid> _headerGridToPane = [];
 
+        // 画像表示中のペインの一時拡大（試験機能 #287）。ペイン → 元の TimelineConfig（幅の復元用）。
+        private readonly Dictionary<Grid, TimelineConfig> _paneToConfig = [];
+        private Grid? _enlargedPane;
+
         // キーボードショートカット処理スクリプト（各 WebView2 に注入）
         private static readonly string KeyboardShortcutScript = """
             (function() {

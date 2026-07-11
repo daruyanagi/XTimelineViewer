@@ -523,6 +523,16 @@ namespace XTimelineViewer.Views
                         _urlDivergedWebViews.Remove(webView);
                     }
                     EvaluateHardReloadPause(webView);
+
+                    // 画像表示中はペインを一時拡大する（試験機能 #287）
+                    if (_appSettings.MediaEnlargeEnabled &&
+                        _webViewToPane.TryGetValue(webView, out var pane))
+                    {
+                        if (UrlHelper.IsMediaPhotoUrl(webView.CoreWebView2.Source))
+                            EnlargePane(pane);
+                        else if (_enlargedPane == pane)
+                            RestorePaneSize();
+                    }
                 };
                 await LoadExtensionsAsync(webView);
                 ApplyThemeToWebViews();
