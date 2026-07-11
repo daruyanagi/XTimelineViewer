@@ -109,6 +109,8 @@
   <data name="Experimental_Caution" xml:space="preserve"><value>Features listed here may change, be deprecated, or be removed without notice.</value></data>
   <data name="Settings_ComposePreload" xml:space="preserve"><value>Preload the compose window</value></data>
   <data name="Settings_ComposePreload_Description" xml:space="preserve"><value>Loads the compose page in the background so there is less wait between pressing Post and being able to type (last used profile). Uses more memory.</value></data>
+  <data name="Settings_ComposeResetToPrimary" xml:space="preserve"><value>Return to primary profile after posting</value></data>
+  <data name="Settings_ComposeResetToPrimary_Description" xml:space="preserve"><value>After you switch accounts and post, the compose window returns to your primary profile next time. Helps avoid posting from the wrong account. Set the primary profile on the Profiles page.</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>Extensions</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>Profiles</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>User Data</value></data>
@@ -125,6 +127,8 @@
   <data name="Profile_DeleteConfirmBody" xml:space="preserve"><value>{0} timeline(s) using this profile will also be removed.</value></data>
   <data name="Profile_DeleteConfirm" xml:space="preserve"><value>Delete</value></data>
   <data name="Profiles_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Profiles_Primary" xml:space="preserve"><value>Primary profile</value></data>
+  <data name="Profiles_Primary_Description" xml:space="preserve"><value>Use this account as the default in the compose window.</value></data>
   <data name="Profiles_BadgeColor" xml:space="preserve"><value>Badge Color</value></data>
   <data name="Profiles_BadgeText" xml:space="preserve"><value>Badge Text</value></data>
   <data name="Profiles_DefaultDescription" xml:space="preserve"><value>Internal profile used by the application</value></data>

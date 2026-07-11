@@ -51,6 +51,12 @@ namespace XTimelineViewer.Views.Settings
             ComposePreloadToggle.OnContent  = R.Get("Toggle_On");
             ComposePreloadToggle.OffContent = R.Get("Toggle_Off");
 
+            // 投稿後にプライマリプロフィールへ戻す（#285）
+            ComposeResetToPrimaryCard.Header      = R.Get("Settings_ComposeResetToPrimary");
+            ComposeResetToPrimaryCard.Description = R.Get("Settings_ComposeResetToPrimary_Description");
+            ComposeResetToPrimaryToggle.OnContent  = R.Get("Toggle_On");
+            ComposeResetToPrimaryToggle.OffContent = R.Get("Toggle_Off");
+
             // ItemsSource 再設定で SelectedIndex が失われるため、バインディングを再評価する
             Bindings.Update();
         }
