@@ -189,6 +189,18 @@ namespace XTimelineViewer.ViewModels
             }
         }
 
+        /// <summary>動画の全画面ボタンでペインを一時拡大する（試験機能 #289）。</summary>
+        public bool VideoEnlargeEnabled
+        {
+            get => _settings.VideoEnlargeEnabled;
+            set
+            {
+                if (_settings.VideoEnlargeEnabled == value) return;
+                _settings.VideoEnlargeEnabled = value;
+                Notify(nameof(VideoEnlargeEnabled));
+            }
+        }
+
         public int BrowserIndex
         {
             get => Math.Max(0, Array.IndexOf(BrowserValues, _settings.ExternalBrowser));

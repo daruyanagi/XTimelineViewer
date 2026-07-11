@@ -43,6 +43,15 @@
                 <ToggleSwitch x:Name="MediaEnlargeToggle"
                               IsOn="{x:Bind VM.MediaEnlargeEnabled, Mode=TwoWay}"/>
             </controls:SettingsCard>
+
+            <!-- 動画の全画面ボタンでペインを一時拡大（#289）-->
+            <controls:SettingsCard x:Name="VideoEnlargeCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE740;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="VideoEnlargeToggle"
+                              IsOn="{x:Bind VM.VideoEnlargeEnabled, Mode=TwoWay}"/>
+            </controls:SettingsCard>
         </StackPanel>
     </ScrollViewer>
 </Page>

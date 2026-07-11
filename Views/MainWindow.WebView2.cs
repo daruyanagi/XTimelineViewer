@@ -534,6 +534,20 @@ namespace XTimelineViewer.Views
                             RestorePaneSize();
                     }
                 };
+
+                // 動画の全画面ボタン（試験機能 #289）。ページが HTML 全画面 API を要求すると発火する。
+                // 既定では WebView2 は自コントロール内で全画面表示するため、細いペイン内に収まって
+                // 戻る導線が失われる。要求を検知してペインごと拡大し、全画面解除で元に戻す。
+                // ユーザーが全画面ボタンを押したときだけ発火するので、動画の自動再生を誤検知しない。
+                webView.CoreWebView2.ContainsFullScreenElementChanged += (s, e) =>
+                {
+                    if (!_appSettings.VideoEnlargeEnabled) return;
+                    if (!_webViewToPane.TryGetValue(webView, out var pane)) return;
+                    if (webView.CoreWebView2.ContainsFullScreenElement)
+                        EnlargePane(pane);
+                    else if (_enlargedPane == pane)
+                        RestorePaneSize();
+                };
                 await LoadExtensionsAsync(webView);
                 ApplyThemeToWebViews();
             }
