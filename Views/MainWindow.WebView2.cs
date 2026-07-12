@@ -136,7 +136,7 @@ namespace XTimelineViewer.Views
                 if (window._xtvMediaBtn) return;
                 window._xtvMediaBtn = true;
 
-                var SEL = '[data-testid="tweetPhoto"], [data-testid="videoPlayer"], [data-testid="videoComponent"]';
+                var SEL = '[data-testid="tweetPhoto"], [data-testid="videoPlayer"]';
 
                 function addStyle() {
                     if (document.getElementById('xtv-media-btn-style')) return;
@@ -153,7 +153,7 @@ namespace XTimelineViewer.Views
                         'border:none;border-radius:6px;background:rgba(0,0,0,0.55);color:#fff;font-size:16px;' +
                         'cursor:pointer;display:flex!important;align-items:center;justify-content:center;opacity:.55!important;' +
                         'box-shadow:0 0 0 1px rgba(255,255,255,0.35),0 1px 3px rgba(0,0,0,0.5);transition:opacity .15s,background .15s;}' +
-                        '.xtv-enlarge-host:hover .xtv-enlarge-btn,[data-testid="tweet"]:hover .xtv-enlarge-btn{opacity:1!important;background:rgba(0,0,0,0.8);}' +
+                        '[data-testid="tweet"]:hover .xtv-enlarge-btn{opacity:1!important;background:rgba(0,0,0,0.8);}' +
                         // 全画面中（動画は videoPlayer 自身が全画面）は自前の ⛶ を隠す。✕ と重なるため（#297）。
                         ':fullscreen .xtv-enlarge-btn{display:none!important;}' +
                         '.xtv-fs-close{position:fixed;top:16px;right:16px;z-index:2147483647;width:46px;height:46px;' +
@@ -176,11 +176,11 @@ namespace XTimelineViewer.Views
                 }
 
                 // コンテナが「写真」「動画」のどちらの拡大対象か判定する（#297）。
-                // 動画は tweetPhoto の内側に videoPlayer/videoComponent として入れ子になっているため、
-                // 素朴に SEL でマッチすると外側 tweetPhoto と内側 player の両方にボタンが付き、
-                // 画像ブランチが動画を画像として開いてしまう。ここで一意な単位へ正規化する。
+                // 動画は tweetPhoto の内側に videoPlayer として入れ子になっているため、素朴に tweetPhoto を
+                // 対象にすると外側 tweetPhoto と内側 videoPlayer の両方にボタンが付き、画像ブランチが動画を
+                // 画像として開いてしまう。動画は videoPlayer に一本化し、動画内包 tweetPhoto は除外する。
                 //   ・写真: /media/ 画像を含み、動画要素を含まない tweetPhoto のみ
-                //   ・動画: videoPlayer（controls を含む単位）。配下の videoComponent は重複なので除外
+                //   ・動画: videoPlayer（controls を含む単位）
                 function mediaKind(container) {
                     var t = container.getAttribute('data-testid');
                     if (t === 'tweetPhoto') {
@@ -189,10 +189,6 @@ namespace XTimelineViewer.Views
                         return 'photo';
                     }
                     if (t === 'videoPlayer') return 'video';
-                    if (t === 'videoComponent') {
-                        var vp = container.closest('[data-testid="videoPlayer"]');
-                        return (vp && vp !== container) ? null : 'video';  // videoPlayer 配下は重複
-                    }
                     return null;
                 }
 
@@ -200,9 +196,8 @@ namespace XTimelineViewer.Views
                     if (!window._xtvMediaOverlayEnabled) return;
                     if (container.__xtvBtn) return;
                     var kind = mediaKind(container);
-                    if (!kind) return;                 // 対象外（動画内包 tweetPhoto・入れ子 videoComponent・画像未ロード等）
+                    if (!kind) return;                 // 対象外（動画内包 tweetPhoto・画像未ロード等）
                     container.__xtvBtn = true;
-                    container.classList.add('xtv-enlarge-host');
                     if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
                     var btn = document.createElement('button');
                     btn.className = 'xtv-enlarge-btn';
@@ -229,12 +224,10 @@ namespace XTimelineViewer.Views
 
                 // 画像を専用ビューア div（背景黒・contain・高解像度）で全画面表示する（#295）。
                 function openImageViewer(container) {
+                    // photo 判定時点で /media/ 画像の存在は保証されているが、念のため null ガード。
                     var srcImg = container.querySelector('img[src*="pbs.twimg.com/media/"]')
                               || container.querySelector('img');
-                    if (!srcImg) {
-                        try { if (container.requestFullscreen) container.requestFullscreen(); } catch (x) {}
-                        return;
-                    }
+                    if (!srcImg) return;
                     var hi = hiResUrl(srcImg.currentSrc || srcImg.src);
                     var viewer = document.createElement('div');
                     viewer.className = 'xtv-img-viewer';
