@@ -156,6 +156,13 @@ namespace XTimelineViewer.Views
                         ':fullscreen .xtv-enlarge-btn{display:none!important;}' +
                         '.xtv-fs-close{position:fixed;top:16px;right:16px;z-index:2147483647;width:46px;height:46px;' +
                         'border:none;border-radius:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:22px;cursor:pointer;}' +
+                        // 動画フレーム保存ボタン（#299）：全画面中に ✕ の左へ置く。
+                        '.xtv-fs-save{position:fixed;top:16px;right:72px;z-index:2147483647;width:46px;height:46px;' +
+                        'border:none;border-radius:8px;background:rgba(0,0,0,0.7);color:#fff;cursor:pointer;' +
+                        'display:flex;align-items:center;justify-content:center;}' +
+                        '.xtv-toast{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:2147483647;' +
+                        'background:rgba(0,0,0,0.85);color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;' +
+                        'max-width:80vw;text-align:center;pointer-events:none;}' +
                         '.xtv-img-viewer{position:fixed;inset:0;width:100%;height:100%;background:#000;' +
                         'display:flex;align-items:center;justify-content:center;overflow:hidden;}' +
                         '.xtv-img-viewer img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;}';
@@ -252,6 +259,54 @@ namespace XTimelineViewer.Views
                 }
                 window._xtvMediaBtnRescan = scan;  // C# から ON 切り替え時に既存メディアへ付与するため
 
+                // ── 動画フレーム保存（#299）──
+                // 全画面中の <video> の現在フレームを canvas に焼き、base64 PNG を C# に送って保存する。
+                // 全画面中は全画面要素の子孫しか描画されないため、トーストは全画面要素側へ挿入する。
+                function showToast(msg) {
+                    var host = document.fullscreenElement || document.body;
+                    if (!host) return;
+                    var t = document.createElement('div');
+                    t.className = 'xtv-toast';
+                    t.textContent = msg;
+                    host.appendChild(t);
+                    setTimeout(function () { t.remove(); }, 2200);
+                }
+                // 動画が属するツイートの handle / status ID を求める（ファイル名でソースを辿れるように）。
+                // 全画面中でも article は DOM に残るので closest で辿れる。取得失敗時は空を返す。
+                function getTweetRef(el) {
+                    try {
+                        var tw = el.closest('[data-testid="tweet"]');
+                        if (!tw) return { handle: '', status: '' };
+                        var timeA = tw.querySelector('a[href*="/status/"] time');
+                        var a = timeA ? timeA.closest('a') : tw.querySelector('a[href*="/status/"]');
+                        var m = a && (a.getAttribute('href') || '').match(/^\/([^\/]+)\/status\/(\d+)/);
+                        return m ? { handle: m[1], status: m[2] } : { handle: '', status: '' };
+                    } catch (e) { return { handle: '', status: '' }; }
+                }
+                function captureFrame(video) {
+                    if (!video || !video.videoWidth || !video.videoHeight) return false;
+                    try {
+                        var c = document.createElement('canvas');
+                        c.width = video.videoWidth; c.height = video.videoHeight;
+                        c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+                        var url = c.toDataURL('image/png');
+                        var r = getTweetRef(video);
+                        // 形式: saveFrame:<handle>|<status>|<base64>（handle/status は英数と _ のみで | を含まない）
+                        window.chrome.webview.postMessage('saveFrame:' + r.handle + '|' + r.status + '|' + url.slice(url.indexOf(',') + 1));
+                        return true;
+                    } catch (e) { return false; }
+                }
+                // C# 側の保存結果を受けてトーストを出す。
+                try {
+                    window.chrome.webview.addEventListener('message', function (e) {
+                        var d = e.data;
+                        if (typeof d !== 'string') return;
+                        var L = window._xtvFrameSaveL || {};
+                        if (d.indexOf('frameSaved:') === 0) showToast(L.saved || 'Saved');
+                        else if (d === 'frameError') showToast(L.failed || 'Failed');
+                    });
+                } catch (x) {}
+
                 // 全画面中は「✕」ボタンを全画面要素に重ねる（Esc でも解除できる）。
                 // 画像ビューア（.xtv-img-viewer）は自前で ✕ を内包するのでここでは付けない。
                 function onFsChange() {
@@ -268,12 +323,27 @@ namespace XTimelineViewer.Views
                             }, true);
                             fsEl.appendChild(c);
                         }
+                        // 動画かつ試験機能 ON なら「フレーム保存」ボタンを ✕ の左に置く（#299）。
+                        if (window._xtvFrameSaveEnabled && fsEl.querySelector('video') && !fsEl.querySelector(':scope > .xtv-fs-save')) {
+                            var L = window._xtvFrameSaveL || {};
+                            var sv = document.createElement('button');
+                            sv.className = 'xtv-fs-save';
+                            sv.type = 'button';
+                            sv.title = L.tip || 'Save frame';
+                            sv.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M20 5h-3.17L15 3H9L7.17 5H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm-8 13a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"></path></svg>';
+                            sv.addEventListener('click', function (e) {
+                                e.preventDefault(); e.stopPropagation();
+                                var video = fsEl.querySelector('video');
+                                if (!captureFrame(video)) showToast((window._xtvFrameSaveL || {}).failed || 'Failed');
+                            }, true);
+                            fsEl.appendChild(sv);
+                        }
                     } else if (!fsEl) {
-                        // 全画面終了: 画像ビューアと、動画コンテナに付けた ✕ を後始末する。
+                        // 全画面終了: 画像ビューアと、動画コンテナに付けた ✕・保存ボタン・トーストを後始末する。
                         var v = document.querySelector('.xtv-img-viewer');
                         if (v) v.remove();
-                        var leftover = document.querySelector('.xtv-fs-close');
-                        if (leftover) leftover.remove();
+                        document.querySelectorAll('.xtv-fs-close, .xtv-fs-save, .xtv-toast')
+                               .forEach(function (x) { x.remove(); });
                     }
                 }
                 document.addEventListener('fullscreenchange', onFsChange, true);
@@ -288,9 +358,20 @@ namespace XTimelineViewer.Views
             })();
             """;
 
-        /// <summary>現在の設定を、メディア拡大ボタンの JS 制御変数へ反映するスニペット（#293）。</summary>
+        /// <summary>現在の設定を、メディア拡大ボタンの JS 制御変数へ反映するスニペット（#293）。
+        /// フレーム保存（#299）のローカライズ文言もここで JS へ渡す。</summary>
         private string BuildMediaOverlayButtonConfigJs()
-            => $"window._xtvMediaOverlayEnabled = {(_appSettings.MediaOverlayButtonEnabled ? "true" : "false")};";
+        {
+            var labels = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                tip    = R.Get("MediaFrameSave_Tooltip"),
+                saved  = R.Get("MediaFrameSave_Saved"),
+                failed = R.Get("MediaFrameSave_Failed"),
+            });
+            return $"window._xtvMediaOverlayEnabled = {(_appSettings.MediaOverlayButtonEnabled ? "true" : "false")};"
+                 + $"window._xtvFrameSaveEnabled = {(_appSettings.VideoFrameSaveEnabled ? "true" : "false")};"
+                 + $"window._xtvFrameSaveL = {labels};";
+        }
 
         /// <summary>メディア拡大ボタンの ON/OFF を各ペインへ即時反映する（#293）。</summary>
         private async Task ApplyMediaOverlayButtonAsync(WebView2 webView)

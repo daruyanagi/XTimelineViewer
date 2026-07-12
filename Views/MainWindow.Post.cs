@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Web.WebView2.Core;
@@ -528,6 +529,15 @@ namespace XTimelineViewer.Views
                 return;
             }
 
+            if (message.StartsWith("saveFrame:"))  // #299: 動画の現在フレームを PNG 保存
+            {
+                // 形式: saveFrame:<handle>|<status>|<base64>
+                var parts = message["saveFrame:".Length..].Split('|', 3);
+                if (parts.Length == 3)
+                    _ = SaveVideoFrameAsync(senderWebView, parts[0], parts[1], parts[2]);
+                return;
+            }
+
             switch (message)
             {
                 case "focusNext": FocusAdjacentTimeline(senderWebView, +1); break;
@@ -551,6 +561,51 @@ namespace XTimelineViewer.Views
                     EnsureWebViewKeyboardFocus(senderWebView);
                     break;
             }
+        }
+
+        // 動画の現在フレーム（base64 PNG）を Pictures\XTimelineViewer に保存する（#299・試験機能）。
+        // ファイル名は <handle>_<statusId>_<保存時刻> で元ポスト（x.com/handle/status/statusId）を辿れる。
+        private async Task SaveVideoFrameAsync(WebView2 senderWebView, string handle, string status, string base64Png)
+        {
+            string? savedName = null;
+            try
+            {
+                var bytes = Convert.FromBase64String(base64Png);
+                var dir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                    "XTimelineViewer");
+                Directory.CreateDirectory(dir);
+                // 保存時刻はミリ秒まで付けて同一秒内の連続保存でも衝突しないようにする。
+                var name = $"{SanitizeNamePart(handle, "unknown")}_{SanitizeNamePart(status, "noid")}"
+                         + $"_{DateTime.Now:yyyyMMdd_HHmmss_fff}.png";
+                await File.WriteAllBytesAsync(Path.Combine(dir, name), bytes);
+                savedName = name;
+            }
+            catch (Exception ex)
+            {
+                LogError("SaveVideoFrame", ex);
+            }
+
+            // 保存結果を WebView へ返してトースト表示させる（全画面中は XAML ダイアログが
+            // WebView2 の裏に隠れるため、フィードバックはページ内で出す）。
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                try
+                {
+                    senderWebView.CoreWebView2?.PostWebMessageAsString(
+                        savedName is null ? "frameError" : "frameSaved:" + savedName);
+                }
+                catch { }
+            });
+        }
+
+        // ファイル名の一部（handle / statusId）を安全化する。空ならフォールバックを返す。
+        private static string SanitizeNamePart(string value, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return fallback;
+            foreach (var c in Path.GetInvalidFileNameChars())
+                value = value.Replace(c, '_');
+            return value;
         }
 
         // WebView2 コンテンツに実際のキーボードフォーカスを確実に当てる（#251）。

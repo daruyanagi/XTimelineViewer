@@ -1,6 +1,10 @@
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using System;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using XTimelineViewer.ViewModels;
 
 namespace XTimelineViewer.Views.Settings
@@ -73,8 +77,29 @@ namespace XTimelineViewer.Views.Settings
             MediaOverlayButtonToggle.OnContent  = R.Get("Toggle_On");
             MediaOverlayButtonToggle.OffContent = R.Get("Toggle_Off");
 
+            // 動画の現在フレームを画像保存（#299）
+            VideoFrameSaveCard.Header      = R.Get("Settings_VideoFrameSave");
+            VideoFrameSaveCard.Description = R.Get("Settings_VideoFrameSave_Description");
+            VideoFrameSaveOpenFolder.Content = R.Get("Settings_VideoFrameSave_OpenFolder");
+            VideoFrameSaveToggle.OnContent  = R.Get("Toggle_On");
+            VideoFrameSaveToggle.OffContent = R.Get("Toggle_Off");
+
             // ItemsSource 再設定で SelectedIndex が失われるため、バインディングを再評価する
             Bindings.Update();
+        }
+
+        // 動画フレームの保存先フォルダー（ピクチャ\XTimelineViewer）を開く（#299）。
+        private void VideoFrameSaveOpenFolder_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                    "XTimelineViewer");
+                Directory.CreateDirectory(dir);
+                Process.Start(new ProcessStartInfo { FileName = dir, UseShellExecute = true });
+            }
+            catch { /* フォルダーを開けなくても致命的ではない */ }
         }
     }
 }

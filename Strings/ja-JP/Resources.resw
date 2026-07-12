@@ -117,6 +117,12 @@
   <data name="Settings_VideoEnlarge_Description" xml:space="preserve"><value>タイムライン内の動画の全画面ボタンを押すと、そのペインを一時的にウィンドウいっぱいに拡大します。全画面を解除すると元に戻ります。</value></data>
   <data name="Settings_MediaOverlayButton" xml:space="preserve"><value>メディアに拡大ボタンを表示する</value></data>
   <data name="Settings_MediaOverlayButton_Description" xml:space="preserve"><value>タイムラインの画像・動画に拡大ボタンを重ねます。押すとそのメディアだけを画面いっぱいに表示します（Esc または ✕ ボタンで戻る）。</value></data>
+  <data name="MediaFrameSave_Tooltip" xml:space="preserve"><value>フレームを保存</value></data>
+  <data name="MediaFrameSave_Saved" xml:space="preserve"><value>フレームを保存しました</value></data>
+  <data name="MediaFrameSave_Failed" xml:space="preserve"><value>フレームを保存できませんでした</value></data>
+  <data name="Settings_VideoFrameSave" xml:space="preserve"><value>動画のフレームを画像として保存する</value></data>
+  <data name="Settings_VideoFrameSave_Description" xml:space="preserve"><value>動画を全画面表示したとき、右上に保存ボタンを表示します。押すと今表示しているフレームを PNG 画像として「ピクチャ\XTimelineViewer」に保存します。</value></data>
+  <data name="Settings_VideoFrameSave_OpenFolder" xml:space="preserve"><value>保存先フォルダーを開く</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>拡張機能</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>プロファイル</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>ユーザーデータ管理</value></data>

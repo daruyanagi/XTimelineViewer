@@ -213,6 +213,18 @@ namespace XTimelineViewer.ViewModels
             }
         }
 
+        /// <summary>動画の現在フレームを画像保存（試験機能 #299）。</summary>
+        public bool VideoFrameSaveEnabled
+        {
+            get => _settings.VideoFrameSaveEnabled;
+            set
+            {
+                if (_settings.VideoFrameSaveEnabled == value) return;
+                _settings.VideoFrameSaveEnabled = value;
+                Notify(nameof(VideoFrameSaveEnabled));
+            }
+        }
+
         public int BrowserIndex
         {
             get => Math.Max(0, Array.IndexOf(BrowserValues, _settings.ExternalBrowser));
