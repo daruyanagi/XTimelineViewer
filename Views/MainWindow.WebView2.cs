@@ -296,6 +296,19 @@ namespace XTimelineViewer.Views
                         return true;
                     } catch (e) { return false; }
                 }
+                // X の「GIF」は無音ループ MP4。<video> の src が blob でなく tweet_video 直リンクなら GIF（#301）。
+                // GIF は別オリジン直リンクのため canvas が汚染されフレーム保存は失敗する → 代わりに mp4 を落とす。
+                function isGif(video) {
+                    var s = (video && (video.currentSrc || video.src)) || '';
+                    return s.indexOf('blob:') !== 0 && /tweet_video/.test(s);
+                }
+                function downloadGif(video) {
+                    var url = (video && (video.currentSrc || video.src)) || '';
+                    if (!/^https?:/.test(url)) { showToast((window._xtvFrameSaveL || {}).failed || 'Failed'); return; }
+                    var r = getTweetRef(video);
+                    // 形式: saveGif:<handle>|<status>|<url>（url は最後まで丸ごと。C# 側は Split 上限 3 で温存）
+                    window.chrome.webview.postMessage('saveGif:' + r.handle + '|' + r.status + '|' + url);
+                }
                 // C# 側の保存結果を受けてトーストを出す。
                 try {
                     window.chrome.webview.addEventListener('message', function (e) {
@@ -303,6 +316,7 @@ namespace XTimelineViewer.Views
                         if (typeof d !== 'string') return;
                         var L = window._xtvFrameSaveL || {};
                         if (d.indexOf('frameSaved:') === 0) showToast(L.saved || 'Saved');
+                        else if (d.indexOf('gifSaved:') === 0) showToast(L.gifSaved || 'Saved');
                         else if (d === 'frameError') showToast(L.failed || 'Failed');
                     });
                 } catch (x) {}
@@ -323,18 +337,23 @@ namespace XTimelineViewer.Views
                             }, true);
                             fsEl.appendChild(c);
                         }
-                        // 動画かつ試験機能 ON なら「フレーム保存」ボタンを ✕ の左に置く（#299）。
+                        // 動画かつ試験機能 ON なら ✕ の左にボタンを置く（#299/#301）。
+                        // 通常動画: カメラ＝フレーム保存。GIF: 汚染で保存できないため代わりに mp4 ダウンロード。
                         if (window._xtvFrameSaveEnabled && fsEl.querySelector('video') && !fsEl.querySelector(':scope > .xtv-fs-save')) {
                             var L = window._xtvFrameSaveL || {};
+                            var gif = isGif(fsEl.querySelector('video'));
+                            var CAMERA = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M20 5h-3.17L15 3H9L7.17 5H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm-8 13a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"></path></svg>';
+                            var DOWNLOAD = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg>';
                             var sv = document.createElement('button');
                             sv.className = 'xtv-fs-save';
                             sv.type = 'button';
-                            sv.title = L.tip || 'Save frame';
-                            sv.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M20 5h-3.17L15 3H9L7.17 5H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm-8 13a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"></path></svg>';
+                            sv.title = gif ? (L.gifTip || 'Save GIF') : (L.tip || 'Save frame');
+                            sv.innerHTML = gif ? DOWNLOAD : CAMERA;
                             sv.addEventListener('click', function (e) {
                                 e.preventDefault(); e.stopPropagation();
                                 var video = fsEl.querySelector('video');
-                                if (!captureFrame(video)) showToast((window._xtvFrameSaveL || {}).failed || 'Failed');
+                                if (gif) downloadGif(video);
+                                else if (!captureFrame(video)) showToast((window._xtvFrameSaveL || {}).failed || 'Failed');
                             }, true);
                             fsEl.appendChild(sv);
                         }
@@ -364,9 +383,11 @@ namespace XTimelineViewer.Views
         {
             var labels = System.Text.Json.JsonSerializer.Serialize(new
             {
-                tip    = R.Get("MediaFrameSave_Tooltip"),
-                saved  = R.Get("MediaFrameSave_Saved"),
-                failed = R.Get("MediaFrameSave_Failed"),
+                tip      = R.Get("MediaFrameSave_Tooltip"),
+                saved    = R.Get("MediaFrameSave_Saved"),
+                failed   = R.Get("MediaFrameSave_Failed"),
+                gifTip   = R.Get("MediaFrameSave_GifTooltip"),
+                gifSaved = R.Get("MediaFrameSave_GifSaved"),
             });
             return $"window._xtvMediaOverlayEnabled = {(_appSettings.MediaOverlayButtonEnabled ? "true" : "false")};"
                  + $"window._xtvFrameSaveEnabled = {(_appSettings.VideoFrameSaveEnabled ? "true" : "false")};"

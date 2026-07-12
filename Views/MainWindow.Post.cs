@@ -538,6 +538,15 @@ namespace XTimelineViewer.Views
                 return;
             }
 
+            if (message.StartsWith("saveGif:"))  // #301: GIF(MP4) をダウンロード保存
+            {
+                // 形式: saveGif:<handle>|<status>|<url>（url は残り全部）
+                var parts = message["saveGif:".Length..].Split('|', 3);
+                if (parts.Length == 3)
+                    _ = DownloadGifAsync(senderWebView, parts[0], parts[1], parts[2]);
+                return;
+            }
+
             switch (message)
             {
                 case "focusNext": FocusAdjacentTimeline(senderWebView, +1); break;
@@ -594,6 +603,51 @@ namespace XTimelineViewer.Views
                 {
                     senderWebView.CoreWebView2?.PostWebMessageAsString(
                         savedName is null ? "frameError" : "frameSaved:" + savedName);
+                }
+                catch { }
+            });
+        }
+
+        private static readonly System.Net.Http.HttpClient _frameHttp = new();
+
+        // GIF（X では tweet_video の無音ループ MP4）を直 URL からダウンロードして保存する（#301・試験機能）。
+        // 安全のため twimg.com ホストのみ許可。ファイル名は動画フレームと同じ <handle>_<statusId>_<時刻>。
+        private async Task DownloadGifAsync(WebView2 senderWebView, string handle, string status, string url)
+        {
+            string? savedName = null;
+            try
+            {
+                if (Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
+                    (uri.Scheme == Uri.UriSchemeHttps) &&
+                    (uri.Host == "video.twimg.com" || uri.Host.EndsWith(".twimg.com")))
+                {
+                    var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, uri);
+                    req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0");
+                    using var resp = await _frameHttp.SendAsync(req);
+                    resp.EnsureSuccessStatusCode();
+                    var bytes = await resp.Content.ReadAsByteArrayAsync();
+
+                    var dir = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                        "XTimelineViewer");
+                    Directory.CreateDirectory(dir);
+                    var name = $"{SanitizeNamePart(handle, "unknown")}_{SanitizeNamePart(status, "noid")}"
+                             + $"_{DateTime.Now:yyyyMMdd_HHmmss_fff}.mp4";
+                    await File.WriteAllBytesAsync(Path.Combine(dir, name), bytes);
+                    savedName = name;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError("DownloadGif", ex);
+            }
+
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                try
+                {
+                    senderWebView.CoreWebView2?.PostWebMessageAsString(
+                        savedName is null ? "frameError" : "gifSaved:" + savedName);
                 }
                 catch { }
             });
