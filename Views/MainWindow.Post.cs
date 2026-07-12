@@ -3,9 +3,11 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Web.WebView2.Core;
 using Windows.UI;
@@ -543,7 +545,31 @@ namespace XTimelineViewer.Views
                 // 形式: saveGif:<handle>|<status>|<url>（url は残り全部）
                 var parts = message["saveGif:".Length..].Split('|', 3);
                 if (parts.Length == 3)
-                    _ = DownloadGifAsync(senderWebView, parts[0], parts[1], parts[2]);
+                    _ = DownloadMediaAsync(senderWebView, parts[0], parts[1], parts[2], "mp4", "gifSaved");
+                return;
+            }
+
+            if (message.StartsWith("saveImg:"))  // #304: 画像（高解像度）をダウンロード保存
+            {
+                var parts = message["saveImg:".Length..].Split('|', 3);
+                if (parts.Length == 3)
+                    _ = DownloadMediaAsync(senderWebView, parts[0], parts[1], parts[2], "jpg", "imgSaved");
+                return;
+            }
+
+            if (message.StartsWith("saveVideo:"))  // #304: 動画を progressive MP4 でダウンロード保存
+            {
+                // 形式: saveVideo:<handle>|<status>（URL は GraphQL 傍受で保持した辞書から引く）
+                var parts = message["saveVideo:".Length..].Split('|', 2);
+                if (parts.Length == 2)
+                {
+                    var handle = parts[0];
+                    var status = parts[1];
+                    if (_videoMp4ByStatus.TryGetValue(status, out var mp4Url))
+                        _ = DownloadMediaAsync(senderWebView, handle, status, mp4Url, "mp4", "videoSaved");
+                    else
+                        try { senderWebView.CoreWebView2?.PostWebMessageAsString("videoUnavailable"); } catch { }
+                }
                 return;
             }
 
@@ -610,9 +636,102 @@ namespace XTimelineViewer.Views
 
         private static readonly System.Net.Http.HttpClient _frameHttp = new();
 
-        // GIF（X では tweet_video の無音ループ MP4）を直 URL からダウンロードして保存する（#301・試験機能）。
-        // 安全のため twimg.com ホストのみ許可。ファイル名は動画フレームと同じ <handle>_<statusId>_<時刻>。
-        private async Task DownloadGifAsync(WebView2 senderWebView, string handle, string status, string url)
+        // 動画ダウンロード用（#304）: statusId → progressive MP4（最高ビットレート）直 URL。
+        // X の GraphQL レスポンスを傍受して populate する。ffmpeg を使わず音声込み mp4 を得るための要。
+        private readonly ConcurrentDictionary<string, string> _videoMp4ByStatus = new();
+
+        // GraphQL レスポンスから tweet の video_info.variants を拾い、statusId→最高画質 MP4 を辞書化する（#304）。
+        // WebResourceResponseReceived から呼ぶ。失敗しても無視（動画DL 側で「取得できません」に degrade）。
+        internal async Task CaptureVideoVariantsAsync(CoreWebView2WebResourceResponseReceivedEventArgs args)
+        {
+            try
+            {
+                using var raStream = await args.Response.GetContentAsync();
+                if (raStream is null) return;
+                byte[] bytes;
+                using (var netStream = raStream.AsStreamForRead())
+                using (var ms = new MemoryStream())
+                {
+                    await netStream.CopyToAsync(ms);
+                    bytes = ms.ToArray();
+                }
+                if (bytes.Length == 0) return;
+                var pairs = await Task.Run(() =>
+                {
+                    var list = new List<(string id, string url)>();
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(bytes);
+                        CollectVideoVariants(doc.RootElement, list);
+                    }
+                    catch { /* JSON でない/スキーマ違い等は無視 */ }
+                    return list;
+                });
+                foreach (var (id, url) in pairs) _videoMp4ByStatus[id] = url;
+            }
+            catch (Exception ex)
+            {
+                LogError("CaptureVideoVariants", ex);
+            }
+        }
+
+        // rest_id + legacy を持つ tweet オブジェクトを再帰探索し、最高ビットレートの video/mp4 を集める。
+        private static void CollectVideoVariants(JsonElement el, List<(string, string)> outp)
+        {
+            switch (el.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    if (el.TryGetProperty("rest_id", out var idEl) && idEl.ValueKind == JsonValueKind.String &&
+                        el.TryGetProperty("legacy", out var legacy) && legacy.ValueKind == JsonValueKind.Object)
+                    {
+                        var url = BestMp4FromLegacy(legacy);
+                        if (url is not null) outp.Add((idEl.GetString()!, url));
+                    }
+                    foreach (var p in el.EnumerateObject()) CollectVideoVariants(p.Value, outp);
+                    break;
+                case JsonValueKind.Array:
+                    foreach (var it in el.EnumerateArray()) CollectVideoVariants(it, outp);
+                    break;
+            }
+        }
+
+        private static string? BestMp4FromLegacy(JsonElement legacy)
+        {
+            JsonElement media = default;
+            bool has =
+                (legacy.TryGetProperty("extended_entities", out var ee) &&
+                 ee.TryGetProperty("media", out media) && media.ValueKind == JsonValueKind.Array) ||
+                (legacy.TryGetProperty("entities", out var en) &&
+                 en.TryGetProperty("media", out media) && media.ValueKind == JsonValueKind.Array);
+            if (!has) return null;
+
+            string? best = null;
+            long bestBr = -1;
+            foreach (var m in media.EnumerateArray())
+            {
+                if (!m.TryGetProperty("video_info", out var vi)) continue;
+                if (!vi.TryGetProperty("variants", out var vars) || vars.ValueKind != JsonValueKind.Array) continue;
+                foreach (var v in vars.EnumerateArray())
+                {
+                    if (v.TryGetProperty("content_type", out var ct) && ct.ValueKind == JsonValueKind.String &&
+                        ct.GetString() == "video/mp4" &&
+                        v.TryGetProperty("url", out var u) && u.ValueKind == JsonValueKind.String)
+                    {
+                        long br = 0;
+                        if (v.TryGetProperty("bitrate", out var b) && b.ValueKind == JsonValueKind.Number &&
+                            b.TryGetInt64(out var bv)) br = bv;
+                        if (br > bestBr) { bestBr = br; best = u.GetString(); }
+                    }
+                }
+            }
+            return best;
+        }
+
+        // twimg.com の直 URL からメディア（GIF/画像/動画）をダウンロードして保存する（#301/#304・試験機能）。
+        // 安全のため twimg.com ホストのみ許可。ファイル名は <handle>_<statusId>_<時刻>.<ext>。
+        // 成功時は okPrefix + ":" + ファイル名、失敗時は frameError を WebView へ返す。
+        private async Task DownloadMediaAsync(
+            WebView2 senderWebView, string handle, string status, string url, string ext, string okPrefix)
         {
             string? savedName = null;
             try
@@ -632,14 +751,14 @@ namespace XTimelineViewer.Views
                         "XTimelineViewer");
                     Directory.CreateDirectory(dir);
                     var name = $"{SanitizeNamePart(handle, "unknown")}_{SanitizeNamePart(status, "noid")}"
-                             + $"_{DateTime.Now:yyyyMMdd_HHmmss_fff}.mp4";
+                             + $"_{DateTime.Now:yyyyMMdd_HHmmss_fff}.{ext}";
                     await File.WriteAllBytesAsync(Path.Combine(dir, name), bytes);
                     savedName = name;
                 }
             }
             catch (Exception ex)
             {
-                LogError("DownloadGif", ex);
+                LogError($"DownloadMedia({okPrefix})", ex);
             }
 
             DispatcherQueue.TryEnqueue(() =>
@@ -647,7 +766,7 @@ namespace XTimelineViewer.Views
                 try
                 {
                     senderWebView.CoreWebView2?.PostWebMessageAsString(
-                        savedName is null ? "frameError" : "gifSaved:" + savedName);
+                        savedName is null ? "frameError" : okPrefix + ":" + savedName);
                 }
                 catch { }
             });
