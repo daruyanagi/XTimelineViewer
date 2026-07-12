@@ -143,15 +143,17 @@ namespace XTimelineViewer.Views
                     var s = document.createElement('style');
                     s.id = 'xtv-media-btn-style';
                     s.textContent =
-                        // 常時はっきり表示（#297）。実機では引用内は出るのにメイン画像で出ない事象があり、
-                        // Chrome 実測では同構造で可視・最前面だったため、opacity を !important で固定し、
-                        // z-index をほぼ最大に上げて「別要素に覆われる」ケースも前面へ出す。暗い/明るい
-                        // どちらの画像でも視認できるよう白リング＋影を付ける。
+                        // 既定は控えめ（半透明）、ホバーで濃く（#297）。実機ではプライマリメディアで
+                        // ボタンの opacity が上書きされて消える事象があったため、opacity は !important で
+                        // 固定し、z-index もほぼ最大に上げて被りにも耐える。暗い画像でも縁が分かるよう
+                        // 薄い白リング＋影を添える。
                         '.xtv-enlarge-btn{position:absolute!important;top:8px;right:8px;z-index:2147483000;width:34px;height:34px;' +
-                        'border:none;border-radius:6px;background:rgba(0,0,0,0.7);color:#fff;font-size:16px;' +
-                        'cursor:pointer;display:flex!important;align-items:center;justify-content:center;opacity:1!important;' +
-                        'box-shadow:0 0 0 2px rgba(255,255,255,0.85),0 1px 4px rgba(0,0,0,0.6);transition:background .15s;}' +
-                        '.xtv-enlarge-host:hover .xtv-enlarge-btn,[data-testid="tweet"]:hover .xtv-enlarge-btn{background:rgba(0,0,0,0.9);}' +
+                        'border:none;border-radius:6px;background:rgba(0,0,0,0.55);color:#fff;font-size:16px;' +
+                        'cursor:pointer;display:flex!important;align-items:center;justify-content:center;opacity:.55!important;' +
+                        'box-shadow:0 0 0 1px rgba(255,255,255,0.35),0 1px 3px rgba(0,0,0,0.5);transition:opacity .15s,background .15s;}' +
+                        '.xtv-enlarge-host:hover .xtv-enlarge-btn,[data-testid="tweet"]:hover .xtv-enlarge-btn{opacity:1!important;background:rgba(0,0,0,0.8);}' +
+                        // 全画面中（動画は videoPlayer 自身が全画面）は自前の ⛶ を隠す。✕ と重なるため（#297）。
+                        ':fullscreen .xtv-enlarge-btn{display:none!important;}' +
                         '.xtv-fs-close{position:fixed;top:16px;right:16px;z-index:2147483647;width:46px;height:46px;' +
                         'border:none;border-radius:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:22px;cursor:pointer;}' +
                         '.xtv-img-viewer{position:fixed;inset:0;width:100%;height:100%;background:#000;' +
