@@ -201,6 +201,18 @@ namespace XTimelineViewer.ViewModels
             }
         }
 
+        /// <summary>メディアに自前の拡大ボタンを重ねる（試験機能 #293）。</summary>
+        public bool MediaOverlayButtonEnabled
+        {
+            get => _settings.MediaOverlayButtonEnabled;
+            set
+            {
+                if (_settings.MediaOverlayButtonEnabled == value) return;
+                _settings.MediaOverlayButtonEnabled = value;
+                Notify(nameof(MediaOverlayButtonEnabled));
+            }
+        }
+
         public int BrowserIndex
         {
             get => Math.Max(0, Array.IndexOf(BrowserValues, _settings.ExternalBrowser));

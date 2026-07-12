@@ -115,6 +115,8 @@
   <data name="Settings_MediaEnlarge_Description" xml:space="preserve"><value>When a timeline navigates to a photo (e.g. .../status/&lt;id&gt;/photo/1), temporarily enlarges that pane to fill the window. Returns to normal when you leave the photo.</value></data>
   <data name="Settings_VideoEnlarge" xml:space="preserve"><value>Enlarge pane when a video goes fullscreen</value></data>
   <data name="Settings_VideoEnlarge_Description" xml:space="preserve"><value>When you press the fullscreen button on a video in a timeline, temporarily enlarges that pane to fill the window. Exit fullscreen to return to normal.</value></data>
+  <data name="Settings_MediaOverlayButton" xml:space="preserve"><value>Show an enlarge button on media</value></data>
+  <data name="Settings_MediaOverlayButton_Description" xml:space="preserve"><value>Overlays an enlarge button on photos and videos in timelines. Press it to show just that media full-screen (press Esc or the ✕ button to return).</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>Extensions</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>Profiles</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>User Data</value></data>

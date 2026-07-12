@@ -122,6 +122,103 @@ namespace XTimelineViewer.Views
             })();
             """;
 
+        // メディア拡大ボタンのオーバーレイ（試験機能 #293）。全ペインに注入し、タイムライン上の
+        // 画像・動画コンテナに「⛶」ボタンを重ねる。押すとそのメディアコンテナを requestFullscreen()
+        // で全画面表示し（＝メディアだけにフォーカス）、WebView2 の ContainsFullScreenElement が立って
+        // 既存の全画面フック（#291）でペインが画面いっぱいに拡大される。全画面中は「✕」ボタンを重ね、
+        // Esc とあわせて戻れる。window._xtvMediaOverlayEnabled で ON/OFF を制御する。
+        private static readonly string MediaOverlayButtonScript = """
+            (function () {
+                if (window._xtvMediaBtn) return;
+                window._xtvMediaBtn = true;
+
+                var SEL = '[data-testid="tweetPhoto"], [data-testid="videoPlayer"], [data-testid="videoComponent"]';
+
+                function addStyle() {
+                    if (document.getElementById('xtv-media-btn-style')) return;
+                    var s = document.createElement('style');
+                    s.id = 'xtv-media-btn-style';
+                    s.textContent =
+                        '.xtv-enlarge-btn{position:absolute;top:8px;right:8px;z-index:9999;width:34px;height:34px;' +
+                        'border:none;border-radius:6px;background:rgba(0,0,0,0.6);color:#fff;font-size:16px;' +
+                        'cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;}' +
+                        '.xtv-enlarge-host:hover .xtv-enlarge-btn{opacity:1;}' +
+                        '.xtv-fs-close{position:fixed;top:16px;right:16px;z-index:2147483647;width:46px;height:46px;' +
+                        'border:none;border-radius:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:22px;cursor:pointer;}';
+                    (document.head || document.documentElement).appendChild(s);
+                }
+
+                function attach(container) {
+                    if (!window._xtvMediaOverlayEnabled) return;
+                    if (container.__xtvBtn) return;
+                    container.__xtvBtn = true;
+                    container.classList.add('xtv-enlarge-host');
+                    if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+                    var btn = document.createElement('button');
+                    btn.className = 'xtv-enlarge-btn';
+                    btn.type = 'button';
+                    btn.textContent = '⛶';
+                    btn.addEventListener('click', function (e) {
+                        e.preventDefault(); e.stopPropagation();
+                        try { if (container.requestFullscreen) container.requestFullscreen(); } catch (x) {}
+                    }, true);
+                    container.appendChild(btn);
+                }
+
+                function scan() {
+                    if (!window._xtvMediaOverlayEnabled) return;
+                    var list = document.querySelectorAll(SEL);
+                    for (var i = 0; i < list.length; i++) attach(list[i]);
+                }
+                window._xtvMediaBtnRescan = scan;  // C# から ON 切り替え時に既存メディアへ付与するため
+
+                // 全画面中は「✕」ボタンを全画面要素に重ねる（Esc でも解除できる）。
+                function onFsChange() {
+                    var fsEl = document.fullscreenElement;
+                    var existing = document.querySelector('.xtv-fs-close');
+                    if (fsEl) {
+                        if (!existing) {
+                            var c = document.createElement('button');
+                            c.className = 'xtv-fs-close';
+                            c.type = 'button';
+                            c.textContent = '✕';
+                            c.addEventListener('click', function (e) {
+                                e.preventDefault(); e.stopPropagation();
+                                try { if (document.exitFullscreen) document.exitFullscreen(); } catch (x) {}
+                            }, true);
+                            fsEl.appendChild(c);
+                        }
+                    } else if (existing) {
+                        existing.remove();
+                    }
+                }
+                document.addEventListener('fullscreenchange', onFsChange, true);
+
+                var obs = new MutationObserver(function () { scan(); });
+                function start() {
+                    addStyle();
+                    obs.observe(document.body || document.documentElement, { childList: true, subtree: true });
+                    scan();
+                }
+                document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();
+            })();
+            """;
+
+        /// <summary>現在の設定を、メディア拡大ボタンの JS 制御変数へ反映するスニペット（#293）。</summary>
+        private string BuildMediaOverlayButtonConfigJs()
+            => $"window._xtvMediaOverlayEnabled = {(_appSettings.MediaOverlayButtonEnabled ? "true" : "false")};";
+
+        /// <summary>メディア拡大ボタンの ON/OFF を各ペインへ即時反映する（#293）。</summary>
+        private async Task ApplyMediaOverlayButtonAsync(WebView2 webView)
+        {
+            try
+            {
+                await webView.CoreWebView2.ExecuteScriptAsync(BuildMediaOverlayButtonConfigJs());
+                await webView.CoreWebView2.ExecuteScriptAsync("window._xtvMediaBtnRescan && window._xtvMediaBtnRescan();");
+            }
+            catch { }
+        }
+
         /// <summary>cfg がホームタイムラインかどうか。</summary>
         private static bool IsHomeConfig(TimelineConfig cfg)
             => Uri.TryCreate(cfg.Url, UriKind.Absolute, out var u)
@@ -539,9 +636,11 @@ namespace XTimelineViewer.Views
                 // 既定では WebView2 は自コントロール内で全画面表示するため、細いペイン内に収まって
                 // 戻る導線が失われる。要求を検知してペインごと拡大し、全画面解除で元に戻す。
                 // ユーザーが全画面ボタンを押したときだけ発火するので、動画の自動再生を誤検知しない。
+                // 動画の全画面ボタン（#289）に加え、メディア拡大ボタン（#293）から requestFullscreen した
+                // ときもここに合流する。どちらのトグルも OFF なら何もしない。
                 webView.CoreWebView2.ContainsFullScreenElementChanged += (s, e) =>
                 {
-                    if (!_appSettings.VideoEnlargeEnabled) return;
+                    if (!_appSettings.VideoEnlargeEnabled && !_appSettings.MediaOverlayButtonEnabled) return;
                     if (!_webViewToPane.TryGetValue(webView, out var pane)) return;
                     if (webView.CoreWebView2.ContainsFullScreenElement)
                         EnlargePane(pane);
@@ -592,6 +691,9 @@ namespace XTimelineViewer.Views
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(TimestampInterceptScript);
             // 編集状態レポーター（#258）：全ペインに注入し、編集中（リプライ/引用）を C# へ通知する。
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(EditStateReporterScript);
+            // メディア拡大ボタン（#293）：全ペインに注入。config を先に入れてから本体を注入する。
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildMediaOverlayButtonConfigJs());
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(MediaOverlayButtonScript);
             // ホーム自動更新（#207）。ホームペインにのみ注入し、設定で ON/OFF・間隔を制御する。
             if (IsHomeConfig(cfg))
             {

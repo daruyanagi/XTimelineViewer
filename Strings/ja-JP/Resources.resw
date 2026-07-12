@@ -115,6 +115,8 @@
   <data name="Settings_MediaEnlarge_Description" xml:space="preserve"><value>タイムラインが画像（.../status/&lt;id&gt;/photo/1 など）へ遷移したとき、そのペインを一時的にウィンドウいっぱいに拡大します。画像から離れると元に戻ります。</value></data>
   <data name="Settings_VideoEnlarge" xml:space="preserve"><value>動画の全画面ボタンでペインを拡大する</value></data>
   <data name="Settings_VideoEnlarge_Description" xml:space="preserve"><value>タイムライン内の動画の全画面ボタンを押すと、そのペインを一時的にウィンドウいっぱいに拡大します。全画面を解除すると元に戻ります。</value></data>
+  <data name="Settings_MediaOverlayButton" xml:space="preserve"><value>メディアに拡大ボタンを表示する</value></data>
+  <data name="Settings_MediaOverlayButton_Description" xml:space="preserve"><value>タイムラインの画像・動画に拡大ボタンを重ねます。押すとそのメディアだけを画面いっぱいに表示します（Esc または ✕ ボタンで戻る）。</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>拡張機能</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>プロファイル</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>ユーザーデータ管理</value></data>
