@@ -573,6 +573,18 @@ namespace XTimelineViewer.Views
                 return;
             }
 
+            if (message.StartsWith("openFolder:"))  // #308: トーストの「フォルダーを開く」リンク
+            {
+                var dir = MediaDir(isVideo: message["openFolder:".Length..] == "videos");
+                try
+                {
+                    Directory.CreateDirectory(dir);
+                    Process.Start(new ProcessStartInfo { FileName = dir, UseShellExecute = true });
+                }
+                catch (Exception ex) { LogError("openFolder", ex); }
+                return;
+            }
+
             switch (message)
             {
                 case "focusNext": FocusAdjacentTimeline(senderWebView, +1); break;
@@ -606,9 +618,7 @@ namespace XTimelineViewer.Views
             try
             {
                 var bytes = Convert.FromBase64String(base64Png);
-                var dir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-                    "XTimelineViewer");
+                var dir = MediaDir(isVideo: false);  // フレームは PNG 画像 → Pictures
                 Directory.CreateDirectory(dir);
                 // 保存時刻はミリ秒まで付けて同一秒内の連続保存でも衝突しないようにする。
                 var name = $"{SanitizeNamePart(handle, "unknown")}_{SanitizeNamePart(status, "noid")}"
@@ -727,9 +737,16 @@ namespace XTimelineViewer.Views
             return best;
         }
 
+        // WebView へメッセージを返す（UI スレッドで PostWebMessageAsString）。トースト/進捗の通知用。
+        private void PostToWebView(WebView2 webView, string message)
+            => DispatcherQueue.TryEnqueue(() =>
+            {
+                try { webView.CoreWebView2?.PostWebMessageAsString(message); } catch { }
+            });
+
         // twimg.com の直 URL からメディア（GIF/画像/動画）をダウンロードして保存する（#301/#304・試験機能）。
         // 安全のため twimg.com ホストのみ許可。ファイル名は <handle>_<statusId>_<時刻>.<ext>。
-        // 成功時は okPrefix + ":" + ファイル名、失敗時は frameError を WebView へ返す。
+        // ストリーム読みしながら進捗（dlProgress:<pct>）を返し、完了時に okPrefix、失敗時に frameError を返す（#308）。
         private async Task DownloadMediaAsync(
             WebView2 senderWebView, string handle, string status, string url, string ext, string okPrefix)
         {
@@ -742,17 +759,41 @@ namespace XTimelineViewer.Views
                 {
                     var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, uri);
                     req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0");
-                    using var resp = await _frameHttp.SendAsync(req);
+                    using var resp = await _frameHttp
+                        .SendAsync(req, System.Net.Http.HttpCompletionOption.ResponseHeadersRead)
+                        .ConfigureAwait(false);
                     resp.EnsureSuccessStatusCode();
-                    var bytes = await resp.Content.ReadAsByteArrayAsync();
 
-                    var dir = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-                        "XTimelineViewer");
+                    var total = resp.Content.Headers.ContentLength;
+                    byte[] bytes;
+                    using (var src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var buf = new MemoryStream())
+                    {
+                        var chunk = new byte[81920];
+                        long readTotal = 0;
+                        int lastPct = -1, n;
+                        while ((n = await src.ReadAsync(chunk).ConfigureAwait(false)) > 0)
+                        {
+                            buf.Write(chunk, 0, n);
+                            readTotal += n;
+                            if (total is long tot && tot > 0)
+                            {
+                                int pct = (int)(readTotal * 100 / tot);
+                                if (pct >= lastPct + 2 || pct == 100)  // 2% 刻みでスロットル
+                                {
+                                    lastPct = pct;
+                                    PostToWebView(senderWebView, "dlProgress:" + pct);
+                                }
+                            }
+                        }
+                        bytes = buf.ToArray();
+                    }
+
+                    var dir = MediaDir(isVideo: ext == "mp4");  // 動画/GIF(mp4)→Videos, 画像(jpg)→Pictures
                     Directory.CreateDirectory(dir);
                     var name = $"{SanitizeNamePart(handle, "unknown")}_{SanitizeNamePart(status, "noid")}"
                              + $"_{DateTime.Now:yyyyMMdd_HHmmss_fff}.{ext}";
-                    await File.WriteAllBytesAsync(Path.Combine(dir, name), bytes);
+                    await File.WriteAllBytesAsync(Path.Combine(dir, name), bytes).ConfigureAwait(false);
                     savedName = name;
                 }
             }
@@ -761,15 +802,14 @@ namespace XTimelineViewer.Views
                 LogError($"DownloadMedia({okPrefix})", ex);
             }
 
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                try
-                {
-                    senderWebView.CoreWebView2?.PostWebMessageAsString(
-                        savedName is null ? "frameError" : okPrefix + ":" + savedName);
-                }
-                catch { }
-            });
+            PostToWebView(senderWebView, savedName is null ? "frameError" : okPrefix + ":" + savedName);
+        }
+
+        // メディア保存先（#308）: 動画/GIF(mp4)は Videos\XTimelineViewer、画像/フレームは Pictures\XTimelineViewer。
+        private static string MediaDir(bool isVideo)
+        {
+            var special = isVideo ? Environment.SpecialFolder.MyVideos : Environment.SpecialFolder.MyPictures;
+            return Path.Combine(Environment.GetFolderPath(special), "XTimelineViewer");
         }
 
         // ファイル名の一部（handle / statusId）を安全化する。空ならフォールバックを返す。
