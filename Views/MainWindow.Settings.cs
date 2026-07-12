@@ -138,6 +138,11 @@ namespace XTimelineViewer.Views
                         _ = wv.CoreWebView2.ExecuteScriptAsync(
                             $"window._xtvOpenTimestampInBrowser = {tsFlag};");
 
+                // メディア拡大ボタン（#293）の ON/OFF を各ペインへ即時反映
+                foreach (var wv in _webViews)
+                    if (wv.CoreWebView2 is not null)
+                        _ = ApplyMediaOverlayButtonAsync(wv);
+
                 // ホーム自動更新（#207）の ON/OFF・間隔を各ホームペインへ即時反映し、インジケーターも更新
                 foreach (var (homePane, _) in _autoLoadIndicators)
                 {
