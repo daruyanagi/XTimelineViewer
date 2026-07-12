@@ -169,6 +169,7 @@ namespace XTimelineViewer.Views
                         '.xtv-toast{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:2147483647;' +
                         'background:rgba(0,0,0,0.85);color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;' +
                         'max-width:80vw;text-align:center;pointer-events:none;}' +
+                        '.xtv-toast a{color:#8ec7ff;margin-left:12px;text-decoration:underline;cursor:pointer;pointer-events:auto;}' +
                         '.xtv-img-viewer{position:fixed;inset:0;width:100%;height:100%;background:#000;' +
                         'display:flex;align-items:center;justify-content:center;overflow:hidden;}' +
                         '.xtv-img-viewer img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;}';
@@ -255,14 +256,38 @@ namespace XTimelineViewer.Views
                 // ── 動画フレーム保存（#299）──
                 // 全画面中の <video> の現在フレームを canvas に焼き、base64 PNG を C# に送って保存する。
                 // 全画面中は全画面要素の子孫しか描画されないため、トーストは全画面要素側へ挿入する。
-                function showToast(msg) {
+                // folder（'pictures'|'videos'）を渡すと「フォルダーを開く」リンクを付ける（#308）。
+                function showToast(msg, folder) {
                     var host = document.fullscreenElement || document.body;
                     if (!host) return;
                     var t = document.createElement('div');
                     t.className = 'xtv-toast';
                     t.textContent = msg;
+                    if (folder) {
+                        var a = document.createElement('a');
+                        a.className = 'xtv-toast-link';
+                        a.href = '#';
+                        a.textContent = (window._xtvFrameSaveL || {}).openFolder || 'Open folder';
+                        a.addEventListener('click', function (e) {
+                            e.preventDefault(); e.stopPropagation();
+                            try { window.chrome.webview.postMessage('openFolder:' + folder); } catch (x) {}
+                        }, true);
+                        t.appendChild(a);
+                    }
                     host.appendChild(t);
-                    setTimeout(function () { t.remove(); }, 2200);
+                    setTimeout(function () { t.remove(); }, folder ? 5000 : 2200);  // リンク付きは長めに
+                }
+                // ダウンロード進捗トースト（#308）。自動では消さず、結果受信時に hideProgress で消す。
+                function showProgress(text) {
+                    var host = document.fullscreenElement || document.body;
+                    if (!host) return;
+                    var t = document.querySelector('.xtv-progress');
+                    if (!t) { t = document.createElement('div'); t.className = 'xtv-toast xtv-progress'; host.appendChild(t); }
+                    else if (t.parentNode !== host) { host.appendChild(t); }  // 全画面切替に追従
+                    t.textContent = text;
+                }
+                function hideProgress() {
+                    document.querySelectorAll('.xtv-progress').forEach(function (x) { x.remove(); });
                 }
                 // 動画が属するツイートの handle / status ID を求める（ファイル名でソースを辿れるように）。
                 // 全画面中でも article は DOM に残るので closest で辿れる。取得失敗時は空を返す。
@@ -299,17 +324,20 @@ namespace XTimelineViewer.Views
                     var url = (video && (video.currentSrc || video.src)) || '';
                     if (!/^https?:/.test(url)) { showToast((window._xtvFrameSaveL || {}).failed || 'Failed'); return; }
                     var r = getTweetRef(video);
+                    showProgress((window._xtvFrameSaveL || {}).downloading || 'Downloading…');
                     // 形式: saveGif:<handle>|<status>|<url>（url は最後まで丸ごと。C# 側は Split 上限 3 で温存）
                     window.chrome.webview.postMessage('saveGif:' + r.handle + '|' + r.status + '|' + url);
                 }
                 // 画像ダウンロード（#304）。DL は全て C# 側で実行（JS fetch は CORS 不可）。
                 function sendSaveImg(ref, url) {
                     if (!url) { showToast((window._xtvFrameSaveL || {}).failed || 'Failed'); return; }
+                    showProgress((window._xtvFrameSaveL || {}).downloading || 'Downloading…');
                     window.chrome.webview.postMessage('saveImg:' + (ref.handle || '') + '|' + (ref.status || '') + '|' + url);
                 }
                 // 動画ダウンロード（#304）。progressive MP4 の直 URL は C# が GraphQL 傍受で保持。statusId で引く。
                 function sendVideoDownload(video) {
                     var r = getTweetRef(video);
+                    showProgress((window._xtvFrameSaveL || {}).downloading || 'Downloading…');
                     window.chrome.webview.postMessage('saveVideo:' + r.handle + '|' + r.status);
                 }
 
@@ -361,10 +389,12 @@ namespace XTimelineViewer.Views
                         var d = e.data;
                         if (typeof d !== 'string') return;
                         var L = window._xtvFrameSaveL || {};
-                        if (d.indexOf('frameSaved:') === 0) showToast(L.saved || 'Saved');
-                        else if (d.indexOf('gifSaved:') === 0) showToast(L.gifSaved || 'Saved');
-                        else if (d.indexOf('imgSaved:') === 0) showToast(L.imgSaved || 'Saved');
-                        else if (d.indexOf('videoSaved:') === 0) showToast(L.videoSaved || 'Saved');
+                        if (d.indexOf('dlProgress:') === 0) { showProgress((L.downloading || 'Downloading…') + ' ' + d.slice(11) + '%'); return; }
+                        hideProgress();
+                        if (d.indexOf('frameSaved:') === 0) showToast(L.saved || 'Saved', 'pictures');
+                        else if (d.indexOf('gifSaved:') === 0) showToast(L.gifSaved || 'Saved', 'videos');
+                        else if (d.indexOf('imgSaved:') === 0) showToast(L.imgSaved || 'Saved', 'pictures');
+                        else if (d.indexOf('videoSaved:') === 0) showToast(L.videoSaved || 'Saved', 'videos');
                         else if (d === 'videoUnavailable') showToast(L.videoUnavailable || 'Failed');
                         else if (d === 'frameError') showToast(L.failed || 'Failed');
                     });
@@ -419,6 +449,8 @@ namespace XTimelineViewer.Views
                 imgSaved         = R.Get("MediaFrameSave_ImgSaved"),
                 videoSaved       = R.Get("MediaFrameSave_VideoSaved"),
                 videoUnavailable = R.Get("MediaFrameSave_VideoUnavailable"),
+                openFolder       = R.Get("MediaFrameSave_OpenFolder"),
+                downloading      = R.Get("MediaFrameSave_Downloading"),
             });
             return $"window._xtvMediaOverlayEnabled = {(_appSettings.MediaOverlayButtonEnabled ? "true" : "false")};"
                  + $"window._xtvFrameSaveEnabled = {(_appSettings.VideoFrameSaveEnabled ? "true" : "false")};"
