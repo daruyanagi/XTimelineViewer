@@ -123,10 +123,14 @@ namespace XTimelineViewer.Views
             """;
 
         // メディア拡大ボタンのオーバーレイ（試験機能 #293）。全ペインに注入し、タイムライン上の
-        // 画像・動画コンテナに「⛶」ボタンを重ねる。押すとそのメディアコンテナを requestFullscreen()
-        // で全画面表示し（＝メディアだけにフォーカス）、WebView2 の ContainsFullScreenElement が立って
-        // 既存の全画面フック（#291）でペインが画面いっぱいに拡大される。全画面中は「✕」ボタンを重ね、
-        // Esc とあわせて戻れる。window._xtvMediaOverlayEnabled で ON/OFF を制御する。
+        // 画像・動画コンテナに「⛶」ボタンを重ねる。押すとメディアを全画面表示し（＝メディアだけに
+        // フォーカス）、WebView2 の ContainsFullScreenElement が立って既存の全画面フック（#291）で
+        // ペインが画面いっぱいに拡大される。全画面中は「✕」ボタンを重ね、Esc とあわせて戻れる。
+        // window._xtvMediaOverlayEnabled で ON/OFF を制御する。
+        //   ・画像（#295）: 内部 <img> を専用ビューア div に入れて全画面化する。div は背景黒・
+        //     object-fit:contain なので、コンテナごと全画面にしていた頃の上下見切れが起きない。
+        //     さらに src の name=... を orig へ差し替えて拡大時だけ高解像度版を読み込む。
+        //   ・動画: 従来どおりコンテナを全画面化してカスタムコントロールを保つ。
         private static readonly string MediaOverlayButtonScript = """
             (function () {
                 if (window._xtvMediaBtn) return;
@@ -144,7 +148,10 @@ namespace XTimelineViewer.Views
                         'cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;}' +
                         '.xtv-enlarge-host:hover .xtv-enlarge-btn{opacity:1;}' +
                         '.xtv-fs-close{position:fixed;top:16px;right:16px;z-index:2147483647;width:46px;height:46px;' +
-                        'border:none;border-radius:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:22px;cursor:pointer;}';
+                        'border:none;border-radius:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:22px;cursor:pointer;}' +
+                        '.xtv-img-viewer{position:fixed;inset:0;width:100%;height:100%;background:#000;' +
+                        'display:flex;align-items:center;justify-content:center;overflow:hidden;}' +
+                        '.xtv-img-viewer img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;}';
                     (document.head || document.documentElement).appendChild(s);
                 }
 
@@ -160,9 +167,52 @@ namespace XTimelineViewer.Views
                     btn.textContent = '⛶';
                     btn.addEventListener('click', function (e) {
                         e.preventDefault(); e.stopPropagation();
-                        try { if (container.requestFullscreen) container.requestFullscreen(); } catch (x) {}
+                        if (container.matches('[data-testid="tweetPhoto"]')) openImageViewer(container);
+                        else { try { if (container.requestFullscreen) container.requestFullscreen(); } catch (x) {} }
                     }, true);
                     container.appendChild(btn);
+                }
+
+                // pbs.twimg.com の画像 URL を最大解像度（name=orig）へ変換する（#295）。
+                function hiResUrl(src) {
+                    try {
+                        var u = new URL(src, location.href);
+                        if (u.hostname.indexOf('pbs.twimg.com') === -1) return src;
+                        u.searchParams.set('name', 'orig');
+                        if (!u.searchParams.has('format')) u.searchParams.set('format', 'jpg');
+                        return u.toString();
+                    } catch (e) { return src; }
+                }
+
+                // 画像を専用ビューア div（背景黒・contain・高解像度）で全画面表示する（#295）。
+                function openImageViewer(container) {
+                    var srcImg = container.querySelector('img[src*="pbs.twimg.com/media/"]')
+                              || container.querySelector('img');
+                    if (!srcImg) {
+                        try { if (container.requestFullscreen) container.requestFullscreen(); } catch (x) {}
+                        return;
+                    }
+                    var viewer = document.createElement('div');
+                    viewer.className = 'xtv-img-viewer';
+                    var big = document.createElement('img');
+                    big.src = hiResUrl(srcImg.currentSrc || srcImg.src);
+                    viewer.appendChild(big);
+                    var c = document.createElement('button');
+                    c.className = 'xtv-fs-close';
+                    c.type = 'button';
+                    c.textContent = '✕';
+                    c.addEventListener('click', function (e) {
+                        e.preventDefault(); e.stopPropagation();
+                        try { if (document.fullscreenElement) document.exitFullscreen(); } catch (x) {}
+                    }, true);
+                    viewer.appendChild(c);
+                    document.body.appendChild(viewer);
+                    // requestFullscreen は非同期。失敗した場合だけビューアを片付ける
+                    // （成功時の後始末は fullscreenchange 側で行う）。
+                    try {
+                        var p = viewer.requestFullscreen && viewer.requestFullscreen();
+                        if (p && p.catch) p.catch(function () { viewer.remove(); });
+                    } catch (x) { viewer.remove(); }
                 }
 
                 function scan() {
@@ -173,11 +223,11 @@ namespace XTimelineViewer.Views
                 window._xtvMediaBtnRescan = scan;  // C# から ON 切り替え時に既存メディアへ付与するため
 
                 // 全画面中は「✕」ボタンを全画面要素に重ねる（Esc でも解除できる）。
+                // 画像ビューア（.xtv-img-viewer）は自前で ✕ を内包するのでここでは付けない。
                 function onFsChange() {
                     var fsEl = document.fullscreenElement;
-                    var existing = document.querySelector('.xtv-fs-close');
-                    if (fsEl) {
-                        if (!existing) {
+                    if (fsEl && !fsEl.classList.contains('xtv-img-viewer')) {
+                        if (!fsEl.querySelector(':scope > .xtv-fs-close')) {
                             var c = document.createElement('button');
                             c.className = 'xtv-fs-close';
                             c.type = 'button';
@@ -188,8 +238,12 @@ namespace XTimelineViewer.Views
                             }, true);
                             fsEl.appendChild(c);
                         }
-                    } else if (existing) {
-                        existing.remove();
+                    } else if (!fsEl) {
+                        // 全画面終了: 画像ビューアと、動画コンテナに付けた ✕ を後始末する。
+                        var v = document.querySelector('.xtv-img-viewer');
+                        if (v) v.remove();
+                        var leftover = document.querySelector('.xtv-fs-close');
+                        if (leftover) leftover.remove();
                     }
                 }
                 document.addEventListener('fullscreenchange', onFsChange, true);
