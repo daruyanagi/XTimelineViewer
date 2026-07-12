@@ -117,6 +117,12 @@
   <data name="Settings_VideoEnlarge_Description" xml:space="preserve"><value>When you press the fullscreen button on a video in a timeline, temporarily enlarges that pane to fill the window. Exit fullscreen to return to normal.</value></data>
   <data name="Settings_MediaOverlayButton" xml:space="preserve"><value>Show an enlarge button on media</value></data>
   <data name="Settings_MediaOverlayButton_Description" xml:space="preserve"><value>Overlays an enlarge button on photos and videos in timelines. Press it to show just that media full-screen (press Esc or the ✕ button to return).</value></data>
+  <data name="MediaFrameSave_Tooltip" xml:space="preserve"><value>Save frame</value></data>
+  <data name="MediaFrameSave_Saved" xml:space="preserve"><value>Frame saved</value></data>
+  <data name="MediaFrameSave_Failed" xml:space="preserve"><value>Couldn't save frame</value></data>
+  <data name="Settings_VideoFrameSave" xml:space="preserve"><value>Save a video frame as an image</value></data>
+  <data name="Settings_VideoFrameSave_Description" xml:space="preserve"><value>Shows a save button at the top-right when a video is full-screen. Press it to save the currently shown frame as a PNG to Pictures\XTimelineViewer.</value></data>
+  <data name="Settings_VideoFrameSave_OpenFolder" xml:space="preserve"><value>Open the save folder</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>Extensions</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>Profiles</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>User Data</value></data>
