@@ -143,10 +143,15 @@ namespace XTimelineViewer.Views
                     var s = document.createElement('style');
                     s.id = 'xtv-media-btn-style';
                     s.textContent =
-                        '.xtv-enlarge-btn{position:absolute;top:8px;right:8px;z-index:9999;width:34px;height:34px;' +
-                        'border:none;border-radius:6px;background:rgba(0,0,0,0.6);color:#fff;font-size:16px;' +
-                        'cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;}' +
-                        '.xtv-enlarge-host:hover .xtv-enlarge-btn{opacity:1;}' +
+                        // 常時はっきり表示（#297）。実機では引用内は出るのにメイン画像で出ない事象があり、
+                        // Chrome 実測では同構造で可視・最前面だったため、opacity を !important で固定し、
+                        // z-index をほぼ最大に上げて「別要素に覆われる」ケースも前面へ出す。暗い/明るい
+                        // どちらの画像でも視認できるよう白リング＋影を付ける。
+                        '.xtv-enlarge-btn{position:absolute!important;top:8px;right:8px;z-index:2147483000;width:34px;height:34px;' +
+                        'border:none;border-radius:6px;background:rgba(0,0,0,0.7);color:#fff;font-size:16px;' +
+                        'cursor:pointer;display:flex!important;align-items:center;justify-content:center;opacity:1!important;' +
+                        'box-shadow:0 0 0 2px rgba(255,255,255,0.85),0 1px 4px rgba(0,0,0,0.6);transition:background .15s;}' +
+                        '.xtv-enlarge-host:hover .xtv-enlarge-btn,[data-testid="tweet"]:hover .xtv-enlarge-btn{background:rgba(0,0,0,0.9);}' +
                         '.xtv-fs-close{position:fixed;top:16px;right:16px;z-index:2147483647;width:46px;height:46px;' +
                         'border:none;border-radius:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:22px;cursor:pointer;}' +
                         '.xtv-img-viewer{position:fixed;inset:0;width:100%;height:100%;background:#000;' +
@@ -155,9 +160,32 @@ namespace XTimelineViewer.Views
                     (document.head || document.documentElement).appendChild(s);
                 }
 
+                // コンテナが「写真」「動画」のどちらの拡大対象か判定する（#297）。
+                // 動画は tweetPhoto の内側に videoPlayer/videoComponent として入れ子になっているため、
+                // 素朴に SEL でマッチすると外側 tweetPhoto と内側 player の両方にボタンが付き、
+                // 画像ブランチが動画を画像として開いてしまう。ここで一意な単位へ正規化する。
+                //   ・写真: /media/ 画像を含み、動画要素を含まない tweetPhoto のみ
+                //   ・動画: videoPlayer（controls を含む単位）。配下の videoComponent は重複なので除外
+                function mediaKind(container) {
+                    var t = container.getAttribute('data-testid');
+                    if (t === 'tweetPhoto') {
+                        if (container.querySelector('[data-testid="videoPlayer"], [data-testid="videoComponent"], video')) return null;
+                        if (!container.querySelector('img[src*="pbs.twimg.com/media/"]')) return null;  // 画像未ロード → 後続 scan で拾う
+                        return 'photo';
+                    }
+                    if (t === 'videoPlayer') return 'video';
+                    if (t === 'videoComponent') {
+                        var vp = container.closest('[data-testid="videoPlayer"]');
+                        return (vp && vp !== container) ? null : 'video';  // videoPlayer 配下は重複
+                    }
+                    return null;
+                }
+
                 function attach(container) {
                     if (!window._xtvMediaOverlayEnabled) return;
                     if (container.__xtvBtn) return;
+                    var kind = mediaKind(container);
+                    if (!kind) return;                 // 対象外（動画内包 tweetPhoto・入れ子 videoComponent・画像未ロード等）
                     container.__xtvBtn = true;
                     container.classList.add('xtv-enlarge-host');
                     if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
@@ -167,7 +195,7 @@ namespace XTimelineViewer.Views
                     btn.textContent = '⛶';
                     btn.addEventListener('click', function (e) {
                         e.preventDefault(); e.stopPropagation();
-                        if (container.matches('[data-testid="tweetPhoto"]')) openImageViewer(container);
+                        if (kind === 'photo') openImageViewer(container);
                         else { try { if (container.requestFullscreen) container.requestFullscreen(); } catch (x) {} }
                     }, true);
                     container.appendChild(btn);
