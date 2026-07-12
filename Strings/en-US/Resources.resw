@@ -122,8 +122,12 @@
   <data name="MediaFrameSave_Failed" xml:space="preserve"><value>Couldn't save frame</value></data>
   <data name="MediaFrameSave_GifTooltip" xml:space="preserve"><value>Save GIF</value></data>
   <data name="MediaFrameSave_GifSaved" xml:space="preserve"><value>Saved GIF as MP4</value></data>
+  <data name="MediaFrameSave_DownloadTooltip" xml:space="preserve"><value>Download</value></data>
+  <data name="MediaFrameSave_ImgSaved" xml:space="preserve"><value>Image saved</value></data>
+  <data name="MediaFrameSave_VideoSaved" xml:space="preserve"><value>Video saved</value></data>
+  <data name="MediaFrameSave_VideoUnavailable" xml:space="preserve"><value>Couldn't get the video URL</value></data>
   <data name="Settings_VideoFrameSave" xml:space="preserve"><value>Save a video frame as an image</value></data>
-  <data name="Settings_VideoFrameSave_Description" xml:space="preserve"><value>Shows a save button at the top-right when a video is full-screen. Press it to save the currently shown frame as a PNG to Pictures\XTimelineViewer. For GIFs, downloads the GIF (MP4) file instead.</value></data>
+  <data name="Settings_VideoFrameSave_Description" xml:space="preserve"><value>Shows Download and Frame-capture buttons at the top-left when a video, image, or GIF is full-screen (X's close button stays top-right). Download saves video as MP4, image as JPG, GIF as MP4 to Pictures\XTimelineViewer. Frame capture (video only) saves the current frame as a PNG.</value></data>
   <data name="Settings_VideoFrameSave_OpenFolder" xml:space="preserve"><value>Open the save folder</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>Extensions</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>Profiles</value></data>

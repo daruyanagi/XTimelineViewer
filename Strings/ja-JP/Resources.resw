@@ -122,8 +122,12 @@
   <data name="MediaFrameSave_Failed" xml:space="preserve"><value>フレームを保存できませんでした</value></data>
   <data name="MediaFrameSave_GifTooltip" xml:space="preserve"><value>GIF を保存</value></data>
   <data name="MediaFrameSave_GifSaved" xml:space="preserve"><value>GIF を MP4 として保存しました</value></data>
+  <data name="MediaFrameSave_DownloadTooltip" xml:space="preserve"><value>ダウンロード</value></data>
+  <data name="MediaFrameSave_ImgSaved" xml:space="preserve"><value>画像を保存しました</value></data>
+  <data name="MediaFrameSave_VideoSaved" xml:space="preserve"><value>動画を保存しました</value></data>
+  <data name="MediaFrameSave_VideoUnavailable" xml:space="preserve"><value>動画の URL を取得できませんでした</value></data>
   <data name="Settings_VideoFrameSave" xml:space="preserve"><value>動画のフレームを画像として保存する</value></data>
-  <data name="Settings_VideoFrameSave_Description" xml:space="preserve"><value>動画を全画面表示したとき、右上に保存ボタンを表示します。押すと今表示しているフレームを PNG 画像として「ピクチャ\XTimelineViewer」に保存します。GIF の場合は代わりに GIF（MP4）ファイルをダウンロードします。</value></data>
+  <data name="Settings_VideoFrameSave_Description" xml:space="preserve"><value>動画・画像・GIF を全画面表示したとき、左上に［ダウンロード］と［フレームキャプチャー］ボタンを表示します（右上は X の閉じるボタン）。ダウンロードは動画=MP4・画像=JPG・GIF=MP4 として「ピクチャ\XTimelineViewer」に保存。フレームキャプチャー（動画のみ）は現在のフレームを PNG 保存します。</value></data>
   <data name="Settings_VideoFrameSave_OpenFolder" xml:space="preserve"><value>保存先フォルダーを開く</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>拡張機能</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>プロファイル</value></data>

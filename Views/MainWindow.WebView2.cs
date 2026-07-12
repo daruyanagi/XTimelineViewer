@@ -147,7 +147,9 @@ namespace XTimelineViewer.Views
                         // ボタンの opacity が上書きされて消える事象があったため、opacity は !important で
                         // 固定し、z-index もほぼ最大に上げて被りにも耐える。暗い画像でも縁が分かるよう
                         // 薄い白リング＋影を添える。
-                        '.xtv-enlarge-btn{position:absolute!important;top:8px;right:8px;z-index:2147483000;width:34px;height:34px;' +
+                        // 左上に置く（#297）。狭いペインで画像の右側が見切れると right:8px 固定のボタンも
+                        // 画面外に出て見えなくなるため。左端は常に見えるので left:8px にする。
+                        '.xtv-enlarge-btn{position:absolute!important;top:8px;left:8px;z-index:2147483000;width:34px;height:34px;' +
                         'border:none;border-radius:6px;background:rgba(0,0,0,0.55);color:#fff;font-size:16px;' +
                         'cursor:pointer;display:flex!important;align-items:center;justify-content:center;opacity:.55!important;' +
                         'box-shadow:0 0 0 1px rgba(255,255,255,0.35),0 1px 3px rgba(0,0,0,0.5);transition:opacity .15s,background .15s;}' +
@@ -156,10 +158,14 @@ namespace XTimelineViewer.Views
                         ':fullscreen .xtv-enlarge-btn{display:none!important;}' +
                         '.xtv-fs-close{position:fixed;top:16px;right:16px;z-index:2147483647;width:46px;height:46px;' +
                         'border:none;border-radius:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:22px;cursor:pointer;}' +
-                        // 動画フレーム保存ボタン（#299）：全画面中に ✕ の左へ置く。
-                        '.xtv-fs-save{position:fixed;top:16px;right:72px;z-index:2147483647;width:46px;height:46px;' +
-                        'border:none;border-radius:8px;background:rgba(0,0,0,0.7);color:#fff;cursor:pointer;' +
+                        // 自作機能ボタンは左上に置く（#304）: ダウンロード(left:16) / フレームキャプチャー(left:72)。
+                        // X 固有の ✕ は右上のまま、という住み分けで迷いにくくする。カメラは動画のみ活性。
+                        '.xtv-fs-btn{position:fixed;top:16px;z-index:2147483647;width:46px;height:46px;border:none;' +
+                        'border-radius:8px;background:rgba(0,0,0,0.7);color:#fff;cursor:pointer;' +
                         'display:flex;align-items:center;justify-content:center;}' +
+                        '.xtv-fs-dl{left:16px;}' +
+                        '.xtv-fs-cam{left:72px;}' +
+                        '.xtv-fs-btn:disabled{opacity:.35;cursor:default;}' +
                         '.xtv-toast{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:2147483647;' +
                         'background:rgba(0,0,0,0.85);color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;' +
                         'max-width:80vw;text-align:center;pointer-events:none;}' +
@@ -229,23 +235,17 @@ namespace XTimelineViewer.Views
                         try { if (container.requestFullscreen) container.requestFullscreen(); } catch (x) {}
                         return;
                     }
+                    var hi = hiResUrl(srcImg.currentSrc || srcImg.src);
                     var viewer = document.createElement('div');
                     viewer.className = 'xtv-img-viewer';
+                    viewer._xtvRef = getTweetRef(container);  // ダウンロード時のファイル名用（#304）
+                    viewer._xtvImgUrl = hi;
                     var big = document.createElement('img');
-                    big.src = hiResUrl(srcImg.currentSrc || srcImg.src);
+                    big.src = hi;
                     viewer.appendChild(big);
-                    var c = document.createElement('button');
-                    c.className = 'xtv-fs-close';
-                    c.type = 'button';
-                    c.textContent = '✕';
-                    c.addEventListener('click', function (e) {
-                        e.preventDefault(); e.stopPropagation();
-                        try { if (document.fullscreenElement) document.exitFullscreen(); } catch (x) {}
-                    }, true);
-                    viewer.appendChild(c);
                     document.body.appendChild(viewer);
-                    // requestFullscreen は非同期。失敗した場合だけビューアを片付ける
-                    // （成功時の後始末は fullscreenchange 側で行う）。
+                    // ✕・左上ボタンは fullscreenchange 側で付ける（動画/GIF と共通化）。
+                    // requestFullscreen は非同期。失敗した場合だけビューアを片付ける。
                     try {
                         var p = viewer.requestFullscreen && viewer.requestFullscreen();
                         if (p && p.catch) p.catch(function () { viewer.remove(); });
@@ -309,6 +309,59 @@ namespace XTimelineViewer.Views
                     // 形式: saveGif:<handle>|<status>|<url>（url は最後まで丸ごと。C# 側は Split 上限 3 で温存）
                     window.chrome.webview.postMessage('saveGif:' + r.handle + '|' + r.status + '|' + url);
                 }
+                // 画像ダウンロード（#304）。DL は全て C# 側で実行（JS fetch は CORS 不可）。
+                function sendSaveImg(ref, url) {
+                    if (!url) { showToast((window._xtvFrameSaveL || {}).failed || 'Failed'); return; }
+                    window.chrome.webview.postMessage('saveImg:' + (ref.handle || '') + '|' + (ref.status || '') + '|' + url);
+                }
+                // 動画ダウンロード（#304）。progressive MP4 の直 URL は C# が GraphQL 傍受で保持。statusId で引く。
+                function sendVideoDownload(video) {
+                    var r = getTweetRef(video);
+                    window.chrome.webview.postMessage('saveVideo:' + r.handle + '|' + r.status);
+                }
+
+                // ── オーバーレイのボタン生成（#304）──
+                var XTV_CAMERA = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M20 5h-3.17L15 3H9L7.17 5H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm-8 13a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"></path></svg>';
+                var XTV_DOWNLOAD = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg>';
+                function mkBtn(cls, svg, title) {
+                    var b = document.createElement('button');
+                    b.className = cls; b.type = 'button'; b.title = title || ''; b.innerHTML = svg;
+                    return b;
+                }
+                function addCloseButton(host) {  // X 固有の閉じる（✕）は右上
+                    if (host.querySelector(':scope > .xtv-fs-close')) return;
+                    var c = document.createElement('button');
+                    c.className = 'xtv-fs-close'; c.type = 'button'; c.textContent = '✕';
+                    c.addEventListener('click', function (e) {
+                        e.preventDefault(); e.stopPropagation();
+                        try { if (document.exitFullscreen) document.exitFullscreen(); } catch (x) {}
+                    }, true);
+                    host.appendChild(c);
+                }
+                // 左上に［ダウンロード］［フレームキャプチャー］を付ける（#304）。
+                // ダウンロードは全 kind で活性。カメラは kind==='video' のみ活性（画像/GIF は不活性）。
+                function addLeftControls(host, kind, opts) {
+                    if (host.querySelector(':scope > .xtv-fs-dl')) return;
+                    var L = window._xtvFrameSaveL || {};
+                    var dl = mkBtn('xtv-fs-btn xtv-fs-dl', XTV_DOWNLOAD, L.dlTip || 'Download');
+                    dl.addEventListener('click', function (e) {
+                        e.preventDefault(); e.stopPropagation();
+                        if (kind === 'image') sendSaveImg(opts.ref || {}, opts.imgUrl);
+                        else if (kind === 'gif') downloadGif(opts.video);
+                        else sendVideoDownload(opts.video);
+                    }, true);
+                    host.appendChild(dl);
+                    var cam = mkBtn('xtv-fs-btn xtv-fs-cam', XTV_CAMERA, L.tip || 'Save frame');
+                    if (kind !== 'video') {
+                        cam.disabled = true;
+                    } else {
+                        cam.addEventListener('click', function (e) {
+                            e.preventDefault(); e.stopPropagation();
+                            if (!captureFrame(opts.video)) showToast(L.failed || 'Failed');
+                        }, true);
+                    }
+                    host.appendChild(cam);
+                }
                 // C# 側の保存結果を受けてトーストを出す。
                 try {
                     window.chrome.webview.addEventListener('message', function (e) {
@@ -317,51 +370,32 @@ namespace XTimelineViewer.Views
                         var L = window._xtvFrameSaveL || {};
                         if (d.indexOf('frameSaved:') === 0) showToast(L.saved || 'Saved');
                         else if (d.indexOf('gifSaved:') === 0) showToast(L.gifSaved || 'Saved');
+                        else if (d.indexOf('imgSaved:') === 0) showToast(L.imgSaved || 'Saved');
+                        else if (d.indexOf('videoSaved:') === 0) showToast(L.videoSaved || 'Saved');
+                        else if (d === 'videoUnavailable') showToast(L.videoUnavailable || 'Failed');
                         else if (d === 'frameError') showToast(L.failed || 'Failed');
                     });
                 } catch (x) {}
 
-                // 全画面中は「✕」ボタンを全画面要素に重ねる（Esc でも解除できる）。
-                // 画像ビューア（.xtv-img-viewer）は自前で ✕ を内包するのでここでは付けない。
+                // 全画面時にオーバーレイ操作を付ける（画像ビューア・動画・GIF 共通）。
+                //   ✕（右上・常時） / 試験機能 ON のとき 左上に［DL］［カメラ］（#304）。
                 function onFsChange() {
                     var fsEl = document.fullscreenElement;
-                    if (fsEl && !fsEl.classList.contains('xtv-img-viewer')) {
-                        if (!fsEl.querySelector(':scope > .xtv-fs-close')) {
-                            var c = document.createElement('button');
-                            c.className = 'xtv-fs-close';
-                            c.type = 'button';
-                            c.textContent = '✕';
-                            c.addEventListener('click', function (e) {
-                                e.preventDefault(); e.stopPropagation();
-                                try { if (document.exitFullscreen) document.exitFullscreen(); } catch (x) {}
-                            }, true);
-                            fsEl.appendChild(c);
-                        }
-                        // 動画かつ試験機能 ON なら ✕ の左にボタンを置く（#299/#301）。
-                        // 通常動画: カメラ＝フレーム保存。GIF: 汚染で保存できないため代わりに mp4 ダウンロード。
-                        if (window._xtvFrameSaveEnabled && fsEl.querySelector('video') && !fsEl.querySelector(':scope > .xtv-fs-save')) {
-                            var L = window._xtvFrameSaveL || {};
-                            var gif = isGif(fsEl.querySelector('video'));
-                            var CAMERA = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M20 5h-3.17L15 3H9L7.17 5H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm-8 13a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"></path></svg>';
-                            var DOWNLOAD = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg>';
-                            var sv = document.createElement('button');
-                            sv.className = 'xtv-fs-save';
-                            sv.type = 'button';
-                            sv.title = gif ? (L.gifTip || 'Save GIF') : (L.tip || 'Save frame');
-                            sv.innerHTML = gif ? DOWNLOAD : CAMERA;
-                            sv.addEventListener('click', function (e) {
-                                e.preventDefault(); e.stopPropagation();
+                    if (fsEl) {
+                        addCloseButton(fsEl);  // X 固有の閉じるは右上・常時
+                        if (window._xtvFrameSaveEnabled) {
+                            if (fsEl.classList.contains('xtv-img-viewer')) {
+                                addLeftControls(fsEl, 'image', { ref: fsEl._xtvRef, imgUrl: fsEl._xtvImgUrl });
+                            } else {
                                 var video = fsEl.querySelector('video');
-                                if (gif) downloadGif(video);
-                                else if (!captureFrame(video)) showToast((window._xtvFrameSaveL || {}).failed || 'Failed');
-                            }, true);
-                            fsEl.appendChild(sv);
+                                if (video) addLeftControls(fsEl, isGif(video) ? 'gif' : 'video', { video: video });
+                            }
                         }
-                    } else if (!fsEl) {
-                        // 全画面終了: 画像ビューアと、動画コンテナに付けた ✕・保存ボタン・トーストを後始末する。
+                    } else {
+                        // 全画面終了: 画像ビューアと、付けた ✕・左上ボタン・トーストを後始末する。
                         var v = document.querySelector('.xtv-img-viewer');
                         if (v) v.remove();
-                        document.querySelectorAll('.xtv-fs-close, .xtv-fs-save, .xtv-toast')
+                        document.querySelectorAll('.xtv-fs-close, .xtv-fs-btn, .xtv-toast')
                                .forEach(function (x) { x.remove(); });
                     }
                 }
@@ -383,11 +417,15 @@ namespace XTimelineViewer.Views
         {
             var labels = System.Text.Json.JsonSerializer.Serialize(new
             {
-                tip      = R.Get("MediaFrameSave_Tooltip"),
-                saved    = R.Get("MediaFrameSave_Saved"),
-                failed   = R.Get("MediaFrameSave_Failed"),
-                gifTip   = R.Get("MediaFrameSave_GifTooltip"),
-                gifSaved = R.Get("MediaFrameSave_GifSaved"),
+                tip              = R.Get("MediaFrameSave_Tooltip"),
+                saved            = R.Get("MediaFrameSave_Saved"),
+                failed           = R.Get("MediaFrameSave_Failed"),
+                gifTip           = R.Get("MediaFrameSave_GifTooltip"),
+                gifSaved         = R.Get("MediaFrameSave_GifSaved"),
+                dlTip            = R.Get("MediaFrameSave_DownloadTooltip"),
+                imgSaved         = R.Get("MediaFrameSave_ImgSaved"),
+                videoSaved       = R.Get("MediaFrameSave_VideoSaved"),
+                videoUnavailable = R.Get("MediaFrameSave_VideoUnavailable"),
             });
             return $"window._xtvMediaOverlayEnabled = {(_appSettings.MediaOverlayButtonEnabled ? "true" : "false")};"
                  + $"window._xtvFrameSaveEnabled = {(_appSettings.VideoFrameSaveEnabled ? "true" : "false")};"
@@ -833,6 +871,16 @@ namespace XTimelineViewer.Views
                     else if (_enlargedPane == pane)
                         RestorePaneSize();
                 };
+
+                // 動画DL 用（#304・試験機能）：GraphQL レスポンスを傍受し、progressive MP4 の直 URL を
+                // statusId 毎に保持する。JS からの直 fetch は CORS 不可のため、ここで拾って DL 時に使う。
+                webView.CoreWebView2.WebResourceResponseReceived += (s, args) =>
+                {
+                    if (!_appSettings.VideoFrameSaveEnabled) return;
+                    if (args.Request.Uri.IndexOf("/graphql/", StringComparison.OrdinalIgnoreCase) < 0) return;
+                    _ = CaptureVideoVariantsAsync(args);
+                };
+
                 await LoadExtensionsAsync(webView);
                 ApplyThemeToWebViews();
             }
