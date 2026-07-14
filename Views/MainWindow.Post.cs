@@ -565,8 +565,10 @@ namespace XTimelineViewer.Views
                 {
                     var handle = parts[0];
                     var status = parts[1];
-                    if (_videoMp4ByStatus.TryGetValue(status, out var mp4Url))
-                        _ = DownloadMediaAsync(senderWebView, handle, status, mp4Url, "mp4", "videoSaved");
+                    var hit = _videoMp4ByStatus.TryGetValue(status, out var mp4Url);
+                    LogDebug($"saveVideo status={status} handle={handle} hit={hit} mapTotal={_videoMp4ByStatus.Count}");
+                    if (hit)
+                        _ = DownloadMediaAsync(senderWebView, handle, status, mp4Url!, "mp4", "videoSaved");
                     else
                         try { senderWebView.CoreWebView2?.PostWebMessageAsString("videoUnavailable"); } catch { }
                 }
@@ -654,10 +656,15 @@ namespace XTimelineViewer.Views
         // WebResourceResponseReceived から呼ぶ。失敗しても無視（動画DL 側で「取得できません」に degrade）。
         internal async Task CaptureVideoVariantsAsync(CoreWebView2WebResourceResponseReceivedEventArgs args)
         {
+            // 一時診断（動画DL 調査）: 操作名を URL 末尾から抜く。
+            var uri = args.Request.Uri;
+            var op = uri;
+            var q = op.IndexOf('?'); if (q >= 0) op = op[..q];
+            var slash = op.LastIndexOf('/'); if (slash >= 0) op = op[(slash + 1)..];
             try
             {
                 using var raStream = await args.Response.GetContentAsync();
-                if (raStream is null) return;
+                if (raStream is null) { LogDebug($"gql {op} status={args.Response.StatusCode} content=NULL"); return; }
                 byte[] bytes;
                 using (var netStream = raStream.AsStreamForRead())
                 using (var ms = new MemoryStream())
@@ -665,7 +672,7 @@ namespace XTimelineViewer.Views
                     await netStream.CopyToAsync(ms);
                     bytes = ms.ToArray();
                 }
-                if (bytes.Length == 0) return;
+                if (bytes.Length == 0) { LogDebug($"gql {op} status={args.Response.StatusCode} content=EMPTY"); return; }
                 var pairs = await Task.Run(() =>
                 {
                     var list = new List<(string id, string url)>();
@@ -678,9 +685,28 @@ namespace XTimelineViewer.Views
                     return list;
                 });
                 foreach (var (id, url) in pairs) _videoMp4ByStatus[id] = url;
+                // 診断: 応答に video_info / mp4変種 が含まれるか（パーサ漏れか、そもそも含まれないかの判別）。
+                bool hasVI = false, hasMp4 = false; string snip = "";
+                try
+                {
+                    var text = System.Text.Encoding.UTF8.GetString(bytes);
+                    hasVI = text.Contains("video_info");
+                    hasMp4 = text.Contains("video/mp4");
+                    if (hasVI && pairs.Count == 0)
+                    {
+                        var idx = text.IndexOf("video_info", StringComparison.Ordinal);
+                        var from = Math.Max(0, idx - 40);
+                        snip = text.Substring(from, Math.Min(320, text.Length - from)).Replace("\n", " ").Replace("\r", "");
+                    }
+                }
+                catch { }
+                LogDebug($"gql {op} bytes={bytes.Length} hasVI={hasVI} hasMp4={hasMp4} videos={pairs.Count} mapTotal={_videoMp4ByStatus.Count}"
+                       + (pairs.Count > 0 ? " ids=" + string.Join(",", pairs.Select(p => p.id).Take(5)) : "")
+                       + (snip != "" ? " SNIP=" + snip : ""));
             }
             catch (Exception ex)
             {
+                LogDebug($"gql {op} EXCEPTION {ex.GetType().Name}: {ex.Message}");
                 LogError("CaptureVideoVariants", ex);
             }
         }

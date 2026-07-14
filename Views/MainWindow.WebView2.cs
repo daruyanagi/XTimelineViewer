@@ -783,6 +783,17 @@ namespace XTimelineViewer.Views
             catch { /* ログ書き込み失敗は無視 */ }
         }
 
+        // 一時診断用（動画DL の GraphQL 傍受調査）。1 行だけ error.log に追記する。
+        private static void LogDebug(string msg)
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(LogFilePath)!);
+                File.AppendAllText(LogFilePath, $"[{DateTime.Now:HH:mm:ss}] DBG {msg}\n");
+            }
+            catch { }
+        }
+
         /// <summary>
         /// 現在アクティブなアカウントの X スクリーンネームをセッションからライブ取得する。
         /// 左ナビの「プロフィール」リンク（AppTabBar_Profile_Link）は委任アカウント切り替え後も
