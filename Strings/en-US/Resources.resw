@@ -128,9 +128,12 @@
   <data name="MediaFrameSave_VideoUnavailable" xml:space="preserve"><value>Couldn't get the video URL</value></data>
   <data name="MediaFrameSave_OpenFolder" xml:space="preserve"><value>Open folder</value></data>
   <data name="MediaFrameSave_Downloading" xml:space="preserve"><value>Downloading…</value></data>
-  <data name="Settings_VideoFrameSave" xml:space="preserve"><value>Save a video frame as an image</value></data>
-  <data name="Settings_VideoFrameSave_Description" xml:space="preserve"><value>Shows Download and Frame-capture buttons at the top-left when a video, image, or GIF is full-screen (X's close button stays top-right). Download saves video and GIF as MP4 to Videos\XTimelineViewer, and images as JPG to Pictures\XTimelineViewer (the post-save toast has a link to open the folder). Frame capture (video only) saves the current frame as a PNG to Pictures\XTimelineViewer.</value></data>
-  <data name="Settings_VideoFrameSave_OpenFolder" xml:space="preserve"><value>Open the save folder</value></data>
+  <data name="Settings_VideoFrameSave" xml:space="preserve"><value>Save images, GIFs, and videos as files</value></data>
+  <data name="Settings_VideoFrameSave_Desc1" xml:space="preserve"><value>A Download button appears at the top-left when media is full-screen. Images are saved to: </value></data>
+  <data name="Settings_VideoFrameSave_Desc2" xml:space="preserve"><value>GIFs and videos are saved to: </value></data>
+  <data name="Settings_VideoFrameSave_Desc3" xml:space="preserve"><value>For videos, Frame capture also saves the current frame (PNG / Pictures).</value></data>
+  <data name="Settings_VideoFrameSave_PicturesFolder" xml:space="preserve"><value>Pictures\XTimelineViewer</value></data>
+  <data name="Settings_VideoFrameSave_VideosFolder" xml:space="preserve"><value>Videos\XTimelineViewer</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>Extensions</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>Profiles</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>User Data</value></data>
