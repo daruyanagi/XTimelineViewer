@@ -62,17 +62,13 @@
                               IsOn="{x:Bind VM.MediaOverlayButtonEnabled, Mode=TwoWay}"/>
             </controls:SettingsCard>
 
-            <!-- 動画の現在フレームを画像保存（#299）-->
+            <!-- 画像・GIF・動画をファイル保存（#299/#304/#308）。説明文に保存先フォルダーの inline リンク（#312）-->
             <controls:SettingsCard x:Name="VideoFrameSaveCard">
                 <controls:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE722;" FontFamily="Segoe Fluent Icons"/>
                 </controls:SettingsCard.HeaderIcon>
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <HyperlinkButton x:Name="VideoFrameSaveOpenFolder"
-                                     Click="VideoFrameSaveOpenFolder_Click"/>
-                    <ToggleSwitch x:Name="VideoFrameSaveToggle"
-                                  IsOn="{x:Bind VM.VideoFrameSaveEnabled, Mode=TwoWay}"/>
-                </StackPanel>
+                <ToggleSwitch x:Name="VideoFrameSaveToggle"
+                              IsOn="{x:Bind VM.VideoFrameSaveEnabled, Mode=TwoWay}"/>
             </controls:SettingsCard>
         </StackPanel>
     </ScrollViewer>

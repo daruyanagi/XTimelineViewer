@@ -1,5 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.ComponentModel;
@@ -77,10 +79,9 @@ namespace XTimelineViewer.Views.Settings
             MediaOverlayButtonToggle.OnContent  = R.Get("Toggle_On");
             MediaOverlayButtonToggle.OffContent = R.Get("Toggle_Off");
 
-            // 動画の現在フレームを画像保存（#299）
+            // 画像・GIF・動画をファイル保存（#299/#304/#308）。説明文は保存先フォルダーへの inline リンク付き（#312）
             VideoFrameSaveCard.Header      = R.Get("Settings_VideoFrameSave");
-            VideoFrameSaveCard.Description = R.Get("Settings_VideoFrameSave_Description");
-            VideoFrameSaveOpenFolder.Content = R.Get("Settings_VideoFrameSave_OpenFolder");
+            VideoFrameSaveCard.Description = BuildVideoFrameSaveDescription();
             VideoFrameSaveToggle.OnContent  = R.Get("Toggle_On");
             VideoFrameSaveToggle.OffContent = R.Get("Toggle_Off");
 
@@ -88,14 +89,44 @@ namespace XTimelineViewer.Views.Settings
             Bindings.Update();
         }
 
-        // 動画フレームの保存先フォルダー（ピクチャ\XTimelineViewer）を開く（#299）。
-        private void VideoFrameSaveOpenFolder_Click(object sender, RoutedEventArgs e)
+        // 保存先フォルダーへの inline リンクを含む説明文を組み立てる（#312）。
+        // 3 行構成で、リンク（フォルダー名）は各行末に置き i18n の語順問題を軽減する。
+        //   1) 画像の保存先 → ピクチャ\XTimelineViewer（リンク）
+        //   2) GIF・動画の保存先 → ビデオ\XTimelineViewer（リンク）
+        //   3) 動画はフレームキャプチャーで現在フレームも保存可
+        private TextBlock BuildVideoFrameSaveDescription()
+        {
+            var tb = new TextBlock
+            {
+                TextWrapping = TextWrapping.Wrap,
+                Style        = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
+                Foreground   = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            };
+            tb.Inlines.Add(new Run { Text = R.Get("Settings_VideoFrameSave_Desc1") });
+            tb.Inlines.Add(MakeFolderLink(R.Get("Settings_VideoFrameSave_PicturesFolder"), isVideo: false));
+            tb.Inlines.Add(new LineBreak());
+            tb.Inlines.Add(new Run { Text = R.Get("Settings_VideoFrameSave_Desc2") });
+            tb.Inlines.Add(MakeFolderLink(R.Get("Settings_VideoFrameSave_VideosFolder"), isVideo: true));
+            tb.Inlines.Add(new LineBreak());
+            tb.Inlines.Add(new Run { Text = R.Get("Settings_VideoFrameSave_Desc3") });
+            return tb;
+        }
+
+        private static Hyperlink MakeFolderLink(string text, bool isVideo)
+        {
+            var link = new Hyperlink();
+            link.Inlines.Add(new Run { Text = text });
+            link.Click += (_, _) => OpenMediaFolder(isVideo);
+            return link;
+        }
+
+        // 保存先フォルダー（動画/GIF=ビデオ、画像/フレーム=ピクチャ）を Explorer で開く（#312）。
+        private static void OpenMediaFolder(bool isVideo)
         {
             try
             {
-                var dir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-                    "XTimelineViewer");
+                var special = isVideo ? Environment.SpecialFolder.MyVideos : Environment.SpecialFolder.MyPictures;
+                var dir = Path.Combine(Environment.GetFolderPath(special), "XTimelineViewer");
                 Directory.CreateDirectory(dir);
                 Process.Start(new ProcessStartInfo { FileName = dir, UseShellExecute = true });
             }
