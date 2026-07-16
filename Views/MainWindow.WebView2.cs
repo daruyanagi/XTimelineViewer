@@ -257,25 +257,30 @@ namespace XTimelineViewer.Views
                 // 全画面中の <video> の現在フレームを canvas に焼き、base64 PNG を C# に送って保存する。
                 // 全画面中は全画面要素の子孫しか描画されないため、トーストは全画面要素側へ挿入する。
                 // folder（'pictures'|'videos'）を渡すと「フォルダーを開く」リンクを付ける（#308）。
-                function showToast(msg, folder) {
+                // link={label, message} を渡すとリンクを付ける（クリックで postMessage(message)）。
+                function showToast(msg, link) {
                     var host = document.fullscreenElement || document.body;
                     if (!host) return;
                     var t = document.createElement('div');
                     t.className = 'xtv-toast';
                     t.textContent = msg;
-                    if (folder) {
+                    if (link && link.label && link.message) {
                         var a = document.createElement('a');
                         a.className = 'xtv-toast-link';
                         a.href = '#';
-                        a.textContent = (window._xtvFrameSaveL || {}).openFolder || 'Open folder';
+                        a.textContent = link.label;
                         a.addEventListener('click', function (e) {
                             e.preventDefault(); e.stopPropagation();
-                            try { window.chrome.webview.postMessage('openFolder:' + folder); } catch (x) {}
+                            try { window.chrome.webview.postMessage(link.message); } catch (x) {}
                         }, true);
                         t.appendChild(a);
                     }
                     host.appendChild(t);
-                    setTimeout(function () { t.remove(); }, folder ? 5000 : 2200);  // リンク付きは長めに
+                    setTimeout(function () { t.remove(); }, link ? 5000 : 2200);  // リンク付きは長めに
+                }
+                // 「フォルダーを開く」リンク付きトースト（#308）
+                function toastFolder(msg, folder) {
+                    showToast(msg, { label: (window._xtvFrameSaveL || {}).openFolder || 'Open folder', message: 'openFolder:' + folder });
                 }
                 // ダウンロード進捗トースト（#308）。自動では消さず、結果受信時に hideProgress で消す。
                 function showProgress(text) {
@@ -391,11 +396,12 @@ namespace XTimelineViewer.Views
                         var L = window._xtvFrameSaveL || {};
                         if (d.indexOf('dlProgress:') === 0) { showProgress((L.downloading || 'Downloading…') + ' ' + d.slice(11) + '%'); return; }
                         hideProgress();
-                        if (d.indexOf('frameSaved:') === 0) showToast(L.saved || 'Saved', 'pictures');
-                        else if (d.indexOf('gifSaved:') === 0) showToast(L.gifSaved || 'Saved', 'videos');
-                        else if (d.indexOf('imgSaved:') === 0) showToast(L.imgSaved || 'Saved', 'pictures');
-                        else if (d.indexOf('videoSaved:') === 0) showToast(L.videoSaved || 'Saved', 'videos');
-                        else if (d === 'videoUnavailable') showToast(L.videoUnavailable || 'Failed');
+                        if (d.indexOf('frameSaved:') === 0) toastFolder(L.saved || 'Saved', 'pictures');
+                        else if (d.indexOf('gifSaved:') === 0) toastFolder(L.gifSaved || 'Saved', 'videos');
+                        else if (d.indexOf('imgSaved:') === 0) toastFolder(L.imgSaved || 'Saved', 'pictures');
+                        else if (d.indexOf('videoSaved:') === 0) toastFolder(L.videoSaved || 'Saved', 'videos');
+                        // 動画DL 失敗時は回避策（ブログ）へのリンクを付ける（#310 のワークアラウンド）
+                        else if (d === 'videoUnavailable') showToast(L.videoUnavailable || 'Failed', { label: L.help || 'How to fix', message: 'openHelp' });
                         else if (d === 'frameError') showToast(L.failed || 'Failed');
                     });
                 } catch (x) {}
@@ -451,6 +457,7 @@ namespace XTimelineViewer.Views
                 videoUnavailable = R.Get("MediaFrameSave_VideoUnavailable"),
                 openFolder       = R.Get("MediaFrameSave_OpenFolder"),
                 downloading      = R.Get("MediaFrameSave_Downloading"),
+                help             = R.Get("MediaFrameSave_HelpLink"),
             });
             return $"window._xtvMediaOverlayEnabled = {(_appSettings.MediaOverlayButtonEnabled ? "true" : "false")};"
                  + $"window._xtvFrameSaveEnabled = {(_appSettings.VideoFrameSaveEnabled ? "true" : "false")};"

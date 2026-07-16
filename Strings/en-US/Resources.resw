@@ -128,6 +128,7 @@
   <data name="MediaFrameSave_VideoUnavailable" xml:space="preserve"><value>Couldn't get the video URL</value></data>
   <data name="MediaFrameSave_OpenFolder" xml:space="preserve"><value>Open folder</value></data>
   <data name="MediaFrameSave_Downloading" xml:space="preserve"><value>Downloading…</value></data>
+  <data name="MediaFrameSave_HelpLink" xml:space="preserve"><value>How to fix this</value></data>
   <data name="Settings_VideoFrameSave" xml:space="preserve"><value>Save images, GIFs, and videos as files</value></data>
   <data name="Settings_VideoFrameSave_Desc1" xml:space="preserve"><value>A Download button appears at the top-left when media is full-screen. Images are saved to: </value></data>
   <data name="Settings_VideoFrameSave_Desc2" xml:space="preserve"><value>GIFs and videos are saved to: </value></data>

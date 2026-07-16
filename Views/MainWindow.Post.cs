@@ -587,6 +587,12 @@ namespace XTimelineViewer.Views
                 return;
             }
 
+            if (message == "openHelp")  // #310: 動画DL 失敗トーストの「対処法を見る」リンク
+            {
+                _ = LaunchUriByEdgeProfileAsync(new Uri("https://daruyanagi.jp/posts/2026/07/16/"));
+                return;
+            }
+
             switch (message)
             {
                 case "focusNext": FocusAdjacentTimeline(senderWebView, +1); break;

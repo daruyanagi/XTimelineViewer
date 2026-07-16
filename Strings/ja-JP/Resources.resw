@@ -128,6 +128,7 @@
   <data name="MediaFrameSave_VideoUnavailable" xml:space="preserve"><value>動画の URL を取得できませんでした</value></data>
   <data name="MediaFrameSave_OpenFolder" xml:space="preserve"><value>フォルダーを開く</value></data>
   <data name="MediaFrameSave_Downloading" xml:space="preserve"><value>ダウンロード中…</value></data>
+  <data name="MediaFrameSave_HelpLink" xml:space="preserve"><value>対処法を見る</value></data>
   <data name="Settings_VideoFrameSave" xml:space="preserve"><value>画像・GIF・動画をファイル保存する</value></data>
   <data name="Settings_VideoFrameSave_Desc1" xml:space="preserve"><value>メディアを全画面表示すると左上に［ダウンロード］が出ます。画像の保存先: </value></data>
   <data name="Settings_VideoFrameSave_Desc2" xml:space="preserve"><value>GIF・動画の保存先: </value></data>
