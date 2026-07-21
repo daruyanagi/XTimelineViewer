@@ -67,6 +67,8 @@ namespace XTimelineViewer.Views
                 sender.Text = SearchQueryHelper.ExtractQueryFromSearchPath(chosen) ?? chosen;
         }
 
+        private ContentDialog? _activeSearchDialog;  // 現在開いている検索ダイアログ（ESC クローズ用 #317）
+
         private async Task OpenSearchDialogAsync(string input, bool showAddButton = true)
         {
             var profileId = ResolveComposeProfileId();
@@ -89,6 +91,7 @@ namespace XTimelineViewer.Views
                 DefaultButton      = showAddButton ? ContentDialogButton.Primary : ContentDialogButton.Close,
             };
 
+            _activeSearchDialog = dlg;  // ESC クローズ用（#317）
             await InitSearchWebView(webView, profileId);
             webView.Source = new Uri(initialUrl);
 
@@ -111,6 +114,7 @@ namespace XTimelineViewer.Views
             }
             finally
             {
+                _activeSearchDialog = null;
                 foreach (var wv in _webViews)
                     wv.Visibility = Visibility.Visible;
 
@@ -139,6 +143,25 @@ namespace XTimelineViewer.Views
                 _                  => CoreWebView2PreferredColorScheme.Auto,
             };
             webView.CoreWebView2.Profile.PreferredColorScheme = scheme;
+
+            // ESC で閉じられるようにする（#317）。WebView2 が ESC を吸って ContentDialog に届かないため、
+            // document 作成時に ESC を捕捉して C# へ通知し、ダイアログを閉じる（投稿ダイアログ #246 と同方式）。
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync("""
+                (function () {
+                    window.addEventListener('keydown', function (e) {
+                        if (e.key === 'Escape') {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                            try { window.chrome.webview.postMessage('searchCancel'); } catch (_) {}
+                        }
+                    }, true);
+                })();
+                """);
+            webView.CoreWebView2.WebMessageReceived += (s, e) =>
+            {
+                if (e.TryGetWebMessageAsString() == "searchCancel")
+                    DispatcherQueue.TryEnqueue(() => _activeSearchDialog?.Hide());
+            };
 
             webView.CoreWebView2.NavigationCompleted += async (s, args) =>
             {
