@@ -143,6 +143,11 @@ namespace XTimelineViewer.Views
                     if (wv.CoreWebView2 is not null)
                         _ = ApplyMediaOverlayButtonAsync(wv);
 
+                // 「直前のリポストを検索」（#315）の ON/OFF を各ペインへ即時反映
+                foreach (var wv in _webViews)
+                    if (wv.CoreWebView2 is not null)
+                        _ = ApplyPriorRepostSearchAsync(wv);
+
                 // ホーム自動更新（#207）の ON/OFF・間隔を各ホームペインへ即時反映し、インジケーターも更新
                 foreach (var (homePane, _) in _autoLoadIndicators)
                 {
