@@ -69,7 +69,7 @@ namespace XTimelineViewer.Views
 
         private ContentDialog? _activeSearchDialog;  // 現在開いている検索ダイアログ（ESC クローズ用 #317）
 
-        private async Task OpenSearchDialogAsync(string input)
+        private async Task OpenSearchDialogAsync(string input, bool showAddButton = true)
         {
             var profileId = ResolveComposeProfileId();
 
@@ -84,10 +84,11 @@ namespace XTimelineViewer.Views
             {
                 Title              = R.Get("Search_DialogTitle"),
                 Content            = webView,
-                PrimaryButtonText  = R.Get("Search_AddBtn"),
+                // 「直前のリポストを検索」など閲覧目的のときは［タイムラインとして追加］を出さない（#315）
+                PrimaryButtonText  = showAddButton ? R.Get("Search_AddBtn") : null,
                 CloseButtonText    = R.Get("Button_Close"),
                 XamlRoot           = Content.XamlRoot,
-                DefaultButton      = ContentDialogButton.Primary,
+                DefaultButton      = showAddButton ? ContentDialogButton.Primary : ContentDialogButton.Close,
             };
 
             _activeSearchDialog = dlg;  // ESC クローズ用（#317）

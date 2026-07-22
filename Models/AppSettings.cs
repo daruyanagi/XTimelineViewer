@@ -24,5 +24,6 @@ namespace XTimelineViewer.Models
         public bool    VideoEnlargeEnabled   { get; set; } = false;     // 動画の全画面ボタンでペインを一時拡大（試験機能 #289）
         public bool    MediaOverlayButtonEnabled { get; set; } = false; // メディアに自前の拡大ボタンを重ねる（試験機能 #293）
         public bool    VideoFrameSaveEnabled { get; set; } = false;     // 動画の現在フレームを画像保存（試験機能 #299）
+        public bool    PriorRepostSearchEnabled { get; set; } = false;  // ［…］メニューに「直前のリポストを検索」（試験機能 #315）
     }
 }

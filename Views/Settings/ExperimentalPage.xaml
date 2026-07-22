@@ -70,6 +70,15 @@
                 <ToggleSwitch x:Name="VideoFrameSaveToggle"
                               IsOn="{x:Bind VM.VideoFrameSaveEnabled, Mode=TwoWay}"/>
             </controls:SettingsCard>
+
+            <!-- ［…］メニューに「直前のリポストを検索」を追加（#315）-->
+            <controls:SettingsCard x:Name="PriorRepostSearchCard">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE721;" FontFamily="Segoe Fluent Icons"/>
+                </controls:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="PriorRepostSearchToggle"
+                              IsOn="{x:Bind VM.PriorRepostSearchEnabled, Mode=TwoWay}"/>
+            </controls:SettingsCard>
         </StackPanel>
     </ScrollViewer>
 </Page>

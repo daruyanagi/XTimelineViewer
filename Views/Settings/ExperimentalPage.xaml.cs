@@ -85,6 +85,12 @@ namespace XTimelineViewer.Views.Settings
             VideoFrameSaveToggle.OnContent  = R.Get("Toggle_On");
             VideoFrameSaveToggle.OffContent = R.Get("Toggle_Off");
 
+            // ［…］メニューに「直前のリポストを検索」（#315）
+            PriorRepostSearchCard.Header      = R.Get("Settings_PriorRepostSearch");
+            PriorRepostSearchCard.Description = R.Get("Settings_PriorRepostSearch_Description");
+            PriorRepostSearchToggle.OnContent  = R.Get("Toggle_On");
+            PriorRepostSearchToggle.OffContent = R.Get("Toggle_Off");
+
             // ItemsSource 再設定で SelectedIndex が失われるため、バインディングを再評価する
             Bindings.Update();
         }

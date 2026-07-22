@@ -225,6 +225,18 @@ namespace XTimelineViewer.ViewModels
             }
         }
 
+        /// <summary>［…］メニューに「直前のリポストを検索」を追加（試験機能 #315）。</summary>
+        public bool PriorRepostSearchEnabled
+        {
+            get => _settings.PriorRepostSearchEnabled;
+            set
+            {
+                if (_settings.PriorRepostSearchEnabled == value) return;
+                _settings.PriorRepostSearchEnabled = value;
+                Notify(nameof(PriorRepostSearchEnabled));
+            }
+        }
+
         public int BrowserIndex
         {
             get => Math.Max(0, Array.IndexOf(BrowserValues, _settings.ExternalBrowser));

@@ -135,6 +135,9 @@
   <data name="Settings_VideoFrameSave_Desc3" xml:space="preserve"><value>動画は［フレームキャプチャー］で現在のフレームも保存できます（PNG／ピクチャ）。</value></data>
   <data name="Settings_VideoFrameSave_PicturesFolder" xml:space="preserve"><value>ピクチャ\XTimelineViewer</value></data>
   <data name="Settings_VideoFrameSave_VideosFolder" xml:space="preserve"><value>ビデオ\XTimelineViewer</value></data>
+  <data name="Settings_PriorRepostSearch" xml:space="preserve"><value>タイムスタンプの隣に「直前のリポストを検索」ボタンを表示する</value></data>
+  <data name="Settings_PriorRepostSearch_Description" xml:space="preserve"><value>ポストのタイムスタンプの隣に小さなボタンを表示します（ホバーで出現）。押すと、その投稿者が投稿時刻の直前に行ったリポストを検索します（いわゆる空リプの対象を辿る）。既存の検索ダイアログで開き、検索履歴は汚しません。</value></data>
+  <data name="PriorRepostSearch_ButtonLabel" xml:space="preserve"><value>直前のリポストを検索</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>拡張機能</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>プロファイル</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>ユーザーデータ管理</value></data>

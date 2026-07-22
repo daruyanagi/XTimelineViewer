@@ -475,6 +475,89 @@ namespace XTimelineViewer.Views
             catch { }
         }
 
+        // ポストのタイムスタンプ隣に「直前のリポストを検索」ボタンを添える（試験機能 #315）。
+        // ［…］メニューへの注入はフォロー解除/ブロック等と隣接して誤爆しやすく、メニュー DOM 依存で
+        // 壊れやすいので、タイムスタンプの直後に自前ボタンを置く方式にした。ホバーで薄く現れる。
+        // クリックで C# へ searchPriorRepost:<handle>|<T(unix秒)> を送る。
+        private static readonly string PriorRepostSearchScript = """
+            (function () {
+                if (window._xtvPriorRepost) return;
+                window._xtvPriorRepost = true;
+
+                function addStyle() {
+                    if (document.getElementById('xtv-prior-style')) return;
+                    var s = document.createElement('style');
+                    s.id = 'xtv-prior-style';
+                    s.textContent =
+                        '.xtv-prior-btn{display:inline-flex;align-items:center;justify-content:center;gap:1px;vertical-align:middle;' +
+                        'margin-left:6px;height:20px;padding:0 2px;border:none;background:transparent;' +
+                        'color:rgb(83,100,113);cursor:pointer;opacity:0;transition:opacity .15s;}' +
+                        '[data-testid="tweet"]:hover .xtv-prior-btn{opacity:.65;}' +
+                        '.xtv-prior-btn:hover{opacity:1!important;color:#1d9bf0;}';
+                    (document.head || document.documentElement).appendChild(s);
+                }
+
+                function attach(tw) {
+                    if (!window._xtvPriorRepostEnabled) return;
+                    if (tw.__xtvPriorBtn) return;
+                    var timeA = tw.querySelector('a[href*="/status/"] time');
+                    var a = timeA ? timeA.closest('a') : null;
+                    if (!a) return;
+                    var m = (a.getAttribute('href') || '').match(/^\/([^\/]+)\/status\/(\d+)/);
+                    var iso = timeA.getAttribute('datetime');
+                    if (!m || !iso) return;
+                    tw.__xtvPriorBtn = true;
+                    var handle = m[1];
+                    var btn = document.createElement('button');
+                    btn.className = 'xtv-prior-btn';
+                    btn.type = 'button';
+                    btn.title = window._xtvPriorRepostLabel || 'Search the preceding repost';
+                    btn.setAttribute('aria-label', btn.title);
+                    // リポスト（2本矢印）＋虫メガネで「リポストを検索」を示す
+                    btn.innerHTML =
+                        '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"></path></svg>' +
+                        '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M10.25 3.75c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5c1.795 0 3.419-.726 4.596-1.904 1.178-1.177 1.904-2.801 1.904-4.596 0-3.59-2.91-6.5-6.5-6.5zm-8.5 6.5c0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.986-.682 3.815-1.824 5.262l4.781 4.781-1.414 1.414-4.781-4.781c-1.447 1.142-3.276 1.824-5.262 1.824-4.694 0-8.5-3.806-8.5-8.5z"></path></svg>';
+                    btn.addEventListener('click', function (e) {
+                        e.preventDefault(); e.stopPropagation();
+                        var t = Math.floor(new Date(iso).getTime() / 1000);
+                        try { window.chrome.webview.postMessage('searchPriorRepost:' + handle + '|' + t); } catch (x) {}
+                    }, true);
+                    a.parentElement.appendChild(btn);  // タイムスタンプの直後（同じ親）に置く
+                }
+
+                function scan() {
+                    if (!window._xtvPriorRepostEnabled) return;
+                    var tweets = document.querySelectorAll('article[data-testid="tweet"]');
+                    for (var i = 0; i < tweets.length; i++) attach(tweets[i]);
+                }
+                window._xtvPriorScan = scan;  // C# から ON 切り替え時に既存ポストへ付与するため
+
+                var obs = new MutationObserver(function () { scan(); });
+                function start() {
+                    addStyle();
+                    obs.observe(document.body || document.documentElement, { childList: true, subtree: true });
+                    scan();
+                }
+                document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();
+            })();
+            """;
+
+        /// <summary>「直前のリポストを検索」の ON/OFF とボタン文言を JS へ渡す（#315）。</summary>
+        private string BuildPriorRepostConfigJs()
+            => $"window._xtvPriorRepostEnabled = {(_appSettings.PriorRepostSearchEnabled ? "true" : "false")};"
+             + $"window._xtvPriorRepostLabel = {System.Text.Json.JsonSerializer.Serialize(R.Get("PriorRepostSearch_ButtonLabel"))};";
+
+        /// <summary>「直前のリポストを検索」の設定を各ペインへ即時反映する（#315）。</summary>
+        private async Task ApplyPriorRepostSearchAsync(WebView2 webView)
+        {
+            try
+            {
+                await webView.CoreWebView2.ExecuteScriptAsync(BuildPriorRepostConfigJs());
+                await webView.CoreWebView2.ExecuteScriptAsync("window._xtvPriorScan && window._xtvPriorScan();");
+            }
+            catch { }
+        }
+
         /// <summary>cfg がホームタイムラインかどうか。</summary>
         private static bool IsHomeConfig(TimelineConfig cfg)
             => Uri.TryCreate(cfg.Url, UriKind.Absolute, out var u)
@@ -971,6 +1054,9 @@ namespace XTimelineViewer.Views
             // メディア拡大ボタン（#293）：全ペインに注入。config を先に入れてから本体を注入する。
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildMediaOverlayButtonConfigJs());
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(MediaOverlayButtonScript);
+            // ［…］メニューに「直前のリポストを検索」（#315）：全ペインに注入。config を先に入れてから本体を注入する。
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildPriorRepostConfigJs());
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(PriorRepostSearchScript);
             // ホーム自動更新（#207）。ホームペインにのみ注入し、設定で ON/OFF・間隔を制御する。
             if (IsHomeConfig(cfg))
             {
