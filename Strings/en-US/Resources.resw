@@ -135,9 +135,9 @@
   <data name="Settings_VideoFrameSave_Desc3" xml:space="preserve"><value>For videos, Frame capture also saves the current frame (PNG / Pictures).</value></data>
   <data name="Settings_VideoFrameSave_PicturesFolder" xml:space="preserve"><value>Pictures\XTimelineViewer</value></data>
   <data name="Settings_VideoFrameSave_VideosFolder" xml:space="preserve"><value>Videos\XTimelineViewer</value></data>
-  <data name="Settings_PriorRepostSearch" xml:space="preserve"><value>Show a "Search the preceding repost" button next to the timestamp</value></data>
-  <data name="Settings_PriorRepostSearch_Description" xml:space="preserve"><value>Shows a small button next to a post's timestamp (appears on hover). It searches for the repost the author made just before this post (to trace a quote-less reference). Opens in the existing search dialog and doesn't pollute your search history.</value></data>
-  <data name="PriorRepostSearch_ButtonLabel" xml:space="preserve"><value>Search the preceding repost</value></data>
+  <data name="Settings_PriorRepostSearch" xml:space="preserve"><value>Show a "Search preceding posts and reposts" button next to the timestamp</value></data>
+  <data name="Settings_PriorRepostSearch_Description" xml:space="preserve"><value>Shows a magnifier button next to a post's timestamp (appears on hover). It lists the posts and reposts the author made just before this one, in chronological order, so you can trace the context of a remark (including quote-less references). Opens in the existing search dialog and doesn't pollute your search history.</value></data>
+  <data name="PriorRepostSearch_ButtonLabel" xml:space="preserve"><value>Search preceding posts and reposts</value></data>
   <data name="Nav_Extensions" xml:space="preserve"><value>Extensions</value></data>
   <data name="Nav_Profiles" xml:space="preserve"><value>Profiles</value></data>
   <data name="Nav_Data" xml:space="preserve"><value>User Data</value></data>
