@@ -593,7 +593,7 @@ namespace XTimelineViewer.Views
                 return;
             }
 
-            if (message.StartsWith("searchPriorRepost:"))  // #315: ［…］メニューから直前のリポストを検索
+            if (message.StartsWith("searchPriorRepost:"))  // #315/#319: 直前のポスト・リポストを検索
             {
                 // 形式: searchPriorRepost:<handle>|<T(unix秒)>
                 var parts = message["searchPriorRepost:".Length..].Split('|', 2);
@@ -603,7 +603,8 @@ namespace XTimelineViewer.Views
                     var handle = new string(parts[0].Where(c => char.IsLetterOrDigit(c) || c == '_').ToArray());
                     if (handle.Length > 0)
                     {
-                        var q = $"from:{handle} filter:nativeretweets until_time:{t}";
+                        // include:nativeretweets で自ポストとリポストを混在させ、発言の文脈を時系列で遡る（#319）
+                        var q = $"from:{handle} include:nativeretweets until_time:{t}";
                         var path = "/search?q=" + Uri.EscapeDataString(q) + "&f=live";
                         // 既存の検索 UI を再利用（非破壊・履歴を汚さない）。閲覧目的なので追加ボタンは出さない。
                         _ = OpenSearchDialogAsync(path, showAddButton: false);
