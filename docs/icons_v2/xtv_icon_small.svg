@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Simplified source for 32/24/16px: thicker V antenna and no fragile details. -->
+  <path d="M512 204L382 52M512 204L642 52" fill="none" stroke="#0A1220"
+        stroke-width="94" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M512 204L382 52M512 204L642 52" fill="none" stroke="#E9FBFF"
+        stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="96" y="128" width="832" height="760" rx="188" fill="#0A1220" stroke="#E9FBFF" stroke-width="44"/>
+  <rect x="224" y="250" width="150" height="516" rx="54" fill="#00C8ED"/>
+  <rect x="437" y="250" width="150" height="516" rx="54" fill="#7657F6"/>
+  <rect x="650" y="250" width="150" height="516" rx="54" fill="#FF4D7F"/>
+  <circle cx="512" cy="826" r="26" fill="#FFFFFF"/>
+</svg>
