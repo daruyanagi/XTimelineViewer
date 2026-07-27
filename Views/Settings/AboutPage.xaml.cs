@@ -271,6 +271,7 @@ namespace XTimelineViewer.Views.Settings
         }
 
         // 謝辞（#207）。同梱していた TwitterTimelineLoader を内製化したため、原作への謝辞を掲載する。
+        // あわせてアプリアイコンの制作者をクレジットする（#281）。
         private void BuildAcknowledgementsExpander()
         {
             var expander = new CommunityToolkit.WinUI.Controls.SettingsExpander
@@ -289,11 +290,11 @@ namespace XTimelineViewer.Views.Settings
                 R.Get("About_Ack_TTL"),
                 "https://chromewebstore.google.com/detail/twittertimelineloader/ipmgjpmedafkmmadinmeoannpofakpbh"));
 
-            // 実装の参考にした Qiita 記事
+            // アプリアイコンの制作者（#281）
             expander.Items.Add(BuildLinkCard(
-                R.Get("About_Ack_TTL_Article"),
-                "Qiita",
-                "https://qiita.com/ryounagaoka/items/a48d3a4c4faf78a99ae5"));
+                "keikipc",
+                R.Get("About_Ack_Icon"),
+                "https://crowdworks.jp/public/employees/7101047"));
 
             RootPanel.Children.Add(expander);
         }

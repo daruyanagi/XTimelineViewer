@@ -226,5 +226,5 @@
   <data name="About_Acknowledgements" xml:space="preserve"><value>謝辞</value></data>
   <data name="About_OpenLink" xml:space="preserve"><value>開く</value></data>
   <data name="About_Ack_TTL" xml:space="preserve"><value>ホームタイムラインの自動更新機能は、この Chromium 拡張機能のアイデアと実装を参考に内製化しました。</value></data>
-  <data name="About_Ack_TTL_Article" xml:space="preserve"><value>実装の参考にした記事</value></data>
+  <data name="About_Ack_Icon" xml:space="preserve"><value>アプリアイコンを制作していただきました。</value></data>
 </root>

@@ -226,5 +226,5 @@
   <data name="About_Acknowledgements" xml:space="preserve"><value>Acknowledgements</value></data>
   <data name="About_OpenLink" xml:space="preserve"><value>Open</value></data>
   <data name="About_Ack_TTL" xml:space="preserve"><value>The Home timeline auto-refresh feature was built in-house, inspired by the idea and implementation of this Chromium extension.</value></data>
-  <data name="About_Ack_TTL_Article" xml:space="preserve"><value>Reference article</value></data>
+  <data name="About_Ack_Icon" xml:space="preserve"><value>Designed the app icon.</value></data>
 </root>
