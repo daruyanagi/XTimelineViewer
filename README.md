@@ -1,6 +1,6 @@
 # XTimelineViewer（xTV） ～ 貧乏人のための「X Pro」（TweetDeck）
 
-![XTimelineViewer（xTV） アイコン](docs/app_icon_64.jpg)
+![XTimelineViewer（xTV） アイコン](docs/icons_v2/xtv_icon_64.png)
 
 [「X Pro」（TweetDeck）が突如「プレミアムプラス」プラン必須に](https://forest.watch.impress.co.jp/docs/news/2096749.html) なって困ったので、Claude の助けを借りて開発しました。
 
