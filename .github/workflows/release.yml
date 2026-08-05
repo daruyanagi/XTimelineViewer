@@ -70,6 +70,18 @@ jobs:
               --generate-notes
           fi
 
+      # winget-pkgs の fork が upstream から遅れていると、次の winget 公開が
+      # 「does not have the correct permissions to execute `CreateRef`」で失敗する
+      # （権限エラーに見えるが実体は fork の同期ずれ。winget-releaser#319）。
+      # 毎回ここで fork を同期しておく。失敗しても公開自体は試みる。
+      - name: Sync winget-pkgs fork
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          gh api -X POST repos/daruyanagi/winget-pkgs/merge-upstream \
+            -f branch=master --jq '.message'
+
       - name: Publish to winget
         uses: vedantmgoyal9/winget-releaser@v2
         with:
