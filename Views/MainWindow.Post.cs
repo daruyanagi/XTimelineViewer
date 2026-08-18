@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
@@ -451,21 +451,57 @@ namespace XTimelineViewer.Views
                 await webView.CoreWebView2.ExecuteScriptAsync("""
                     (function() {
                         var id = 'xtv-compose-style';
-                        if (document.getElementById(id)) return;
-                        var s = document.createElement('style');
-                        s.id = id;
-                        s.textContent =
+                        var s = document.getElementById(id);
+                        if (!s) {
+                            s = document.createElement('style');
+                            s.id = id;
+                            (document.head || document.documentElement).appendChild(s);
+                        }
+
+                        // 常に隠すもの（背景のタイムライン・サイドバー等）
+                        var BASE =
                             '[data-testid="primaryColumn"],' +
                             '[data-testid="sidebarColumn"],' +
                             'header[role="banner"],' +
-                            '[data-testid="modalBackdrop"],' +
-                            // compose 上部バー（戻る・下書き・ポストする）を隠し、WinUI フッターに一本化 (#246)
+                            '[data-testid="modalBackdrop"]' +
+                            '{display:none!important}';
+
+                        // compose 上部バー（戻る・下書き・ポストする）を隠し、WinUI フッターに一本化 (#246)。
+                        // ただしサブパネル（予約設定・位置情報・GIF 検索）は ✕ や確定ボタンが同じヘッダー行に
+                        // 同居しており、隠すと確定も中断もできなくなる。そのため compose 本体を表示している
+                        // ときだけ適用する (#330)。サブパネルは /compose/post 配下とは限らない
+                        // （GIF は /i/foundmedia/search）ため、パスのホワイトリストで判定する。
+                        var APPBAR =
                             '[data-testid="app-bar-close"],' +
                             '[data-testid="tweetButton"],' +
                             'div:has(> [data-testid="app-bar-close"]),' +
                             'div:has(> div > [data-testid="app-bar-close"])' +
                             '{display:none!important}';
-                        document.head.appendChild(s);
+
+                        function isComposeRoot() {
+                            return /^\/compose\/(post|tweet)\/?$/.test(location.pathname);
+                        }
+                        function apply() {
+                            var css = BASE + (isComposeRoot() ? APPBAR : '');
+                            if (s.textContent !== css) s.textContent = css;
+                        }
+                        apply();
+
+                        // SPA 遷移では NavigationCompleted が発火しないため、履歴 API をフックして追従する。
+                        // 取りこぼし（X 内部の描画遅延など）に備えて低頻度のポーリングも併用する。
+                        if (!window._xtvComposeRouteHook) {
+                            window._xtvComposeRouteHook = true;
+                            ['pushState', 'replaceState'].forEach(function (m) {
+                                var orig = history[m];
+                                history[m] = function () {
+                                    var r = orig.apply(this, arguments);
+                                    try { apply(); } catch (e) {}
+                                    return r;
+                                };
+                            });
+                            window.addEventListener('popstate', apply, true);
+                            setInterval(apply, 500);
+                        }
                     })();
                     """);
 
