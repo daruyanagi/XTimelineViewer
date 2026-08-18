@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -32,15 +32,18 @@ namespace XTimelineViewer.Views.Settings
 
             var currentVersion = Assembly.GetExecutingAssembly().GetName().Version!;
             var versionStr = currentVersion.ToString(3);
+            // 配布経路を併記して winget 版 / ZIP 版を見分けられるようにする（#327）。
+            // サポート時に「winget upgrade で更新してください」と案内できるかの判断材料になる。
+            var versionWithChannel = $"v{versionStr}（{ChannelLabel()}）";
             var edgeChannel = R.Get("EdgeChannel_Runtime");
             var edgeVersion = _parent?.EdgeVersion ?? R.Get("Version_Unknown");
-            var versionInfoText = $"XTimelineViewer (xTV) v{versionStr}\r\n{edgeChannel} {edgeVersion}";
+            var versionInfoText = $"XTimelineViewer (xTV) {versionWithChannel}\r\n{edgeChannel} {edgeVersion}";
 
             var repoUrl = "https://github.com/daruyanagi/XTimelineViewer";
             var fallbackUrl = repoUrl + "/releases/latest";
 
             // ── 1. アプリ情報ヘッダー ────────────────────────────────────────
-            BuildHeaderCard(versionStr, versionInfoText);
+            BuildHeaderCard(versionWithChannel, versionInfoText);
 
             // ── 2. 更新を確認 ────────────────────────────────────────────────
             BuildUpdateSection(currentVersion, repoUrl, fallbackUrl);
@@ -71,7 +74,15 @@ namespace XTimelineViewer.Views.Settings
             BuildAcknowledgementsExpander();
         }
 
-        private void BuildHeaderCard(string versionStr, string versionInfoText)
+        // 配布経路の表示名（#327）
+        private static string ChannelLabel() => PackageContext.Channel switch
+        {
+            InstallChannel.Winget   => R.Get("About_Channel_Winget"),
+            InstallChannel.Packaged => R.Get("About_Channel_Packaged"),
+            _                       => R.Get("About_Channel_Zip"),
+        };
+
+        private void BuildHeaderCard(string versionText, string versionInfoText)
         {
             var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "StoreLogo.png");
 
@@ -82,7 +93,7 @@ namespace XTimelineViewer.Views.Settings
                 FontSize   = 20,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
             });
-            textStack.Children.Add(new TextBlock { Text = $"v{versionStr}", FontSize = 13, Opacity = 0.7 });
+            textStack.Children.Add(new TextBlock { Text = versionText, FontSize = 13, Opacity = 0.7 });
             textStack.Children.Add(new TextBlock { Text = R.Get("About_Copyright"), FontSize = 12, Opacity = 0.6 });
 
             var titleRow = new StackPanel

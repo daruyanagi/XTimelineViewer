@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
@@ -221,6 +221,9 @@
 
   <!-- About dialog sections -->
   <data name="About_Copyright" xml:space="preserve"><value>© 2026 daruyanagi</value></data>
+  <data name="About_Channel_Winget" xml:space="preserve"><value>winget</value></data>
+  <data name="About_Channel_Zip" xml:space="preserve"><value>ZIP</value></data>
+  <data name="About_Channel_Packaged" xml:space="preserve"><value>packaged</value></data>
   <data name="About_License" xml:space="preserve"><value>License</value></data>
   <data name="About_Components" xml:space="preserve"><value>Components Used</value></data>
   <data name="About_Acknowledgements" xml:space="preserve"><value>Acknowledgements</value></data>
