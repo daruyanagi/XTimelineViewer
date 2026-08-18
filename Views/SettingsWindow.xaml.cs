@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
@@ -66,8 +66,8 @@ namespace XTimelineViewer.Views
         /// <summary>winget が利用可能かどうか（unpackaged のみ意味がある）。</summary>
         internal bool HasWinget { get; set; }
 
-        /// <summary>winget から最新バージョンを取得するコールバック。</summary>
-        internal Func<Task<Version?>>? FetchWingetLatestVersionAsync { get; set; }
+        /// <summary>最新バージョンを取得するコールバック（winget 版は winget、それ以外は GitHub Releases）。</summary>
+        internal Func<Task<Version?>>? FetchLatestVersionAsync { get; set; }
 
         /// <summary>設定のみ保存する（テーマ適用等はしない）コールバック。</summary>
         internal Action? SaveSettingsOnly { get; set; }
