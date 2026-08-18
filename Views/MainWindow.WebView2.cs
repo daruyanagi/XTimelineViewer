@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -44,12 +44,15 @@ namespace XTimelineViewer.Views
                         css.push('div:has(>div>div>div>div>div>button[data-testid="app-bar-back"]){display:none!important}');
                         css.push('[data-testid="cellInnerDiv"]:has(a[href*="/i/lists/"][href$="/members"]){display:none!important}');
                     }
-                    // ブックマーク: 上部ナビバー＋タイトルブロック＋空フォルダの説明文を非表示
-                    // nth-child(1) は X の DOM 変更で最初の投稿まで隠れる問題があったため
-                    // :has(h2) でタイトル見出しを含む要素のみを対象にする (#115)
-                    if(/^\/(i\/bookmarks|bookmarks)/.test(path)){
+                    // ブックマーク: 上部ナビバー＋空フォルダの説明文を非表示。
+                    // X の再編で /i/bookmarks は /i/history にリダイレクトされ、ブックマークは
+                    // 「履歴」ページ配下のタブ（ブックマーク/いいね）になった。パス判定に
+                    // /i/history を追加する (#329)。旧パスもリダイレクト元として残しておく。
+                    // 「履歴」見出しは app-bar-back を含むヘッダーブロック側に入るため、
+                    // 従来の :has(h2) セレクタ（#115）は不要になった。タブ行は別ブロックなので
+                    // 巻き込まれず、ブックマーク/いいねの切り替えは残る。
+                    if(/^\/(i\/history|i\/bookmarks|bookmarks)/.test(path)){
                         css.push('div:has(>div>div>div>div>div>button[data-testid="app-bar-back"]){display:none!important}');
-                        css.push('#react-root main section>div>div>div:has(h2){display:none!important}');
                         css.push('[data-testid="emptyState"]{display:none!important}');
                     }
                     // プロフィール: ナビバー＋プロフィール情報カード（バナー・アバター・自己紹介・フォロー数）を非表示

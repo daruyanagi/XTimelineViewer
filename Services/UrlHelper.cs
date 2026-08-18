@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -45,8 +45,11 @@ namespace XTimelineViewer.Services
             if (p.StartsWith("/home"))                                return "\uE80F"; // Home
             if (p.StartsWith("/notifications"))                       return "\uE7E7"; // Bell
             if (p.StartsWith("/search") || p.StartsWith("/explore")) return "\uE71E"; // Search
+            // X の再編でブックマークは「履歴」ページ配下のタブになり、/i/bookmarks は
+            // /i/history にリダイレクトされる (#329)。両方をブックマーク扱いにする。
             if (p == "/bookmarks" || p.StartsWith("/bookmarks/") ||
-                p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/")) return "\uE734"; // Bookmark
+                p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/") ||
+                p == "/i/history" || p.StartsWith("/i/history/")) return "\uE734"; // Bookmark
             if (p == "/i/lists" || p.StartsWith("/i/lists/") ||
                 Regex.IsMatch(p, @"^/[^/]+/lists$"))                  return "\uE71D"; // BulletedList (lists index / individual)
             if (p.StartsWith("/messages"))                            return "\uE8BD"; // Chat
@@ -70,6 +73,7 @@ namespace XTimelineViewer.Services
                    p.StartsWith("/explore")       ||
                    p == "/bookmarks" || p.StartsWith("/bookmarks/") ||
                    p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/") ||
+                   p == "/i/history" || p.StartsWith("/i/history/") ||
                    p.StartsWith("/i/lists/")      ||
                    IsProfilePath(p);
         }

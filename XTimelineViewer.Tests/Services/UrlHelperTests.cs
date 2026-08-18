@@ -1,4 +1,4 @@
-using XTimelineViewer.Services;
+﻿using XTimelineViewer.Services;
 using Xunit;
 
 namespace XTimelineViewer.Tests.Services;
@@ -37,6 +37,7 @@ public class UrlHelperTests
     [InlineData("https://x.com/search?q=test",     "\uE71E")] // Search
     [InlineData("https://x.com/explore",           "\uE71E")] // Search
     [InlineData("https://x.com/i/bookmarks",       "\uE734")] // Bookmark
+    [InlineData("https://x.com/i/history",         "\uE734")] // Bookmark (#329 ブックマークは /i/history へ再編)
     [InlineData("https://x.com/daruyanagi/lists",  "\uE71D")] // BulletedList (per-user lists index)
     [InlineData("https://x.com/i/lists/123",       "\uE71D")] // BulletedList (individual list)
     [InlineData("https://x.com/messages",          "\uE8BD")] // Chat
@@ -53,6 +54,7 @@ public class UrlHelperTests
     [InlineData("https://x.com/search?q=test",  true)]
     [InlineData("https://x.com/explore",        true)]
     [InlineData("https://x.com/i/bookmarks",    true)]
+    [InlineData("https://x.com/i/history",      true)]   // #329 ブックマークは /i/history へ再編
     [InlineData("https://x.com/i/lists/123",    true)]
     [InlineData("https://x.com/daruyanagi",     true)]  // プロファイルページ
     [InlineData("https://x.com/home",           false)]
