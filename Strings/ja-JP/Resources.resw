@@ -198,6 +198,7 @@
   <data name="CheckUpdate_Latest" xml:space="preserve"><value>最新版です</value></data>
   <data name="CheckUpdate_Available" xml:space="preserve"><value>{0} が利用可能です</value></data>
   <data name="CheckUpdate_Download_Winget" xml:space="preserve"><value>winget で更新してアプリを終了</value></data>
+  <data name="CheckUpdate_Download_Zip" xml:space="preserve"><value>リリースページを開く</value></data>
   <data name="CheckUpdate_Error" xml:space="preserve"><value>確認に失敗しました</value></data>
   <data name="CheckUpdate_WingetTitle" xml:space="preserve"><value>winget でアップデート</value></data>
   <data name="CheckUpdate_WingetBody" xml:space="preserve"><value>アプリを終了して winget でアップデートします。完了後、アプリを手動で再起動してください。</value></data>

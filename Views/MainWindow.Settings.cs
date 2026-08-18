@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 using System;
@@ -102,7 +102,7 @@ namespace XTimelineViewer.Views
             }
             settingsWin.EdgeVersion = edgeVer;
             settingsWin.HasWinget = !PackageContext.IsPackaged && FindWinget() is not null;
-            settingsWin.FetchWingetLatestVersionAsync = FetchWingetLatestVersionAsync;
+            settingsWin.FetchLatestVersionAsync = FetchLatestVersionAsync;
             settingsWin.SaveSettingsOnly = SaveSettings;
             settingsWin.UpdateMenuBadge = UpdateMenuUpdateBadge;
             settingsWin.ExitAndRunWingetUpdate = () =>

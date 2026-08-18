@@ -148,9 +148,12 @@ namespace XTimelineViewer.Views.Settings
         {
             if (_parent is null) return;
 
-            // MSIX 版は Store の自動更新に任せる / winget がなければ更新チェック不要
-            bool hasWinget = _parent.HasWinget;
-            if (PackageContext.IsPackaged || !hasWinget) return;
+            // MSIX 版は Store / Windows Update の自動更新に任せる。
+            // ZIP 版は winget を持たないことがあるが、GitHub Releases で確認できるので表示する (#328)。
+            if (PackageContext.IsPackaged) return;
+
+            // winget 版なら winget upgrade に委譲でき、それ以外はリリースページへ誘導する。
+            bool useWinget = PackageContext.Channel == InstallChannel.Winget && _parent.HasWinget;
 
             var settings = _parent.Settings;
 
@@ -163,7 +166,8 @@ namespace XTimelineViewer.Views.Settings
 
             var updateBtn = new Button
             {
-                Content    = R.Get("CheckUpdate_Download_Winget"),
+                Content    = useWinget ? R.Get("CheckUpdate_Download_Winget")
+                                       : R.Get("CheckUpdate_Download_Zip"),
                 Margin     = new Thickness(0, 4, 0, 0),
                 Visibility = Visibility.Collapsed,
             };
@@ -187,8 +191,8 @@ namespace XTimelineViewer.Views.Settings
                 updateBtn.Visibility  = Visibility.Collapsed;
                 try
                 {
-                    if (_parent.FetchWingetLatestVersionAsync is null) return;
-                    var latest = await _parent.FetchWingetLatestVersionAsync();
+                    if (_parent.FetchLatestVersionAsync is null) return;
+                    var latest = await _parent.FetchLatestVersionAsync();
                     if (latest is not null && latest > currentVersion)
                     {
                         var tag = $"v{latest.ToString(3)}";
@@ -216,6 +220,14 @@ namespace XTimelineViewer.Views.Settings
 
             updateBtn.Click += async (_, _) =>
             {
+                // ZIP 版は自己置き換えを行わず、リリースページへ誘導する (#328)
+                if (!useWinget)
+                {
+                    if (_parent.LaunchUriAsync is not null)
+                        await _parent.LaunchUriAsync(new Uri(fallbackUrl));
+                    return;
+                }
+
                 var confirmDlg = new ContentDialog
                 {
                     Title             = R.Get("CheckUpdate_WingetTitle"),
