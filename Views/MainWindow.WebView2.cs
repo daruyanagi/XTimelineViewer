@@ -1044,81 +1044,92 @@ namespace XTimelineViewer.Views
                 return;
             }
 
-
-
-            // キーボードショートカット：ブラウザ既定アクセラレータを無効化し JS で代替処理
-            webView.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
-            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(KeyboardShortcutScript);
-            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(TimestampInterceptScript);
-            // 編集状態レポーター（#258）：全ペインに注入し、編集中（リプライ/引用）を C# へ通知する。
-            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(EditStateReporterScript);
-            // メディア拡大ボタン（#293）：全ペインに注入。config を先に入れてから本体を注入する。
-            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildMediaOverlayButtonConfigJs());
-            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(MediaOverlayButtonScript);
-            // ［…］メニューに「直前のリポストを検索」（#315）：全ペインに注入。config を先に入れてから本体を注入する。
-            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildPriorRepostConfigJs());
-            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(PriorRepostSearchScript);
-            // ホーム自動更新（#207）。ホームペインにのみ注入し、設定で ON/OFF・間隔を制御する。
-            if (IsHomeConfig(cfg))
+            // ここから先も初期化の一部だが、従来は上の try/catch の範囲外だった。
+            // fire-and-forget（_ = InitWebViewAsync(...)）で呼ばれるため、例外が発生しても
+            // 誰も観測できず無言で失敗していた (#339)。メソッド全体を保護する。
+            try
             {
-                await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildHomeAutoLoadConfigJs());
-                await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(HomeAutoLoadScript);
+
+
+
+                // キーボードショートカット：ブラウザ既定アクセラレータを無効化し JS で代替処理
+                webView.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
+                await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(KeyboardShortcutScript);
+                await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(TimestampInterceptScript);
+                // 編集状態レポーター（#258）：全ペインに注入し、編集中（リプライ/引用）を C# へ通知する。
+                await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(EditStateReporterScript);
+                // メディア拡大ボタン（#293）：全ペインに注入。config を先に入れてから本体を注入する。
+                await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildMediaOverlayButtonConfigJs());
+                await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(MediaOverlayButtonScript);
+                // ［…］メニューに「直前のリポストを検索」（#315）：全ペインに注入。config を先に入れてから本体を注入する。
+                await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildPriorRepostConfigJs());
+                await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(PriorRepostSearchScript);
+                // ホーム自動更新（#207）。ホームペインにのみ注入し、設定で ON/OFF・間隔を制御する。
+                if (IsHomeConfig(cfg))
+                {
+                    await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(BuildHomeAutoLoadConfigJs());
+                    await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(HomeAutoLoadScript);
+                }
+                webView.CoreWebView2.WebMessageReceived += (s, e) =>
+                    OnWebViewMessageReceived(webView, e.TryGetWebMessageAsString());
+
+                // 外部リンクをシステム既定ブラウザーまたは指定 Edge プロファイルで開く
+                webView.CoreWebView2.NewWindowRequested += async (s, args) =>
+                {
+                    args.Handled = true;
+                    await LaunchUriByEdgeProfileAsync(new Uri(args.Uri));
+                };
+
+                webView.CoreWebView2.NavigationStarting += async (s, args) =>
+                {
+                    if (!Uri.TryCreate(args.Uri, UriKind.Absolute, out var nav)) return;
+
+                    if (Uri.TryCreate(cfg.Url, UriKind.Absolute, out var origin) &&
+                        !nav.Host.Equals(origin.Host, StringComparison.OrdinalIgnoreCase))
+                    {
+                        args.Cancel = true;
+                        await LaunchUriByEdgeProfileAsync(nav);
+                        return;
+                    }
+
+                };
+
+                webView.CoreWebView2.NavigationCompleted += async (s, args) =>
+                {
+                    if (args.IsSuccess)
+                    {
+                        await ApplyHideSidebarAsync(webView, cfg.HideSidebar);
+                        await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
+                        await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
+
+                        var tsFlag = _appSettings.OpenTimestampInBrowser ? "true" : "false";
+                        await webView.CoreWebView2.ExecuteScriptAsync(
+                            $"window._xtvOpenTimestampInBrowser = {tsFlag};");
+
+                        // プロファイルのスクリーンネームが未取得なら、ログイン中セッションから補完する
+                        // （初期推測用のキャッシュ。リスト URL 解決の正は EnsureListsUrlAsync）。
+                        await BackfillScreenNameAsync(webView, cfg.ProfileId);
+
+                        // リスト一覧はアクティブアカウントのハンドルでライブ解決する（委任アカウント対応 #211）
+                        await EnsureListsUrlAsync(webView, cfg);
+                    }
+                };
+
+                webView.CoreWebView2.SourceChanged += async (s, args) =>
+                {
+                    if (cfg.HideCompose)
+                        await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
+                    if (cfg.HideListHeader)
+                        await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
+                };
+
+                webView.Source = new Uri(cfg.Url);
+                StartHardReloadTimer(webView, cfg);
             }
-            webView.CoreWebView2.WebMessageReceived += (s, e) =>
-                OnWebViewMessageReceived(webView, e.TryGetWebMessageAsString());
-
-            // 外部リンクをシステム既定ブラウザーまたは指定 Edge プロファイルで開く
-            webView.CoreWebView2.NewWindowRequested += async (s, args) =>
+            catch (Exception ex)
             {
-                args.Handled = true;
-                await LaunchUriByEdgeProfileAsync(new Uri(args.Uri));
-            };
-
-            webView.CoreWebView2.NavigationStarting += async (s, args) =>
-            {
-                if (!Uri.TryCreate(args.Uri, UriKind.Absolute, out var nav)) return;
-
-                if (Uri.TryCreate(cfg.Url, UriKind.Absolute, out var origin) &&
-                    !nav.Host.Equals(origin.Host, StringComparison.OrdinalIgnoreCase))
-                {
-                    args.Cancel = true;
-                    await LaunchUriByEdgeProfileAsync(nav);
-                    return;
-                }
-
-            };
-
-            webView.CoreWebView2.NavigationCompleted += async (s, args) =>
-            {
-                if (args.IsSuccess)
-                {
-                    await ApplyHideSidebarAsync(webView, cfg.HideSidebar);
-                    await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
-                    await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
-
-                    var tsFlag = _appSettings.OpenTimestampInBrowser ? "true" : "false";
-                    await webView.CoreWebView2.ExecuteScriptAsync(
-                        $"window._xtvOpenTimestampInBrowser = {tsFlag};");
-
-                    // プロファイルのスクリーンネームが未取得なら、ログイン中セッションから補完する
-                    // （初期推測用のキャッシュ。リスト URL 解決の正は EnsureListsUrlAsync）。
-                    await BackfillScreenNameAsync(webView, cfg.ProfileId);
-
-                    // リスト一覧はアクティブアカウントのハンドルでライブ解決する（委任アカウント対応 #211）
-                    await EnsureListsUrlAsync(webView, cfg);
-                }
-            };
-
-            webView.CoreWebView2.SourceChanged += async (s, args) =>
-            {
-                if (cfg.HideCompose)
-                    await ApplyHideComposeAsync(webView, EffectiveHideCompose(cfg, webView.CoreWebView2.Source));
-                if (cfg.HideListHeader)
-                    await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
-            };
-
-            webView.Source = new Uri(cfg.Url);
-            StartHardReloadTimer(webView, cfg);
+                LogError($"InitWebViewAsync/post-init (url={cfg.Url})", ex);
+            }
         }
     }
 }
