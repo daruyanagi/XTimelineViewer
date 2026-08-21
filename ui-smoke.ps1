@@ -78,9 +78,25 @@ if (-not $AppPid) {
 Write-Host "テスト対象 PID: $AppPid"
 New-Item -ItemType Directory -Force -Path $ScreenshotDir | Out-Null
 
-function Get-AppWindow([string]$Title) {
-    $ws = winapp ui list-windows --json 2>$null | ConvertFrom-Json
-    ($ws | Where-Object { $_.processId -eq $AppPid -and $_.title -eq $Title } | Select-Object -First 1)
+function Get-AppWindows {
+    winapp ui list-windows --json 2>$null | ConvertFrom-Json |
+        Where-Object { $_.processId -eq $AppPid }
+}
+
+# メインウィンドウ（タイトルは製品名で固定なのでロケール非依存）
+function Get-MainWindow {
+    Get-AppWindows | Where-Object { $_.className -eq 'WinUIDesktopWin32WindowClass' -and $_.title -like 'XTimelineViewer*' } |
+        Select-Object -First 1
+}
+
+# 設定ウィンドウ。タイトルはロケールで変わる（ja: アプリ設定 / en: App Settings）ため、
+# 「メインウィンドウ以外の WinUI トップレベルウィンドウ」として探す。
+# PopupHost（メニュー等）は className が異なるので除外される。
+function Get-SettingsWindow {
+    $main = Get-MainWindow
+    Get-AppWindows | Where-Object {
+        $_.className -eq 'WinUIDesktopWin32WindowClass' -and $_.hwnd -ne $main.hwnd
+    } | Select-Object -First 1
 }
 
 # ── 1. 起動とメインウィンドウ ─────────────────────────────────────────────────
@@ -91,12 +107,12 @@ Test-Smoke "プロセスが生存している" {
     if ($p -and -not $p.HasExited) { $global:LASTEXITCODE = 0 } else { Write-Output "プロセスが終了している"; $global:LASTEXITCODE = 1 }
 }
 
-Test-Smoke "メインウィンドウ 'XTimelineViewer (xTV)' が存在する" {
-    if (Get-AppWindow "XTimelineViewer (xTV)") { $global:LASTEXITCODE = 0 }
+Test-Smoke "メインウィンドウが存在する" {
+    if (Get-MainWindow) { $global:LASTEXITCODE = 0 }
     else { Write-Output "メインウィンドウが見つからない"; $global:LASTEXITCODE = 1 }
 }
 
-$main = Get-AppWindow "XTimelineViewer (xTV)"
+$main = Get-MainWindow
 if ($main) { winapp ui screenshot window -a $AppPid -w $main.hwnd -o (Join-Path $ScreenshotDir "01-main.png") 2>$null | Out-Null }
 
 # ── 2. ツールバー ─────────────────────────────────────────────────────────────
@@ -118,12 +134,16 @@ Write-Section "設定ウィンドウ"
 winapp ui invoke "AppSettingsMenuItem" -a $AppPid 2>$null | Out-Null
 Start-Sleep -Seconds 3
 
-Test-Smoke "設定ウィンドウ 'アプリ設定' が開く" {
-    if (Get-AppWindow "アプリ設定") { $global:LASTEXITCODE = 0 }
-    else { Write-Output "設定ウィンドウが開かない"; $global:LASTEXITCODE = 1 }
+Test-Smoke "設定ウィンドウが開く" {
+    if (Get-SettingsWindow) { $global:LASTEXITCODE = 0 }
+    else {
+        Write-Output ("設定ウィンドウが開かない。現在のウィンドウ: " +
+            ((Get-AppWindows | ForEach-Object { "'$($_.title)'($($_.className))" }) -join ', '))
+        $global:LASTEXITCODE = 1
+    }
 }
 
-$sw = Get-AppWindow "アプリ設定"
+$sw = Get-SettingsWindow
 if ($sw) {
     winapp ui screenshot window -a $AppPid -w $sw.hwnd -o (Join-Path $ScreenshotDir "02-settings.png") 2>$null | Out-Null
 
