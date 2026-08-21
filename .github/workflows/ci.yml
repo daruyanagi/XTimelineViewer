@@ -29,3 +29,45 @@ jobs:
       # ユニットテスト（UI 非依存の net8.0 テストプロジェクト）。
       - name: Test
         run: dotnet test XTimelineViewer.Tests/XTimelineViewer.Tests.csproj -c Release --nologo
+
+  # 起動スモークテスト（#346）。「壊滅的に壊れていないこと」だけを確認する。
+  # 実際に exe を起動して UI Automation で触るため、ヘッドレスな runner では
+  # 不安定になりうる。本体のビルド/テストを巻き込まないよう別ジョブに分け、
+  # continue-on-error で失敗しても CI 全体は落とさない（結果は Actions 上で確認する）。
+  ui-smoke:
+    runs-on: windows-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      # winapp CLI（UI Automation 用）。npm 配布は見つからなかったため winget から入れる。
+      - name: Install winapp CLI
+        run: >
+          winget install --id Microsoft.WinAppCli --source winget
+          --accept-source-agreements --accept-package-agreements --disable-interactivity
+        shell: pwsh
+
+      # スモークは Debug ビルドで十分（起動して UI が出ることの確認が目的）。
+      - name: Build app (x64)
+        run: >
+          dotnet build XTimelineViewer.csproj
+          -c Debug -p:Platform=x64 -p:EffectivePlatform=x64 --nologo
+
+      - name: Run UI smoke test
+        run: .\ui-smoke.ps1
+        shell: pwsh
+
+      # 失敗時の切り分け用にスクリーンショットを残す。
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-smoke-screenshots
+          path: test-screenshots/
+          if-no-files-found: ignore

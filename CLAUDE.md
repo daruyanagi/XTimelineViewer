@@ -17,7 +17,12 @@ dotnet build XTimelineViewer.csproj -c Debug -p:Platform=x64
 出力: `bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/XTimelineViewer.exe`
 
 - **デバッグ実行は `debug-run` スキルに従う**（ビルドした exe と起動する exe を必ず一致させる。古い exe 起動での時間浪費を防ぐ）。
-- テスト: `dotnet test XTimelineViewer.Tests/XTimelineViewer.Tests.csproj`（xUnit）。CI では現状未実行（手動）。
+- テスト: `dotnet test XTimelineViewer.Tests/XTimelineViewer.Tests.csproj`（xUnit）。CI（`ci.yml`）で自動実行される。
+- **起動スモークテスト**: `.\ui-smoke.ps1`（#346）。実際に exe を起動し、winapp CLI の UI Automation で
+  ツールバー・メニュー・設定ウィンドウが出ることだけを確認する。CI では別ジョブ `ui-smoke` として
+  `continue-on-error` 付きで実行し、スクリーンショットを artifact に残す。**UI の些細な変更で落ちて
+  保守されなくなるのを避けるため、意図的に「壊滅的に壊れていないこと」だけに絞っている**（旧 `ui-tests.ps1`
+  は旧 UI 前提のまま放置され CI でも動いていなかったので置き換えた）。
 
 ## アーキテクチャ
 
