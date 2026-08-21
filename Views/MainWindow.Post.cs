@@ -653,6 +653,9 @@ namespace XTimelineViewer.Views
             {
                 case "focusNext": FocusAdjacentTimeline(senderWebView, +1); break;
                 case "focusPrev": FocusAdjacentTimeline(senderWebView, -1); break;
+                // Ctrl+Shift+←/→ でペインを並べ替える（#344）
+                case "movePaneNext": MoveTimelinePane(senderWebView, +1); break;
+                case "movePanePrev": MoveTimelinePane(senderWebView, -1); break;
                 case "newPost":
                     if (_appSettings.OpenComposerInBrowser)
                         _ = LaunchUriByEdgeProfileAsync(new Uri("https://x.com/compose/post"));
@@ -927,6 +930,13 @@ namespace XTimelineViewer.Views
                     await Task.Delay(60);
                 }
             });
+        }
+
+        // 送信元のペインを隣と入れ替える（#344）
+        private void MoveTimelinePane(WebView2 senderWebView, int direction)
+        {
+            if (_webViewToPane.TryGetValue(senderWebView, out var pane))
+                MovePaneAdjacent(pane, direction);
         }
 
         private void FocusAdjacentTimeline(WebView2 senderWebView, int direction)

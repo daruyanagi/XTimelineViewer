@@ -261,6 +261,53 @@ namespace XTimelineViewer.Views
             }
         }
 
+        // ── ペインの並べ替え（ドラッグ / キーボード #344）─────────────────
+        // TimelinePanel の子と _configs を同じ順序で入れ替え、番号バッジを振り直して保存する。
+        // to には「取り除く前のインデックス」を渡す（ドラッグ先ペインの位置）。
+        private void MovePaneTo(Grid pane, int to)
+        {
+            int from = TimelinePanel.Children.IndexOf(pane);
+            if (from < 0 || to < 0 || from == to) return;
+
+            TimelinePanel.Children.RemoveAt(from);
+            TimelinePanel.Children.Insert(to, pane);
+
+            var cfg = _configs[from];
+            _configs.RemoveAt(from);
+            _configs.Insert(to, cfg);
+
+            RefreshTimelineNumbers();  // 並び替え後に番号を振り直す（#225）
+            _ = SaveTimelinesAsync();
+
+            // 視覚ツリーへの再挿入後、WebView2 の Win32 HWND を再アンカーさせる
+            pane.Visibility = Visibility.Collapsed;
+            pane.UpdateLayout();
+            pane.Visibility = Visibility.Visible;
+        }
+
+        // 隣のペインと入れ替える（#344）。端では止まる（ラップしない）。
+        // 再挿入でフォーカスが外れるので、連続して押せるよう戻しておく。
+        private void MovePaneAdjacent(Grid pane, int direction)
+        {
+            int from = TimelinePanel.Children.IndexOf(pane);
+            if (from < 0) return;
+            int to = from + direction;
+            if (to < 0 || to >= TimelinePanel.Children.Count) return;
+
+            MovePaneTo(pane, to);
+
+            if (_paneToSetFocus.TryGetValue(pane, out var setFocus)) setFocus();
+            pane.StartBringIntoView();  // 視界外なら横スクロールして表示（#231）
+        }
+
+        // Ctrl+Shift+←/→（WebView2 非フォーカス時）。アクティブなペインを動かす。
+        private void MovePaneFromActive(int direction)
+        {
+            if (_focusedHeaderGrid is null) return;
+            if (!_headerGridToPane.TryGetValue(_focusedHeaderGrid, out var pane)) return;
+            MovePaneAdjacent(pane, direction);
+        }
+
         // ── AddTimeline ───────────────────────────────────────────────────────
 
         private void AddTimeline(TimelineConfig cfg)
@@ -495,26 +542,10 @@ namespace XTimelineViewer.Views
 
                 var dragging = _draggingPane;
 
-                int from = TimelinePanel.Children.IndexOf(dragging);
-                int to   = TimelinePanel.Children.IndexOf(pane);
-                if (from < 0 || to < 0) return;
+                MovePaneTo(dragging, TimelinePanel.Children.IndexOf(pane));
 
-                TimelinePanel.Children.RemoveAt(from);
-                TimelinePanel.Children.Insert(to, dragging);
-
-                var cfg2 = _configs[from];
-                _configs.RemoveAt(from);
-                _configs.Insert(to, cfg2);
-
-                RefreshTimelineNumbers();  // 並び替え後に番号を振り直す（#225）
-                _ = SaveTimelinesAsync();
                 dragging.Opacity = 1.0;
                 _draggingPane = null;
-
-                // 視覚ツリーへの再挿入後、WebView2 の Win32 HWND を再アンカーさせる
-                dragging.Visibility = Visibility.Collapsed;
-                dragging.UpdateLayout();
-                dragging.Visibility = Visibility.Visible;
             };
             pane.DragLeave += (s, args) => pane.Opacity = 1.0;
             headerGrid.DragStarting += (s, args) => pane.Opacity = 0.5;
@@ -525,17 +556,20 @@ namespace XTimelineViewer.Views
             {
                 var widthBox = new NumberBox
                 {
+                    Header                  = R.Get("Timeline_Width"),
                     Value                   = cfg.Width,
                     Minimum                 = 100,
                     Maximum                 = 2000,
                     SmallChange             = 10,
                     LargeChange             = 50,
                     SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline,
-                    Width                   = 160
+                    Width                   = 160,
+                    HorizontalAlignment     = HorizontalAlignment.Left,
                 };
 
                 var hideSidebarToggle = new ToggleSwitch
                 {
+                    Header     = R.Get("Timeline_Sidebar"),
                     IsOn       = cfg.HideSidebar,
                     OnContent  = R.Get("Toggle_Hide"),
                     OffContent = R.Get("Toggle_Show")
@@ -543,6 +577,7 @@ namespace XTimelineViewer.Views
 
                 var hideComposeToggle = new ToggleSwitch
                 {
+                    Header     = R.Get("Timeline_Compose"),
                     IsOn       = cfg.HideCompose,
                     OnContent  = R.Get("Toggle_Hide"),
                     OffContent = R.Get("Toggle_Show")
@@ -551,20 +586,16 @@ namespace XTimelineViewer.Views
                 var listHeaderApplicable = UrlHelper.IsListHeaderApplicable(cfg.Url);
                 var hideListHeaderToggle = new ToggleSwitch
                 {
+                    Header     = R.Get("Timeline_ListHeader"),
                     IsOn       = cfg.HideListHeader,
                     IsEnabled  = listHeaderApplicable,
                     OnContent  = R.Get("Toggle_Hide"),
                     OffContent = R.Get("Toggle_Show")
                 };
-                var hideListHeaderLabel = new TextBlock
-                {
-                    Text    = R.Get("Timeline_ListHeader"),
-                    Margin  = new Thickness(0, 8, 0, 0),
-                    Opacity = listHeaderApplicable ? 1.0 : 0.4
-                };
 
                 var hardReloadToggle = new ToggleSwitch
                 {
+                    Header     = R.Get("Timeline_ReloadInterval"),
                     IsOn       = cfg.HardReloadEnabled,
                     OnContent  = R.Get("Toggle_On"),
                     OffContent = R.Get("Toggle_Off"),
@@ -576,15 +607,13 @@ namespace XTimelineViewer.Views
                     Maximum                 = 60,
                     SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline,
                     Width                   = 160,
+                    HorizontalAlignment     = HorizontalAlignment.Left,
                     IsEnabled               = cfg.HardReloadEnabled,
                 };
                 hardReloadToggle.Toggled += (_, _) =>
                     hardReloadIntervalBox.IsEnabled = hardReloadToggle.IsOn;
-                var reloadLabel = new TextBlock
-                {
-                    Text   = R.Get("Timeline_ReloadInterval"),
-                    Margin = new Thickness(0, 8, 0, 0),
-                };
+                // トグルと同じラベルのグループなので、見た目は変えず名前だけ UIA に与える（#344）
+                AutomationProperties.SetName(hardReloadIntervalBox, R.Get("Timeline_ReloadInterval"));
 
                 var deleteBtn = new Button
                 {
@@ -594,7 +623,12 @@ namespace XTimelineViewer.Views
                     Foreground          = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"],
                 };
 
-                var profileBox = new ComboBox { MinWidth = 200 };
+                var profileBox = new ComboBox
+                {
+                    Header              = R.Get("Timeline_Profile"),
+                    MinWidth            = 200,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                };
                 foreach (var p in _profiles.Where(p => p.Id != "default"))
                     profileBox.Items.Add(new ComboBoxItem { Content = p.Name, Tag = p.Id });
                 profileBox.SelectedItem = profileBox.Items
@@ -636,25 +670,13 @@ namespace XTimelineViewer.Views
                 panel.Children.Add(baseUrlText);
                 panel.Children.Add(setBaseUrlBtn);
                 panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 8, 0, 0) });
-                panel.Children.Add(new TextBlock { Text = R.Get("Timeline_Profile") });
+                // ラベルは別立ての TextBlock ではなく各コントロールの Header に持たせる。
+                // コード生成でも UI Automation 上の関連付けが成立する（#344）。
                 panel.Children.Add(profileBox);
-                panel.Children.Add(new TextBlock { Text = R.Get("Timeline_Width"), Margin = new Thickness(0, 8, 0, 0) });
                 panel.Children.Add(widthBox);
-                panel.Children.Add(new TextBlock
-                {
-                    Text   = R.Get("Timeline_Sidebar"),
-                    Margin = new Thickness(0, 8, 0, 0)
-                });
                 panel.Children.Add(hideSidebarToggle);
-                panel.Children.Add(new TextBlock
-                {
-                    Text   = R.Get("Timeline_Compose"),
-                    Margin = new Thickness(0, 8, 0, 0)
-                });
                 panel.Children.Add(hideComposeToggle);
-                panel.Children.Add(hideListHeaderLabel);
                 panel.Children.Add(hideListHeaderToggle);
-                panel.Children.Add(reloadLabel);
                 panel.Children.Add(hardReloadToggle);
                 panel.Children.Add(hardReloadIntervalBox);
                 panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 8, 0, 0) });

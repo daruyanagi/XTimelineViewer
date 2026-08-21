@@ -33,6 +33,13 @@ namespace XTimelineViewer.Views
             args.Handled = true;
         }
 
+        // Ctrl+Shift+←/→（WebView2 非フォーカス時もカバー）#344
+        private void MovePaneAdjacent_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            MovePaneFromActive(sender.Key == Windows.System.VirtualKey.Right ? +1 : -1);
+            args.Handled = true;
+        }
+
         private void SearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
         {
             if (args.ChosenSuggestion is string chosen)
