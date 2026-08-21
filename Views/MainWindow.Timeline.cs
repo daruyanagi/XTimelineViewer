@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -11,6 +11,7 @@ using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -29,11 +30,38 @@ namespace XTimelineViewer.Views
     {
         // ── Persistence ───────────────────────────────────────────────────────
 
+        // 保存の同時実行を防ぐ。追加・並べ替えなどから fire-and-forget で呼ばれるため、
+        // I/O が重なって timelines.json が競合するのを避ける（#338）。
+        private readonly SemaphoreSlim _saveTimelinesLock = new(1, 1);
+
         private async Task SaveTimelinesAsync()
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(SaveFilePath)!);
+            // JSON 化は UI スレッド上で同期的に行い、_configs のスナップショットを取る。
+            // await の後で _configs が変更されても、書き出す内容がぶれないようにするため。
             var json = JsonSerializer.Serialize(_configs, JsonOptions);
-            await File.WriteAllTextAsync(SaveFilePath, json);
+
+            await _saveTimelinesLock.WaitAsync();
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(SaveFilePath)!);
+
+                // 一時ファイルに書いてから置換する原子的保存（#338）。
+                // WriteAllTextAsync は truncate してから書くため、途中で落ちると
+                // timelines.json が壊れる。RestoreTimelinesAsync は例外を握りつぶすので、
+                // 壊れると全ペインが黙って消えてしまう。
+                var tmp = SaveFilePath + ".tmp";
+                await File.WriteAllTextAsync(tmp, json);
+                File.Move(tmp, SaveFilePath, overwrite: true);
+            }
+            catch (Exception ex)
+            {
+                // fire-and-forget の呼び出し元では観測されないので、ここで必ず記録する。
+                LogError("SaveTimelinesAsync", ex);
+            }
+            finally
+            {
+                _saveTimelinesLock.Release();
+            }
         }
 
         private async Task RestoreTimelinesAsync()

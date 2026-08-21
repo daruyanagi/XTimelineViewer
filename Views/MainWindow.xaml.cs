@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -33,6 +33,9 @@ namespace XTimelineViewer.Views
         private static readonly string SaveFilePath      = GetDataFilePath("timelines.json");
         private static readonly string SettingsFilePath  = GetDataFilePath("settings.json");
         private static readonly string ProfilesFilePath  = GetDataFilePath("profiles.json");
+
+        // 終了時に一度だけ保存してから閉じ直すためのフラグ（#338）
+        private bool _closeHandled;
 
         // MSIX パッケージ環境では ApplicationData.Current.LocalFolder を使用する。
         // 旧バージョン（アンパッケージド）からの移行のため、旧パスにファイルが存在すれば自動コピーする。
@@ -256,13 +259,33 @@ namespace XTimelineViewer.Views
             if (File.Exists(iconPath)) AppWindow.SetIcon(iconPath);
             Title = "XTimelineViewer (xTV)";
             RefreshUIText();
-            Closed += async (s, e) =>
+            // 終了時の保存は Closing 側で行う（#338）。
+            // Closed は async void 相当で、await の後を待たずにプロセスが終了しうるため、
+            // 直前の変更（ペインの追加・並べ替えなど）が取りこぼされることがあった。
+            // ここでは一度クローズをキャンセルして保存を待ち、完了後に閉じ直す。
+            AppWindow.Closing += async (sender, args) =>
+            {
+                if (_closeHandled) return;   // 保存後の閉じ直しでは素通しする
+                args.Cancel = true;
+
+                _closeHandled = true;
+                try
+                {
+                    await SaveTimelinesAsync();
+                }
+                catch (Exception ex)
+                {
+                    LogError("AppWindow.Closing (save)", ex);
+                }
+                Close();
+            };
+
+            Closed += (s, e) =>
             {
                 _hardReloadUiTimer?.Stop();
                 DisposeComposeWarm();  // 投稿プリロードの後始末（#244 案B）
                 foreach (var wv in _webViews.ToList())
                     CleanupWebView(wv);
-                await SaveTimelinesAsync();
             };
             ((FrameworkElement)Content).ActualThemeChanged += (s, e) => ApplyThemeToWebViews();
             LoadSettings();
