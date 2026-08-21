@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -725,7 +725,8 @@ namespace XTimelineViewer.Views
                         AutomationProperties.SetName(webView, urlLabel.Text);
 
                         var newBadge = CreateProfileBadge(cfg.ProfileId);
-                        Grid.SetColumn(newBadge, 1);
+                        // 列 2 がプロフィールバッジ（列 1 は種別アイコン）。初期生成側と揃える (#337)
+                        Grid.SetColumn(newBadge, 2);
                         headerGrid.Children.Remove(profileBadge);
                         headerGrid.Children.Add(newBadge);
                         profileBadge = newBadge;
