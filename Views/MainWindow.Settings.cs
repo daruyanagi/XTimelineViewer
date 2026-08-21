@@ -97,7 +97,10 @@ namespace XTimelineViewer.Views
             }
             catch
             {
-                edgeVer = _profileEnvs.Values.FirstOrDefault()?.BrowserVersionString
+                // 生成済み（完了済み）の環境からバージョンを拾う。#339 で Task キャッシュに
+                // 変えたため、まだ完了していない/失敗した Task は対象外にする。
+                edgeVer = _profileEnvs.Values
+                              .FirstOrDefault(t => t.IsCompletedSuccessfully)?.Result.BrowserVersionString
                           ?? R.Get("Version_Unknown");
             }
             settingsWin.EdgeVersion = edgeVer;

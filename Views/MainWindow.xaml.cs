@@ -11,6 +11,7 @@ using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -101,7 +102,10 @@ namespace XTimelineViewer.Views
         private readonly List<WebView2> _webViews = [];
         private bool _extensionsLoaded = false;
         private readonly List<ExtensionInfo> _loadedExtensions = [];
-        private readonly Dictionary<string, CoreWebView2Environment> _profileEnvs = [];
+        // 環境そのものではなく「生成中の Task」をキャッシュする（#339）。
+        // TryGetValue と await の間に隙間があると、同一プロファイルのペインを並行復元した
+        // ときに同じ user data folder に対して CreateWithOptionsAsync が重複しうるため。
+        private readonly Dictionary<string, Task<CoreWebView2Environment>> _profileEnvs = [];
         private List<ProfileConfig> _profiles = [];
         private readonly Dictionary<WebView2, Grid>            _webViewToPane  = [];
         private readonly Dictionary<Grid, Action>              _paneToSetFocus = [];
@@ -235,9 +239,32 @@ namespace XTimelineViewer.Views
         // プロファイルデータの保存先は ProfileService に共通化済み (#157)
         private static string GetProfilesDataDir() => ProfileService.GetProfilesDataDir();
 
-        private async Task<CoreWebView2Environment> GetOrCreateProfileEnvAsync(string profileId)
+        private Task<CoreWebView2Environment> GetOrCreateProfileEnvAsync(string profileId)
         {
+            // 生成 Task を先に登録してから await させることで、並行呼び出しでも生成は 1 回になる。
+            // UI スレッドから呼ばれる前提なので Dictionary のままでよい。
             if (_profileEnvs.TryGetValue(profileId, out var cached)) return cached;
+
+            var task = CreateProfileEnvAsync(profileId);
+            _profileEnvs[profileId] = task;
+
+            // 失敗した Task を残すと以後ずっと同じ例外を返すため、キャッシュから外して再試行できるようにする。
+            _ = task.ContinueWith(
+                t =>
+                {
+                    if (_profileEnvs.TryGetValue(profileId, out var current) && current == t)
+                        _profileEnvs.Remove(profileId);
+                    LogError($"CreateProfileEnv (profileId={profileId})", t.Exception!);
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.FromCurrentSynchronizationContext());
+
+            return task;
+        }
+
+        private static async Task<CoreWebView2Environment> CreateProfileEnvAsync(string profileId)
+        {
             var userDataFolder = profileId == "default"
                 ? ""
                 : Path.Combine(GetProfilesDataDir(), profileId);
@@ -246,7 +273,6 @@ namespace XTimelineViewer.Views
             var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
             var env = await CoreWebView2Environment.CreateWithOptionsAsync(
                 "", userDataFolder, options);
-            _profileEnvs[profileId] = env;
             Debug.WriteLine($"[Profile] Env created: profileId={profileId}, UserDataFolder={env.UserDataFolder}");
             return env;
         }
