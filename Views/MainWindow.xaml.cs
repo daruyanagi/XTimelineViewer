@@ -194,6 +194,12 @@ namespace XTimelineViewer.Views
                         if (k === 'b' && ni)    { e.preventDefault(); actOnPost('bookmark', 'removeBookmark'); return; }
                         if (k === 'l' && ni)    { e.preventDefault(); actOnPost('like',     'unlike');         return; }
                     }
+                    // Ctrl+Shift+←/→ でペインを左右へ並べ替え（#344）。
+                    // 入力中は単語単位の選択を奪わないよう ni で除外する。
+                    if (c && s && !a && ni) {
+                        if (k === 'ArrowRight') { e.preventDefault(); window.chrome.webview.postMessage('movePaneNext'); return; }
+                        if (k === 'ArrowLeft')  { e.preventDefault(); window.chrome.webview.postMessage('movePanePrev'); return; }
+                    }
                     if (!c && !s && !a) {
                         if (k === 'F3')              { e.preventDefault(); window.chrome.webview.postMessage('focusSearch'); return; } // #228
                         if (k === 'Home'      && ni) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
