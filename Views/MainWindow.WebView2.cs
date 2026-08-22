@@ -262,6 +262,14 @@ namespace XTimelineViewer.Views
                     // （従来から起動のたびに呼んでおり、エラーになっていない）。
                     var ext = await webView.CoreWebView2.Profile.AddBrowserExtensionAsync(extDir);
 
+                    // 有効・無効を復元する（#398）。登録しただけでは常に有効なので、
+                    // ここで落とさないと「設定では OFF なのに効いている」になる。
+                    var key     = ExtensionStateStore.KeyOf(extDir);
+                    var enabled = ExtensionStateStore.IsEnabled(_appSettings.ExtensionStates, key, profileId);
+                    if (!enabled) await ext.EnableAsync(false);
+
+                    _liveExtensions[(profileId, key)] = ext;
+
                     // 一覧とツールバーへ出すのは拡張機能ごとに 1 回だけ。読み込みは
                     // プロファイルごとに走るので、素直に呼ぶと同じボタンが並ぶ。
                     if (_surfacedExtensionIds.Add(ext.Id)) AddExtensionButton(ext, extDir);
@@ -346,6 +354,82 @@ namespace XTimelineViewer.Views
             return new ExtensionInfo(name, extDir, iconPath, optPage, homepageUrl, extensionId);
         }
 
+        /// <summary>
+        /// 拡張機能をこのプロファイルで有効・無効にする（#398）。
+        ///
+        /// まだ読み込まれていないプロファイル（ペインが無い等）については、
+        /// 記録だけ残す。次にそのプロファイルのペインが作られたときに反映される。
+        /// </summary>
+        internal async Task SetExtensionEnabledAsync(string key, string profileId, bool enabled)
+        {
+            ExtensionStateStore.SetEnabled(_appSettings.ExtensionStates, key, profileId, enabled);
+            SaveSettings();
+
+            if (!_liveExtensions.TryGetValue((profileId, key), out var ext)) return;
+
+            try
+            {
+                await ext.EnableAsync(enabled);
+                AppLog.Debug($"Extension: {key} を {profileId} で {(enabled ? "有効" : "無効")} にした");
+            }
+            catch (Exception ex)
+            {
+                // 記録は残っているので、次の起動では反映される。
+                AppLog.Error($"SetExtensionEnabled({key}, {profileId})", ex);
+            }
+        }
+
+        /// <summary>
+        /// 拡張機能をアンインストールする（#398）。成功したら true。
+        ///
+        /// 登録はプロファイルごとに永続化されるので、<b>フォルダーを消すだけでは
+        /// 各プロファイルに登録が残る</b>。先に全プロファイルから登録を外し、
+        /// それからフォルダーを消す。順序を逆にすると、登録だけ残って壊れた状態になる。
+        /// </summary>
+        internal async Task<bool> UninstallExtensionAsync(string key)
+        {
+            var targets = _liveExtensions.Where(kv => string.Equals(kv.Key.Key, key, StringComparison.OrdinalIgnoreCase))
+                                         .ToList();
+
+            foreach (var (id, ext) in targets)
+            {
+                try
+                {
+                    await ext.RemoveAsync();
+                    _liveExtensions.Remove(id);
+                }
+                catch (Exception ex)
+                {
+                    // 1 つでも外れないならフォルダーは消さない。消してしまうと
+                    // 登録だけ残って壊れた状態になる。
+                    AppLog.Error($"UninstallExtension({key}, {id.ProfileId})", ex);
+                    return false;
+                }
+            }
+
+            var dir = Path.Combine(GetExtensionsDir(), key);
+            if (!ExtensionStateStore.DeleteFolder(dir)) return false;
+
+            ExtensionStateStore.Forget(_appSettings.ExtensionStates, key);
+            SaveSettings();
+
+            // ツールバーのボタンと一覧から取り除く
+            if (_extensionButtons.Remove(key, out var btn))
+                (btn.Parent as Panel)?.Children.Remove(btn);
+            _loadedExtensions.RemoveAll(e =>
+                string.Equals(Path.GetFileName(e.DirectoryPath), key, StringComparison.OrdinalIgnoreCase));
+
+            AppLog.Debug($"Extension: {key} をアンインストールした");
+            return true;
+        }
+
+        /// <summary>新しく追加されたプロファイルでの既定を変える（#398）。</summary>
+        internal void SetExtensionDefault(string key, bool enabled)
+        {
+            ExtensionStateStore.SetEnabledByDefault(_appSettings.ExtensionStates, key, enabled);
+            SaveSettings();
+        }
+
         private void AddExtensionButton(CoreWebView2BrowserExtension ext, string extDir)
         {
             var info = ReadExtensionManifest(extDir, ext.Id, ext.Name);
@@ -369,6 +453,7 @@ namespace XTimelineViewer.Views
                 Padding = new Thickness(0),
             };
             ToolTipService.SetToolTip(btn, string.Format(R.Get("ExtSettings_Format"), info.Name));
+            _extensionButtons[Path.GetFileName(extDir)] = btn;
 
             btn.Click += async (_, _) =>
             {

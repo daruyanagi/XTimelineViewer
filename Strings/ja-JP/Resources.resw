@@ -190,6 +190,12 @@
   <data name="ExtSettings_OpenSettings" xml:space="preserve"><value>設定を開く</value></data>
   <data name="Extensions_InfoBar_Empty" xml:space="preserve"><value>拡張機能はインストールされていません。extensions フォルダーに展開済みの拡張機能を置くと、起動時に読み込まれます。</value></data>
   <data name="Extensions_InfoBar_Installed" xml:space="preserve"><value>extensions フォルダーに展開済みの拡張機能を置くと、起動時に読み込まれます。</value></data>
+  <data name="Extensions_DefaultForNewProfiles" xml:space="preserve"><value>新しいプロファイルでの既定</value></data>
+  <data name="Extensions_DefaultForNewProfiles_Desc" xml:space="preserve"><value>あとからプロファイルを追加したときに、この拡張機能を有効にするかどうか</value></data>
+  <data name="Extensions_Uninstall" xml:space="preserve"><value>アンインストール</value></data>
+  <data name="Extensions_Uninstall_Desc" xml:space="preserve"><value>すべてのプロファイルから登録を外し、フォルダーを削除します</value></data>
+  <data name="Extensions_Uninstall_Confirm" xml:space="preserve"><value>「{0}」をアンインストールします。すべてのプロファイルから登録が外れ、フォルダーが削除されます。</value></data>
+  <data name="Extensions_Uninstall_Failed" xml:space="preserve"><value>アンインストールできませんでした。ファイルが使用中の可能性があります。アプリを終了してからもう一度お試しください。</value></data>
   <data name="Extensions_OpenFolder" xml:space="preserve"><value>extensions フォルダーを開く</value></data>
 
   <!-- Update check -->

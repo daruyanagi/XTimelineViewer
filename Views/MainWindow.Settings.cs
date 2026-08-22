@@ -117,6 +117,15 @@ namespace XTimelineViewer.Views
                 progress, ct);
             settingsWin.ExitApp = () => Application.Current.Exit();
 
+            // 拡張機能の有効・無効とアンインストール（#398）
+            settingsWin.SetExtensionEnabledAsync   = SetExtensionEnabledAsync;
+            settingsWin.UninstallExtensionAsync    = UninstallExtensionAsync;
+            settingsWin.SetExtensionDefault        = SetExtensionDefault;
+            settingsWin.IsExtensionEnabled         = (key, pid) =>
+                ExtensionStateStore.IsEnabled(_appSettings.ExtensionStates, key, pid);
+            settingsWin.IsExtensionEnabledByDefault = key =>
+                _appSettings.ExtensionStates.TryGetValue(key, out var st) ? st.EnabledByDefault : true;
+
             settingsWin.ExitAndRunWingetUpdate = () =>
             {
                 Process.Start(new ProcessStartInfo

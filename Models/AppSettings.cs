@@ -30,5 +30,10 @@ namespace XTimelineViewer.Models
         public bool    MediaOverlayButtonEnabled { get; set; } = false; // メディアに自前の拡大ボタンを重ねる（試験機能 #293）
         public bool    VideoFrameSaveEnabled { get; set; } = false;     // 動画の現在フレームを画像保存（試験機能 #299）
         public bool    PriorRepostSearchEnabled { get; set; } = false;  // ［…］メニューに「直前のリポストを検索」（試験機能 #315）
+
+        // 拡張機能の有効・無効（#398）。鍵は拡張機能のフォルダー名。
+        // 拡張機能 ID は AddBrowserExtensionAsync を呼ぶまで分からず、
+        // 「読み込む前に有効かどうかを知りたい」場面で使えない。
+        public Dictionary<string, ExtensionState> ExtensionStates { get; set; } = [];
     }
 }
