@@ -190,6 +190,23 @@
   <data name="ExtSettings_OpenSettings" xml:space="preserve"><value>設定を開く</value></data>
   <data name="Extensions_InfoBar_Empty" xml:space="preserve"><value>拡張機能はインストールされていません。extensions フォルダーに展開済みの拡張機能を置くと、起動時に読み込まれます。</value></data>
   <data name="Extensions_InfoBar_Installed" xml:space="preserve"><value>extensions フォルダーに展開済みの拡張機能を置くと、起動時に読み込まれます。</value></data>
+  <data name="Extensions_InstallFromGitHub" xml:space="preserve"><value>GitHub から入れる</value></data>
+  <data name="Extensions_InstallFromGitHub_Desc" xml:space="preserve"><value>リポジトリの URL を入れると、最新リリースの ZIP / CRX から拡張機能を追加します</value></data>
+  <data name="Extensions_Install" xml:space="preserve"><value>インストール</value></data>
+  <data name="Extensions_Install_PickTitle" xml:space="preserve"><value>どれを入れますか</value></data>
+  <data name="Extensions_Install_ConfirmTitle" xml:space="preserve"><value>拡張機能を追加しますか</value></data>
+  <data name="Extensions_Install_From" xml:space="preserve"><value>取得元: {0}</value></data>
+  <data name="Extensions_Install_Permissions" xml:space="preserve"><value>この拡張機能は次の権限を要求しています。</value></data>
+  <data name="Extensions_Install_NoPermissions" xml:space="preserve"><value>この拡張機能は特別な権限を要求していません。</value></data>
+  <data name="Extensions_Install_Warning" xml:space="preserve"><value>拡張機能は X のページ上でコードを実行でき、ページの内容やログイン状態に触れられます。信頼できる配布元かどうかを確かめてから追加してください。</value></data>
+  <data name="Extensions_Install_Done" xml:space="preserve"><value>「{0}」を追加しました。</value></data>
+  <data name="Extensions_Install_BadUrl" xml:space="preserve"><value>GitHub のリポジトリ URL として読み取れませんでした。https://github.com/owner/repo の形で入れてください。</value></data>
+  <data name="Extensions_Install_NoRelease" xml:space="preserve"><value>リリースを取得できませんでした。URL が正しいか、公開リリースがあるか確認してください。</value></data>
+  <data name="Extensions_Install_NoAsset" xml:space="preserve"><value>最新リリースに ZIP / CRX がありませんでした。</value></data>
+  <data name="Extensions_Install_NotAnExtension" xml:space="preserve"><value>拡張機能として読み取れませんでした（manifest.json が見つかりません）。</value></data>
+  <data name="Extensions_Install_Already" xml:space="preserve"><value>同じ名前の拡張機能が既に入っています。</value></data>
+  <data name="Extensions_Install_Canceled" xml:space="preserve"><value>取り消しました。</value></data>
+  <data name="Extensions_Install_Failed" xml:space="preserve"><value>追加できませんでした。</value></data>
   <data name="Extensions_DefaultForNewProfiles" xml:space="preserve"><value>新しいプロファイルでの既定</value></data>
   <data name="Extensions_DefaultForNewProfiles_Desc" xml:space="preserve"><value>あとからプロファイルを追加したときに、この拡張機能を有効にするかどうか</value></data>
   <data name="Extensions_Uninstall" xml:space="preserve"><value>アンインストール</value></data>

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -420,6 +421,55 @@ namespace XTimelineViewer.Views
                 string.Equals(Path.GetFileName(e.DirectoryPath), key, StringComparison.OrdinalIgnoreCase));
 
             AppLog.Debug($"Extension: {key} をアンインストールした");
+            return true;
+        }
+
+        /// <summary>
+        /// GitHub のリリースから拡張機能を入れる（#399）。
+        ///
+        /// 取ってきて中身を確かめるところまでを行い、<b>置くかどうかは呼び出し側</b>に委ねる。
+        /// 拡張機能は X のページ上で任意のコードを実行できるので、
+        /// 何を許すことになるのかを見せてから確定させる。
+        /// </summary>
+        internal Task<(ExtensionInstallRunner.Status Status, IReadOnlyList<ExtensionInstaller.Candidate> Candidates)>
+            FindExtensionCandidatesAsync(string repoUrl, CancellationToken ct)
+            => new ExtensionInstallRunner(_downloadHttp).FindCandidatesAsync(repoUrl, ct);
+
+        internal Task<ExtensionInstallRunner.Prepared> PrepareExtensionAsync(
+            ExtensionInstaller.Candidate candidate, IProgress<double>? progress, CancellationToken ct)
+            => new ExtensionInstallRunner(_downloadHttp)
+                   .PrepareAsync(candidate, GetExtensionsDir(), progress, ct);
+
+        /// <summary>
+        /// 確認が取れた拡張機能を置き、いま開いているプロファイルへ読み込む（#399）。
+        /// </summary>
+        internal async Task<bool> CommitExtensionAsync(ExtensionInstallRunner.Prepared prepared)
+        {
+            var dir = GetExtensionsDir();
+            if (!ExtensionInstallRunner.Commit(prepared, dir)) return false;
+
+            // 置いただけでは効かない。読み込み済みのプロファイルへ入れて回る。
+            var extDir = Path.Combine(dir, prepared.FolderName!);
+            var key    = ExtensionStateStore.KeyOf(extDir);
+
+            foreach (var profileId in _extensionsLoadedProfiles.ToList())
+            {
+                var webView = Panes.FirstOrDefault(pane => pane.Config.ProfileId == profileId)?.WebView;
+                if (webView?.CoreWebView2 is null) continue;
+
+                try
+                {
+                    var ext = await webView.CoreWebView2.Profile.AddBrowserExtensionAsync(extDir);
+                    _liveExtensions[(profileId, key)] = ext;
+                    if (_surfacedExtensionIds.Add(ext.Id)) AddExtensionButton(ext, extDir);
+                }
+                catch (Exception ex)
+                {
+                    // 入れたものが今すぐ効かないだけ。次の起動では読み込まれる。
+                    AppLog.Error($"CommitExtension({key}, {profileId})", ex);
+                }
+            }
+
             return true;
         }
 
