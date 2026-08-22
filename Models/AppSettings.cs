@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace XTimelineViewer.Models
@@ -9,6 +10,10 @@ namespace XTimelineViewer.Models
         public string  Theme                 { get; set; } = "Default"; // "Light" | "Dark" | "Default"
         public string  Language              { get; set; } = "system";  // "system" | "ja-JP" | "en-US"
         public string? CachedLatestVersion   { get; set; } = null;      // "v1.4.0" など
+        // 最後に更新確認に成功した日時（#382）。
+        // CachedLatestVersion の null は「最新」と「未確認」の区別がつかないため、
+        // 「最新の状態です」と言ってよいかの判断に使う。
+        public DateTimeOffset? LastUpdateCheck { get; set; } = null;
         public bool    DefaultHideSidebar   { get; set; } = false;     // 新規タイムラインの既定値
         public bool    DefaultHideCompose   { get; set; } = true;      // 新規タイムラインの既定値
         public bool    DefaultHideListHeader{ get; set; } = false;     // 新規タイムラインの既定値

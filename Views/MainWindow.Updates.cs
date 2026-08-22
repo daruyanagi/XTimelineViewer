@@ -1,10 +1,11 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using XTimelineViewer.Services;
 
 namespace XTimelineViewer.Views
 {
@@ -89,17 +90,30 @@ namespace XTimelineViewer.Views
             try
             {
                 var latest = await FetchLatestVersionAsync();
-                if (latest is null) return false;
+                if (latest is null)
+                {
+                    // 失敗の内訳（回線不通・レート制限・パース失敗）はここまで伝わってこない。
+                    // 「バッジが出ない」と言われたときに、そもそも確認できていないのかを見分ける（#382）。
+                    AppLog.Debug("UpdateCheck: 最新バージョンを取得できなかった");
+                    return false;
+                }
 
                 var current = Assembly.GetExecutingAssembly().GetName().Version!;
                 _appSettings.CachedLatestVersion = latest > current
                     ? $"v{latest.ToString(3)}"
                     : null;
+                _appSettings.LastUpdateCheck = DateTimeOffset.Now;
+                AppLog.Debug($"UpdateCheck: current=v{current.ToString(3)} latest=v{latest.ToString(3)} "
+                           + $"available={_appSettings.CachedLatestVersion is not null}");
                 SaveSettings();
                 UpdateMenuUpdateBadge();
                 return true;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                AppLog.Error("UpdateCheck", ex);
+                return false;
+            }
         }
 
         /// <summary>
@@ -127,7 +141,7 @@ namespace XTimelineViewer.Views
             {
                 using var req = new System.Net.Http.HttpRequestMessage(
                     System.Net.Http.HttpMethod.Get,
-                    "https://api.github.com/repos/daruyanagi/XTimelineViewer/releases/latest");
+                    Services.AppUrls.LatestReleaseApi);
                 // GitHub API は User-Agent 必須
                 req.Headers.TryAddWithoutValidation("User-Agent", "XTimelineViewer");
                 req.Headers.TryAddWithoutValidation("Accept", "application/vnd.github+json");
@@ -150,10 +164,34 @@ namespace XTimelineViewer.Views
 
         private void UpdateMenuUpdateBadge()
         {
-            UpdateBadgeDot.Visibility = _appSettings.CachedLatestVersion is not null
-                ? Visibility.Visible
-                : Visibility.Collapsed;
+            var latest = _appSettings.CachedLatestVersion;
+            var available = latest is not null;
+
+            UpdateBadgeDot.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
+
+            // 青い点は「何かある」しか伝えられないので、メニューを開いた
+            // ところで版数と行き先を示す（#382）。
+            if (available)
+            {
+                UpdateAvailableMenuItem.Text = string.Format(R.Get("CheckUpdate_Available"), latest);
+            }
+            UpdateAvailableMenuItem.Visibility  = available ? Visibility.Visible : Visibility.Collapsed;
+            UpdateAvailableSeparator.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
         }
+
+        /// <summary>
+        /// メニューからはリリースページを開くだけにする。
+        /// 更新の実行（アプリの終了を伴う）は戻せないので、
+        /// メニューの 1 クリックでは起こさない。
+        /// </summary>
+        private void UpdateAvailableMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            AppLog.Debug($"UpdateCheck: メニューからリリースページを開く latest={_appSettings.CachedLatestVersion}");
+            OpenReleasePageAsync().FireAndForget(nameof(UpdateAvailableMenuItem_Click));
+        }
+
+        private static async Task OpenReleasePageAsync()
+            => await Windows.System.Launcher.LaunchUriAsync(new Uri(AppUrls.LatestRelease));
 
         private static string? FindWinget()
         {
