@@ -516,20 +516,28 @@ namespace XTimelineViewer.Views
                 SetFocus();
                 webView.Source = new Uri(cfg.Url);
             };
-            webView.GotFocus   += (s, e) =>
+            // ⚙ でプロファイルを切り替えると WebView2 を作り直すので、
+            // 購読をここに集めて両方から呼ぶ（#361）。
+            // クロージャではなく引数 wv を使うのが重要。変数 webView は
+            // 切り替えで再代入されるため、ハンドラーが自分の購読先とずれる。
+            void AttachWebViewHandlers(WebView2 wv)
             {
-                _focusedHeaderGrid = headerGrid;
-                foreach (var r in _headerRefreshers) r();
-            };
-            webView.PointerEntered += (s, e) => { _pointerOverWebViews.Add(webView);    EvaluateHardReloadPause(webView); };
-            webView.PointerExited  += (s, e) =>
-            {
-                _pointerOverWebViews.Remove(webView);
-                EvaluateHardReloadPause(webView);
-            };
+                wv.GotFocus += (s, e) =>
+                {
+                    _focusedHeaderGrid = headerGrid;
+                    foreach (var r in _headerRefreshers) r();
+                };
+                wv.PointerEntered += (s, e) => { _pointerOverWebViews.Add(wv);    EvaluateHardReloadPause(wv); };
+                wv.PointerExited  += (s, e) =>
+                {
+                    _pointerOverWebViews.Remove(wv);
+                    EvaluateHardReloadPause(wv);
+                };
 
-            _hardReloadUiUpdaters[webView] = () => UpdateHardReloadTooltip(webView, hardReloadTooltip);
-            EnsureHardReloadUiTimer();
+                _hardReloadUiUpdaters[wv] = () => UpdateHardReloadTooltip(wv, hardReloadTooltip);
+                EnsureHardReloadUiTimer();
+            }
+            AttachWebViewHandlers(webView);
 
             // ── Drag & Drop reorder ───────────────────────────────────────────
 
@@ -787,6 +795,7 @@ namespace XTimelineViewer.Views
                         _webViews.Add(webView);
                         _webViewToPane[webView] = pane;
                         AutomationProperties.SetName(webView, urlLabel.Text);
+                        AttachWebViewHandlers(webView);  // 再購読しないとフォーカス表示とホバー制御が死ぬ（#361）
 
                         var newBadge = CreateProfileBadge(cfg.ProfileId);
                         // 列 2 がプロフィールバッジ（列 1 は種別アイコン）。初期生成側と揃える (#337)
