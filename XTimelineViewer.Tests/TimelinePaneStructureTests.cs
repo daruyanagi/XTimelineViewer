@@ -79,38 +79,6 @@ namespace XTimelineViewer.Tests
                     "型や列番号で視覚ツリーを探すと、ペインの構造を変えた瞬間に無言で壊れます。");
         }
 
-        /// <summary>
-        /// 待たない非同期処理は FireAndForget を通すこと（#374）。
-        /// 生の <c>_ = SomethingAsync()</c> は例外を誰も観測しない。
-        /// #339 はまさにこれで、失敗が完全に無言だった。
-        /// </summary>
-        [Fact]
-        public void FireAndForget_IsUsedInsteadOfBareDiscard()
-        {
-            var offenders = new System.Collections.Generic.List<string>();
-            foreach (var rel in ViewSourceFiles())
-            {
-                var lines = File.ReadAllLines(FindRepoFile(rel));
-                for (int i = 0; i < lines.Length; i++)
-                    if (System.Text.RegularExpressions.Regex.IsMatch(lines[i], @"^\s*_ = .*Async\("))
-                        offenders.Add($"{rel}:{i + 1}  {lines[i].Trim()}");
-            }
-            Assert.True(offenders.Count == 0,
-                "生の _ = ...Async() が残っています。FireAndForget(context) を使ってください:"
-                + Environment.NewLine + string.Join(Environment.NewLine, offenders));
-        }
-
-        private static System.Collections.Generic.IEnumerable<string> ViewSourceFiles()
-        {
-            var root = new DirectoryInfo(AppContext.BaseDirectory);
-            while (root is not null && !Directory.Exists(Path.Combine(root.FullName, "Views"))) root = root.Parent;
-            Assert.NotNull(root);
-            var viewsDir = Path.Combine(root!.FullName, "Views");
-            foreach (var f in Directory.EnumerateFiles(viewsDir, "*.cs", SearchOption.AllDirectories))
-                yield return "Views/" + Path.GetRelativePath(viewsDir, f).Replace(Path.DirectorySeparatorChar, '/');
-            yield return "App.xaml.cs";
-        }
-
         [Fact]
         public void HeaderColumns_AreDeclaredOnlyInXaml()
         {

@@ -49,6 +49,10 @@ dotnet build XTimelineViewer.csproj -c Debug -p:Platform=x64
 - **UI 文字列をコードに直接埋め込まない**。`Strings/ja-JP/Resources.resw` と `Strings/en-US/Resources.resw` に追加し、`R.Get("Key")` で参照する。**両言語のキーは常に一致**させる。UI 文字列の追加・変更は `ui-string` スキルに従う。
 - **言語切り替え**: unpackaged では `PrimaryLanguageOverride`（MSIX パッケージ ID 必須）が使えないため、resw を直接パースする方式（#117）。
 - **コード生成の設定 UI ではラベルを `Header` に持たせる**。別立ての `TextBlock` を並べると UI Automation 上でコントロールと関連付かず、Narrator で「何の設定か」が伝わらない。`NumberBox` / `ToggleSwitch` / `ComboBox` には `Header` があるのでそれを使う（#344）。`Header` を持たないコントロールは `AutomationProperties.SetName` で名前を与える。
+- **例外の扱い**（#374）。待たない非同期処理は `_ = SomethingAsync()` ではなく
+  **`SomethingAsync().FireAndForget(nameof(...))`** を使う（生の `_ =` だと例外を誰も観測しない）。
+  空の `catch` には **なぜ無音でよいかをその場に書く**。ログは `Services/AppLog.cs` に一本化されており
+  （1 MB で 1 世代ローテーション）、これらは `ExceptionPolicyTests` で CI から検査している。
 - **PUA グリフ**（Segoe Fluent Icons 等）は `\uXXXX` エスケープで書く。リンターが生グリフに変換すると Edit で扱いづらい。
 - イシュー着手時は **ブランチを切る**。イシューは **`--assignee daruyanagi`**。実装前に **コメントまで読む**（`gh issue view <n> --comments`）。
 

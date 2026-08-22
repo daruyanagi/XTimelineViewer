@@ -97,7 +97,7 @@ namespace XTimelineViewer.Views
         // 借りていた warm WebView2 を非表示ホストへ戻し、下書きをリセットして次回に備える
         private void ReturnWarmToHost(WebView2 wv, StackPanel rootPanel, string profileId)
         {
-            try { rootPanel.Children.Remove(wv); } catch { }
+            try { rootPanel.Children.Remove(wv); } catch { /* 後始末。既に外れている・閉じていても構わない */ }
             wv.Opacity             = 0;
             wv.IsHitTestVisible    = false;
             wv.HorizontalAlignment = HorizontalAlignment.Left;
@@ -204,7 +204,7 @@ namespace XTimelineViewer.Views
 
                 // 現在の WebView2 を退避：warm は破棄せずホストへ戻す／オンデマンドは破棄
                 if (currentIsWarm) ReturnWarmToHost(webView, rootPanel, prevProfileId);
-                else { rootPanel.Children.Remove(webView); try { webView.Close(); } catch { } }
+                else { rootPanel.Children.Remove(webView); try { webView.Close(); } catch { /* 後始末。既に外れている・閉じていても構わない */ } }
 
                 webView = new WebView2 { Width = 500, MinHeight = 520 };
                 currentIsWarm = false;
@@ -227,7 +227,7 @@ namespace XTimelineViewer.Views
 
                 // 後始末：warm はホストへ戻して再利用、オンデマンドは破棄
                 if (currentIsWarm) ReturnWarmToHost(webView, rootPanel, selectedProfileId);
-                else { try { rootPanel.Children.Remove(webView); webView.Close(); } catch { } }
+                else { try { rootPanel.Children.Remove(webView); webView.Close(); } catch { /* 後始末。既に外れている・閉じていても構わない */ } }
 
                 foreach (var p in Panes)
                     p.WebView.Visibility = Visibility.Visible;
@@ -617,7 +617,7 @@ namespace XTimelineViewer.Views
                     if (hit)
                         DownloadMediaAsync(senderWebView, handle, status, mp4Url!, "mp4", "videoSaved").FireAndForget(nameof(DownloadMediaAsync));
                     else
-                        try { senderWebView.CoreWebView2?.PostWebMessageAsString("videoUnavailable"); } catch { }
+                        try { senderWebView.CoreWebView2?.PostWebMessageAsString("videoUnavailable"); } catch { /* ページ遷移中や破棄済みだと落ちる。常態なので記録するとノイズになる */ }
                 }
                 return;
             }
@@ -716,7 +716,7 @@ namespace XTimelineViewer.Views
                     senderWebView.CoreWebView2?.PostWebMessageAsString(
                         savedName is null ? "frameError" : "frameSaved:" + savedName);
                 }
-                catch { }
+                catch { /* ページ遷移中や破棄済みだと落ちる。常態なので記録するとノイズになる */ }
             });
         }
 
@@ -773,7 +773,7 @@ namespace XTimelineViewer.Views
                         snip = text.Substring(from, Math.Min(320, text.Length - from)).Replace("\n", " ").Replace("\r", "");
                     }
                 }
-                catch { }
+                catch { /* 診断用の抜き出しに失敗しても、下の LogDebug は出す */ }
                 LogDebug($"gql {op} bytes={bytes.Length} hasVI={hasVI} hasMp4={hasMp4} videos={pairs.Count} mapTotal={_videoMp4ByStatus.Count}"
                        + (pairs.Count > 0 ? " ids=" + string.Join(",", pairs.Select(p => p.id).Take(5)) : "")
                        + (snip != "" ? " SNIP=" + snip : ""));
@@ -841,7 +841,7 @@ namespace XTimelineViewer.Views
         private void PostToWebView(WebView2 webView, string message)
             => DispatcherQueue.TryEnqueue(() =>
             {
-                try { webView.CoreWebView2?.PostWebMessageAsString(message); } catch { }
+                try { webView.CoreWebView2?.PostWebMessageAsString(message); } catch { /* ページ遷移中や破棄済みだと落ちる。常態なので記録するとノイズになる */ }
             });
 
         // twimg.com の直 URL からメディア（GIF/画像/動画）をダウンロードして保存する（#301/#304・試験機能）。

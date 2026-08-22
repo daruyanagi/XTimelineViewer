@@ -101,7 +101,7 @@ namespace XTimelineViewer.Views
                 var lines = await FileIO.ReadLinesAsync(file);
                 return UrlHelper.ParseUrlShortcut(lines);
             }
-            catch { }
+            catch { /* .url でない・読めないなら null。呼び出し元が無視する */ }
             return null;
         }
 
