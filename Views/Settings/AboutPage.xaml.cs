@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -192,6 +193,15 @@ namespace XTimelineViewer.Views.Settings
 
             var checkBtn = new Button { Content = R.Get("CheckUpdate_Btn") };
 
+            // Header を持たないコントロールには名前を与える（#344）。
+            // 併せて、更新まわりを UI テストから触れるようにする。
+            AutomationProperties.SetName(checkBtn,    R.Get("CheckUpdate_Btn"));
+            AutomationProperties.SetAutomationId(checkBtn,    "UpdateCheckBtn");
+            AutomationProperties.SetName(updateBtn,   (string)updateBtn.Content);
+            AutomationProperties.SetAutomationId(updateBtn,   "UpdateActionBtn");
+            AutomationProperties.SetName(releaseLink, (string)releaseLink.Content);
+            AutomationProperties.SetAutomationId(releaseLink, "UpdateReleaseLink");
+
             var updateCard = new CommunityToolkit.WinUI.Controls.SettingsCard
             {
                 Header     = R.Get("CheckUpdate_Btn"),
@@ -203,57 +213,89 @@ namespace XTimelineViewer.Views.Settings
                 Content = checkBtn,
             };
 
-            // ダウンロード中の表示。90 MB あるので、黙って待たせない。
-            var progressBar = new ProgressBar { Minimum = 0, Maximum = 1, Width = 220 };
-            var cancelBtn   = new Button { Content = R.Get("Button_Cancel") };
+            // 表示は「文言（左）・中央（進捗）・操作（右）」の 3 分割に揃える（#390）。
+            //
+            // InfoBar の Message + ActionButton は「文言のすぐ右にボタン」という並びが
+            // 決まっているため、進捗バーだけが下の段に置かれ、ダウンロード中だけ
+            // 別の組み方になっていた。全部同じ枠に載せると、状態ごとの差し替えが
+            // 「重大度・文言・中央・右」の 4 つだけになり、後始末も要らなくなる。
+            var messageText = new TextBlock
+            {
+                TextWrapping      = TextWrapping.Wrap,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            var progressBar = new ProgressBar
+            {
+                Minimum           = 0,
+                Maximum           = 1,
+                Width             = 200,
+                VerticalAlignment = VerticalAlignment.Center,
+                Visibility        = Visibility.Collapsed,
+            };
+            // 右端の操作は状態ごとに入れ替わる（ボタン / リンク / 無し）。
+            var actionHost = new ContentControl
+            {
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment   = VerticalAlignment.Center,
+            };
+
+            // InfoBar の内容領域は SettingsCard より右端に寄っている。
+            // そのままだと右のボタンが上の「更新を確認」より 25px 外側に出て
+            // 見た目が揃わない（実測値）。余白で合わせる。
+            var infoGrid = new Grid { ColumnSpacing = 12, Margin = new Thickness(0, 0, 24, 0) };
+            infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(messageText, 0);
+            Grid.SetColumn(progressBar, 1);
+            Grid.SetColumn(actionHost,  2);
+            infoGrid.Children.Add(messageText);
+            infoGrid.Children.Add(progressBar);
+            infoGrid.Children.Add(actionHost);
+            infoBar.Content = infoGrid;
+
+            var cancelBtn = new Button { Content = R.Get("Button_Cancel") };
+            AutomationProperties.SetName(cancelBtn, R.Get("Button_Cancel"));
+            AutomationProperties.SetAutomationId(cancelBtn, "UpdateCancelBtn");
             System.Threading.CancellationTokenSource? cts = null;
             cancelBtn.Click += (_, _) => cts?.Cancel();
 
-            void ShowDownloading(double value)
+            /// <summary>
+            /// 表示の切り替えはここ 1 か所。前の状態の要素が残らないよう、
+            /// 4 つとも毎回指定する（progress を渡さなければ進捗バーは隠れる）。
+            /// </summary>
+            void SetState(InfoBarSeverity severity, string message, UIElement? action, double? progress = null)
             {
-                infoBar.Severity     = InfoBarSeverity.Informational;
-                infoBar.Message      = R.Get("CheckUpdate_Downloading");
-                infoBar.Content      = progressBar;
-                infoBar.ActionButton = cancelBtn;
-                progressBar.Value    = value;
-            }
-
-            void ClearProgress()
-            {
-                infoBar.Content = null;
+                infoBar.Severity       = severity;
+                messageText.Text       = message;
+                actionHost.Content     = action;
+                progressBar.Visibility = progress is null ? Visibility.Collapsed : Visibility.Visible;
+                if (progress is { } value) progressBar.Value = value;
             }
 
             void ShowChecking()
-            {
-                ClearProgress();
-                infoBar.Severity     = InfoBarSeverity.Informational;
-                infoBar.Message      = R.Get("CheckUpdate_Checking");
-                infoBar.ActionButton = null;
-            }
+                => SetState(InfoBarSeverity.Informational, R.Get("CheckUpdate_Checking"), null);
 
             void ShowAvailable(string tag)
-            {
-                ClearProgress();
-                infoBar.Severity     = InfoBarSeverity.Warning;
-                infoBar.Message      = string.Format(R.Get("CheckUpdate_Available"), tag);
-                infoBar.ActionButton = updateBtn;
-            }
+                => SetState(InfoBarSeverity.Warning,
+                            string.Format(R.Get("CheckUpdate_Available"), tag), updateBtn);
 
             void ShowUpToDate()
-            {
-                ClearProgress();
-                infoBar.Severity     = InfoBarSeverity.Success;
-                infoBar.Message      = R.Get("CheckUpdate_Latest");
-                infoBar.ActionButton = releaseLink;
-            }
+                => SetState(InfoBarSeverity.Success, R.Get("CheckUpdate_Latest"), releaseLink);
 
             void ShowError()
-            {
-                ClearProgress();
-                infoBar.Severity     = InfoBarSeverity.Error;
-                infoBar.Message      = R.Get("CheckUpdate_Error");
-                infoBar.ActionButton = releaseLink;
-            }
+                => SetState(InfoBarSeverity.Error, R.Get("CheckUpdate_Error"), releaseLink);
+
+            void ShowNotChecked()
+                => SetState(InfoBarSeverity.Informational, R.Get("CheckUpdate_NotChecked"), releaseLink);
+
+            void ShowDownloading(double value)
+                => SetState(InfoBarSeverity.Informational,
+                            R.Get("CheckUpdate_Downloading"), cancelBtn, value);
+
+            void ShowSelfUpdateUnavailable(string tag)
+                => SetState(InfoBarSeverity.Warning,
+                            string.Format(R.Get("CheckUpdate_SelfUpdateUnavailable"), tag), releaseLink);
 
             // 初期表示。CachedLatestVersion の null だけでは「最新」と「未確認」を
             // 区別できないので、一度も確認できていないうちは断定しない。
@@ -269,9 +311,7 @@ namespace XTimelineViewer.Views.Settings
             }
             else
             {
-                infoBar.Severity     = InfoBarSeverity.Informational;
-                infoBar.Message      = R.Get("CheckUpdate_NotChecked");
-                infoBar.ActionButton = releaseLink;
+                ShowNotChecked();
             }
 
             SetLastCheckedDescription(updateCard, settings.LastUpdateCheck);
@@ -395,12 +435,7 @@ namespace XTimelineViewer.Views.Settings
                             // .sha256 の無い古いリリース。検証できないので手動へ回す。
                             // 失敗ではなく案内なので赤にしない。また、どの版が来ているのかを
                             // 消してしまうと、リリースページで何を選べばよいか分からなくなる。
-                            ClearProgress();
-                            infoBar.Severity     = InfoBarSeverity.Warning;
-                            infoBar.Message      = string.Format(
-                                R.Get("CheckUpdate_SelfUpdateUnavailable"),
-                                settings.CachedLatestVersion ?? string.Empty);
-                            infoBar.ActionButton = releaseLink;
+                            ShowSelfUpdateUnavailable(settings.CachedLatestVersion ?? string.Empty);
                             return;
 
                         case ZipUpdateRunner.RunResult.Canceled:
