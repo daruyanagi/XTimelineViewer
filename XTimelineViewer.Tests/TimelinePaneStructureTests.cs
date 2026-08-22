@@ -47,12 +47,12 @@ namespace XTimelineViewer.Tests
         {
             "_paneToSetFocus",
             "_paneUrlUpdaters",
-            "_paneToConfig",
-            "_autoLoadIndicators",
-            "_paneNumberLabels",
             "_headerGridToPane",
             "_headerRefreshers",
         };
+        // 段階 2A（#345）で _paneToConfig / _autoLoadIndicators / _paneNumberLabels は
+        // TimelinePane の中へ移って消えた。辞書が無ければ漏れも起きないので、
+        // この一覧からも外す。段階 2B で残り 4 つも消え、このテスト自体が不要になる。
 
         [Theory]
         [MemberData(nameof(PerPaneState))]
@@ -81,11 +81,10 @@ namespace XTimelineViewer.Tests
                 "番号バッジが表示順とずれます（#359 と同じ不具合）。");
         }
 
-        // ── ここから下は #345 段階 2B（TimelinePane の UserControl 化）の到達目標 ──
-        // 現時点では成り立たないので Skip しておき、達成したら Skip を外す。
+        // ── 以下は #345 段階 2A（TimelinePane の導入）で達成した不変条件 ──
         // 上の 2 つのテストは、辞書そのものが無くなる段階 2B で不要になる。
 
-        [Fact(Skip = "#345 段階 2B で TimelinePane に移すまで成り立たない")]
+        [Fact]
         public void Profiles_DoesNotSearchVisualTreeByType()
         {
             foreach (var token in new[] { "OfType<Grid>()", "OfType<WebView2>()", "Grid.GetColumn" })
@@ -94,7 +93,7 @@ namespace XTimelineViewer.Tests
                     "型や列番号で視覚ツリーを探すと、ペインの構造を変えた瞬間に無言で壊れます。");
         }
 
-        [Fact(Skip = "#345 段階 2B で TimelinePane.xaml に移すまで成り立たない")]
+        [Fact]
         public void HeaderColumns_AreDeclaredOnlyInXaml()
         {
             Assert.False(TimelineCs.Contains("Grid.SetColumn"),

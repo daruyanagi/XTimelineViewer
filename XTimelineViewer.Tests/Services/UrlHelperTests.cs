@@ -105,6 +105,19 @@ public class UrlHelperTests
         Assert.Equal("https://x.com/home", UrlHelper.ParseUrlShortcut(lines));
     }
 
+        // 以前は同じ式が 3 か所に手書きされていた（#345）
+        [Theory]
+        [InlineData("https://x.com/home", true)]
+        [InlineData("https://x.com/home/", true)]
+        [InlineData("https://x.com/HOME", true)]
+        [InlineData("https://x.com/notifications", false)]
+        [InlineData("https://x.com/i/bookmarks", false)]
+        [InlineData("https://x.com/search?q=test", false)]
+        [InlineData("not a url", false)]
+        public void IsHomeUrl_DetectsHomeTimeline(string url, bool expected)
+            => Assert.Equal(expected, UrlHelper.IsHomeUrl(url));
+
+
     [Fact]
     public void ParseUrlShortcut_NoUrlLine_ReturnsNull()
     {

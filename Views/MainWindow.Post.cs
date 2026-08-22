@@ -14,6 +14,8 @@ using Windows.UI;
 
 using XTimelineViewer.Models;
 
+using XTimelineViewer.Views.Controls;
+
 namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
@@ -945,7 +947,7 @@ namespace XTimelineViewer.Views
             int idx  = TimelinePanel.Children.IndexOf(senderPane);
             int next = idx + direction;
             if (next < 0 || next >= TimelinePanel.Children.Count) return;
-            var targetPane = (Grid)TimelinePanel.Children[next];
+            var targetPane = (TimelinePane)TimelinePanel.Children[next];
             if (_paneToSetFocus.TryGetValue(targetPane, out var setFocus))
             {
                 setFocus();

@@ -24,6 +24,8 @@ using Windows.UI;
 using XTimelineViewer.Models;
 using XTimelineViewer.Services;
 
+using XTimelineViewer.Views.Controls;
+
 namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
@@ -180,10 +182,8 @@ namespace XTimelineViewer.Views
         // ── ホーム自動更新インジケーター（#207）─────────────────────────────────
         // JS から postMessage('homeAutoLoad:STATUS') された状態をアイコン＋ツールチップへ反映する。
         // 状態を唯一の真実とし、設定値とアイコンがズレないようにする。
-        private void UpdateAutoLoadIndicator(Grid pane, string status)
+        private void UpdateAutoLoadIndicator(TimelinePane pane, string status)
         {
-            if (!_autoLoadIndicators.TryGetValue(pane, out var ind)) return;
-
             string glyph, tipKey;
             double opacity;
             switch (status)
@@ -196,9 +196,7 @@ namespace XTimelineViewer.Views
                 case "paused-elsewhere": glyph = ""; tipKey = "AutoLoad_Paused_Elsewhere"; opacity = 0.5;  break; // 他ペイン編集中
                 default:              glyph = ""; tipKey = "AutoLoad_Paused";         opacity = 0.5;  break; // idle 等
             }
-            ind.Icon.Glyph   = glyph;
-            ind.Icon.Opacity = opacity;
-            ind.Tip.Content  = R.Get(tipKey);
+            pane.SetAutoLoadIndicator(glyph, opacity, R.Get(tipKey));
         }
 
         // ── タイムライン番号バッジ / 番号フォーカス（#225）──────────────────────
@@ -206,27 +204,9 @@ namespace XTimelineViewer.Views
         private void RefreshTimelineNumbers()
         {
             int n = 1;
-            foreach (var child in TimelinePanel.Children)
+            foreach (var pane in TimelinePanel.Children.OfType<TimelinePane>())
             {
-                if (child is not Grid pane) continue;
-                if (!_paneNumberLabels.TryGetValue(pane, out var label)) continue;
-                if (n <= 9)
-                {
-                    label.Text       = $"{n}.";
-                    label.Visibility = Visibility.Visible;
-                    // ツールチップにアクティブ化ホットキーを表示（#237）
-                    ToolTipService.SetToolTip(label, string.Format(R.Get("Tooltip_ActivateHotkey"), n));
-                    // 番号ごとに一意な id を振ると、ui-smoke.ps1 から
-                    // 「1..N の連番になっているか」を検査できる（#345 / #359 の再発検知）。
-                    AutomationProperties.SetAutomationId(label, $"PaneNumber{n}");
-                }
-                else
-                {
-                    label.Text       = string.Empty;
-                    label.Visibility = Visibility.Collapsed;
-                    ToolTipService.SetToolTip(label, null);
-                    AutomationProperties.SetAutomationId(label, string.Empty);
-                }
+                pane.SetNumber(n <= 9 ? n : null);
                 n++;
             }
         }
@@ -234,7 +214,7 @@ namespace XTimelineViewer.Views
         // Ctrl+数字 で、表示順 oneBased 番目のタイムラインをアクティブ化する。
         private void FocusTimelineByIndex(int oneBased)
         {
-            var panes = TimelinePanel.Children.OfType<Grid>().ToList();
+            var panes = TimelinePanel.Children.OfType<TimelinePane>().ToList();
             int i = oneBased - 1;
             if (i < 0 || i >= panes.Count) return;
             if (_paneToSetFocus.TryGetValue(panes[i], out var setFocus))
@@ -248,7 +228,7 @@ namespace XTimelineViewer.Views
         // 未フォーカス時は先頭（→）/末尾（←）を基準にフォールバック。端では止まる（ラップしない）。
         private void FocusAdjacentFromActive(int direction)
         {
-            var panes = TimelinePanel.Children.OfType<Grid>().ToList();
+            var panes = TimelinePanel.Children.OfType<TimelinePane>().ToList();
             if (panes.Count == 0) return;
 
             int cur = -1;
@@ -268,7 +248,7 @@ namespace XTimelineViewer.Views
         // ── ペインの並べ替え（ドラッグ / キーボード #344）─────────────────
         // TimelinePanel の子と _configs を同じ順序で入れ替え、番号バッジを振り直して保存する。
         // to には「取り除く前のインデックス」を渡す（ドラッグ先ペインの位置）。
-        private void MovePaneTo(Grid pane, int to)
+        private void MovePaneTo(TimelinePane pane, int to)
         {
             int from = TimelinePanel.Children.IndexOf(pane);
             if (from < 0 || to < 0 || from == to) return;
@@ -291,7 +271,7 @@ namespace XTimelineViewer.Views
 
         // 隣のペインと入れ替える（#344）。端では止まる（ラップしない）。
         // 再挿入でフォーカスが外れるので、連続して押せるよう戻しておく。
-        private void MovePaneAdjacent(Grid pane, int direction)
+        private void MovePaneAdjacent(TimelinePane pane, int direction)
         {
             int from = TimelinePanel.Children.IndexOf(pane);
             if (from < 0) return;
@@ -329,25 +309,13 @@ namespace XTimelineViewer.Views
             ViewModel.HasTimelines = true;
 
             // Pane
-            var pane = new Grid
-            {
-                Width             = cfg.Width,
-                Margin            = new Thickness(4),
-                VerticalAlignment = VerticalAlignment.Stretch,
-                BorderThickness   = new Thickness(1),
-                CornerRadius      = new CornerRadius(8)
-            };
-            pane.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            pane.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-
-            // Header
-            var headerGrid = new Grid { Padding = new Thickness(8, 4, 4, 4) };
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // number (#225)
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // typeIcon
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // profileBadge
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // urlLabel
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // buttons
-            Grid.SetRow(headerGrid, 0);
+            // 以前はここでペインの視覚ツリーをコードで組み立てていた（約 150 行）。
+            // 列番号などの定数が複数箱所に手書きされ、片方だけ直す事故が
+            // 繰り返し起きていたので TimelinePane.xaml へ移した（#345）。
+            var pane       = new TimelinePane(cfg);
+            var headerGrid = pane.Header;
+            var webView    = pane.WebView;
+            ApplyProfileBadge(pane);
 
             // Theme
             void ApplyPaneTheme(ElementTheme theme)
@@ -363,16 +331,16 @@ namespace XTimelineViewer.Views
                 var themeDict  = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[themeKey];
                 bool hc = themeKey == "HighContrast";
 
-                pane.Background = (Brush)themeDict["TimelinePaneBackgroundBrush"];
+                pane.Root.Background = (Brush)themeDict["TimelinePaneBackgroundBrush"];
 
                 // コントラストテーマではフォーカスを「塗り」ではなく「枠」で示す（#341）。
                 // ヘッダーを Highlight 色で塗ると、中の文字色までこちらで揃えない限り
                 // 地と衝突する。枠なら子要素の配色に一切干渉せずに済む。
                 bool outlineFocus = hc && focused;
-                pane.BorderBrush     = (Brush)themeDict[outlineFocus
+                pane.Root.BorderBrush     = (Brush)themeDict[outlineFocus
                     ? "TimelineHeaderFocusedBackgroundBrush"
                     : "TimelinePaneBorderBrush"];
-                pane.BorderThickness = new Thickness(outlineFocus ? 2 : 1);
+                pane.Root.BorderThickness = new Thickness(outlineFocus ? 2 : 1);
 
                 headerGrid.Background = (Brush)themeDict[focused && !hc
                     ? "TimelineHeaderFocusedBackgroundBrush"
@@ -381,126 +349,15 @@ namespace XTimelineViewer.Views
             ApplyPaneTheme(((FrameworkElement)Content).ActualTheme);
             pane.ActualThemeChanged += (s, _) => ApplyPaneTheme(pane.ActualTheme);
 
-            // URL label
-            string displayText = cfg.Url;
-            if (Uri.TryCreate(cfg.Url, UriKind.Absolute, out var uri))
-                // 検索クエリの %xx を人間が読めるようデコードする（既存の検索ロジックを再利用）
-                displayText = SearchQueryHelper.DecodeSearchPath(uri.Host + uri.PathAndQuery);
-
-            // 番号バッジ（#225）。左から 1, 2, … を割り当て、Ctrl+数字 のフォーカス切り替えと対応づける。
-            // 番号は表示順に依存するため、追加・削除・並び替え後に RefreshTimelineNumbers で振り直す。
-            var numberLabel = new TextBlock
-            {
-                FontSize          = 12,
-                FontWeight        = Microsoft.UI.Text.FontWeights.SemiBold,
-                Opacity           = 0.6,
-                Margin            = new Thickness(0, 0, 4, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(numberLabel, 0);
-            _paneNumberLabels[pane] = numberLabel;
-
-            var typeIcon = new FontIcon
-            {
-                Glyph             = UrlHelper.GetTimelineGlyph(cfg.Url),
-                FontFamily        = new FontFamily("Segoe Fluent Icons"),
-                FontSize          = 14,
-                Opacity           = 0.8,
-                Margin            = new Thickness(0, 0, 8, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(typeIcon, 1);
-            var hardReloadTooltip = new ToolTip();
-            ToolTipService.SetToolTip(typeIcon, hardReloadTooltip);
-
-            // Profile badge
-            var profileBadge = CreateProfileBadge(cfg.ProfileId);
-            Grid.SetColumn(profileBadge, 2);
-
-            var urlLabel = new TextBlock
-            {
-                Text              = displayText,
-                FontSize          = 12,
-                TextTrimming      = TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center,
-                Opacity           = 0.8
-            };
-            Grid.SetColumn(urlLabel, 3);
-
-            // WebView2
-            var webView = new WebView2
-            {
-                VerticalAlignment   = VerticalAlignment.Stretch,
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-            Grid.SetRow(webView, 1);
-
-            // Buttons
-            var buttonPanel = new StackPanel
-            {
-                Orientation       = Orientation.Horizontal,
-                Spacing           = 4,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(buttonPanel, 4);
-
-            var settingsBtn = new Button
-            {
-                Content = new FontIcon { Glyph = "", FontFamily = new FontFamily("Segoe Fluent Icons"), FontSize = 14 },
-                Width = 28, Height = 26,
-                Padding = new Thickness(0)
-            };
-            ToolTipService.SetToolTip(settingsBtn, R.Get("Pane_Settings_Tooltip"));
-            AutomationProperties.SetName(settingsBtn, R.Get("Pane_Settings_Tooltip"));
-            AutomationProperties.SetAutomationId(settingsBtn, "PaneSettingsBtn");
-            AutomationProperties.SetName(webView, displayText);
-
-            // ホーム自動更新インジケーター（#207）。ホームペインのみ表示し、設定ギアの左に置く。
-            var autoLoadIcon = new FontIcon
-            {
-                Glyph             = "",
-                FontFamily        = new FontFamily("Segoe Fluent Icons"),
-                FontSize          = 14,
-                Opacity           = 0.8,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin            = new Thickness(0, 0, 2, 0),
-                Visibility        = IsHomeConfig(cfg) ? Visibility.Visible : Visibility.Collapsed
-            };
-            var autoLoadTip = new ToolTip { Content = R.Get("AutoLoad_Off") };
-            ToolTipService.SetToolTip(autoLoadIcon, autoLoadTip);
-            buttonPanel.Children.Add(autoLoadIcon);
-            _autoLoadIndicators[pane] = (autoLoadIcon, autoLoadTip);
-            UpdateAutoLoadIndicator(pane, _appSettings.HomeAutoLoadEnabled ? "running" : "off");
-
-            buttonPanel.Children.Add(settingsBtn);
-
-            headerGrid.Children.Add(numberLabel);
-            headerGrid.Children.Add(typeIcon);
-            headerGrid.Children.Add(profileBadge);
-            headerGrid.Children.Add(urlLabel);
-            headerGrid.Children.Add(buttonPanel);
-
-            pane.Children.Add(headerGrid);
-            pane.Children.Add(webView);
             TimelinePanel.Children.Add(pane);
             _webViews.Add(webView);
             _webViewToPane[webView] = pane;
             _headerGridToPane[headerGrid] = pane;  // アクティブ判定用（#227）
-            _paneToConfig[pane] = cfg;  // ペイン一時拡大からの幅復元用（#287）
             RefreshTimelineNumbers();  // 番号バッジを振り直す（#225）
+            UpdateAutoLoadIndicator(pane, _appSettings.HomeAutoLoadEnabled ? "running" : "off");
 
             // cfg.Url の変更をヘッダーへ反映する更新子（ベース URL 変更・リスト URL ライブ解決で再利用）
-            _paneUrlUpdaters[cfg] = () =>
-            {
-                urlLabel.Text = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var u)
-                    ? SearchQueryHelper.DecodeSearchPath(u.Host + u.PathAndQuery)
-                    : cfg.Url;
-                typeIcon.Glyph = UrlHelper.GetTimelineGlyph(cfg.Url);
-                AutomationProperties.SetName(webView, urlLabel.Text);
-                bool nowHome = Uri.TryCreate(cfg.Url, UriKind.Absolute, out var hu)
-                            && hu.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase);
-                autoLoadIcon.Visibility = nowHome ? Visibility.Visible : Visibility.Collapsed;
-            };
+            _paneUrlUpdaters[cfg] = pane.UpdateUrlHeader;
 
             // ── Focus ─────────────────────────────────────────────────────────
 
@@ -539,7 +396,7 @@ namespace XTimelineViewer.Views
                     EvaluateHardReloadPause(wv);
                 };
 
-                _hardReloadUiUpdaters[wv] = () => UpdateHardReloadTooltip(wv, hardReloadTooltip);
+                _hardReloadUiUpdaters[wv] = () => UpdateHardReloadTooltip(wv, pane.HardReloadTooltip);
                 EnsureHardReloadUiTimer();
             }
             AttachWebViewHandlers(webView);
@@ -579,7 +436,7 @@ namespace XTimelineViewer.Views
 
             // ── Settings dialog ───────────────────────────────────────────────
 
-            settingsBtn.Click += async (s, e2) =>
+            pane.SettingsButton.Click += async (s, e2) =>
             {
                 var widthBox = new NumberBox
                 {
@@ -740,10 +597,7 @@ namespace XTimelineViewer.Views
                     _configs.Remove(cfg);
                     _paneToSetFocus.Remove(pane);
                     _paneUrlUpdaters.Remove(cfg);
-                    _autoLoadIndicators.Remove(pane);
-                    _paneNumberLabels.Remove(pane);
                     _headerGridToPane.Remove(headerGrid);
-                    _paneToConfig.Remove(pane);
                     _headerRefreshers.Remove(pane);
                     if (_focusedHeaderGrid == headerGrid)
                     {
@@ -788,26 +642,13 @@ namespace XTimelineViewer.Views
                     if (prevProfileId != cfg.ProfileId)
                     {
                         CleanupWebView(webView);
-                        pane.Children.Remove(webView);
-
-                        webView = new WebView2
-                        {
-                            VerticalAlignment   = VerticalAlignment.Stretch,
-                            HorizontalAlignment = HorizontalAlignment.Stretch
-                        };
-                        Grid.SetRow(webView, 1);
-                        pane.Children.Add(webView);
+                        // 差し替え手順は TimelinePane 側に集めてある（行番号の手書きを残さない）
+                        webView = pane.ReplaceWebView();
                         _webViews.Add(webView);
                         _webViewToPane[webView] = pane;
-                        AutomationProperties.SetName(webView, urlLabel.Text);
                         AttachWebViewHandlers(webView);  // 再購読しないとフォーカス表示とホバー制御が死ぬ（#361）
 
-                        var newBadge = CreateProfileBadge(cfg.ProfileId);
-                        // 列 2 がプロフィールバッジ（列 1 は種別アイコン）。初期生成側と揃える (#337)
-                        Grid.SetColumn(newBadge, 2);
-                        headerGrid.Children.Remove(profileBadge);
-                        headerGrid.Children.Add(newBadge);
-                        profileBadge = newBadge;
+                        ApplyProfileBadge(pane);
 
                         Debug.WriteLine($"[Profile] WebView2 recreated for profile switch: {prevProfileId} -> {cfg.ProfileId}");
                         _ = InitWebViewAsync(webView, cfg);

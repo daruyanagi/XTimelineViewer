@@ -1,0 +1,101 @@
+<UserControl
+    x:Class="XTimelineViewer.Views.Controls.TimelinePane"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Microsoft.UI.Xaml.Controls"
+    Margin="4"
+    VerticalAlignment="Stretch">
+
+    <!-- タイムライン 1 本分のペイン（#345）。
+         以前は MainWindow.AddTimeline() が約 510 行のメソッドの中で
+         この視覚ツリーをコードで組み立てていた。列番号などの定数が
+         複数箇所に手書きされ、片方だけ直す事故が実際に起きている
+         （#337 / #341 のバッジ重複）。ここに一度だけ宣言する。 -->
+    <Grid x:Name="PaneRoot"
+          BorderThickness="1"
+          CornerRadius="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="HeaderGrid" Grid.Row="0" Padding="8,4,4,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>  <!-- 0: 番号バッジ (#225) -->
+                <ColumnDefinition Width="Auto"/>  <!-- 1: 種別アイコン -->
+                <ColumnDefinition Width="Auto"/>  <!-- 2: プロファイルバッジ -->
+                <ColumnDefinition Width="*"/>     <!-- 3: URL -->
+                <ColumnDefinition Width="Auto"/>  <!-- 4: ボタン -->
+            </Grid.ColumnDefinitions>
+
+            <!-- 表示順に 1..9 を割り当てる。AutomationId は RefreshTimelineNumbers が
+                 PaneNumber1..9 に振り直す（ui-smoke.ps1 の連番検査用） -->
+            <TextBlock x:Name="NumberLabelText"
+                       Grid.Column="0"
+                       FontSize="12"
+                       FontWeight="SemiBold"
+                       Opacity="0.6"
+                       Margin="0,0,4,0"
+                       VerticalAlignment="Center"/>
+
+            <!-- ツールチップにはハードリロードの残り時間が入る -->
+            <FontIcon x:Name="TypeIcon"
+                      Grid.Column="1"
+                      FontFamily="Segoe Fluent Icons"
+                      FontSize="14"
+                      Opacity="0.8"
+                      Margin="0,0,8,0"
+                      VerticalAlignment="Center"/>
+
+            <!-- 以前はプロファイル変更のたびに Border を作り直して差し替えていた。
+                 器を固定して中身だけ更新すれば、列番号の二重管理が消える（#337） -->
+            <Border x:Name="ProfileBadge"
+                    Grid.Column="2"
+                    CornerRadius="4"
+                    Padding="4,1,4,1"
+                    Margin="0,0,6,0"
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed">
+                <TextBlock x:Name="ProfileBadgeText"
+                           FontSize="10"
+                           FontWeight="SemiBold"/>
+            </Border>
+
+            <TextBlock x:Name="UrlLabel"
+                       Grid.Column="3"
+                       FontSize="12"
+                       TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center"
+                       Opacity="0.8"/>
+
+            <StackPanel Grid.Column="4"
+                        Orientation="Horizontal"
+                        Spacing="4"
+                        VerticalAlignment="Center">
+                <!-- ホーム自動更新インジケーター（#207）。ホームペインのみ表示 -->
+                <FontIcon x:Name="AutoLoadIcon"
+                          Glyph="&#xE72C;"
+                          FontFamily="Segoe Fluent Icons"
+                          FontSize="14"
+                          Opacity="0.8"
+                          Margin="0,0,2,0"
+                          VerticalAlignment="Center"
+                          Visibility="Collapsed"/>
+                <Button x:Name="SettingsBtn"
+                        Width="28"
+                        Height="26"
+                        Padding="0"
+                        AutomationProperties.AutomationId="PaneSettingsBtn">
+                    <FontIcon Glyph="&#xE713;"
+                              FontFamily="Segoe Fluent Icons"
+                              FontSize="14"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <controls:WebView2 x:Name="WebViewHost"
+                           Grid.Row="1"
+                           VerticalAlignment="Stretch"
+                           HorizontalAlignment="Stretch"/>
+    </Grid>
+</UserControl>
