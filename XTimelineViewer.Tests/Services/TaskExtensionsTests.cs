@@ -12,6 +12,9 @@ namespace XTimelineViewer.Tests.Services
     /// <c>_ = SomethingAsync()</c> と書くと例外を誰も観測しない。#339 はまさにこれで、
     /// InitWebViewAsync の後半 90 行が try の外にあり、失敗が完全に無言だった。
     /// </summary>
+    // AppLog は静的なので、同じシンクを取り合うクラスを並列に走らせない。
+    // 並列だと Initialize の先方が互いの出力先を奇麗にしてしまい、結果が揺れる。
+    [Collection("AppLog")]
     public class TaskExtensionsTests : IDisposable
     {
         private readonly string _dir;

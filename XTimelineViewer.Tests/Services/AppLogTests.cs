@@ -14,6 +14,9 @@ namespace XTimelineViewer.Tests.Services
     /// 追記し続けていたため。エラーを探すときノイズに埋もれるうえ、失敗ダイアログが
     /// 「ログ: &lt;パス&gt;」と案内しても開けない大きさになる。
     /// </summary>
+    // AppLog は静的なので、同じシンクを取り合うクラスを並列に走らせない。
+    // 並列だと Initialize の先方が互いの出力先を奇麗にしてしまい、結果が揺れる。
+    [Collection("AppLog")]
     public class AppLogTests : IDisposable
     {
         private readonly string _dir;

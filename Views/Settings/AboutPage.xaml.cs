@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using Windows.ApplicationModel.DataTransfer;
+using XTimelineViewer.Services;
 
 namespace XTimelineViewer.Views.Settings
 {
@@ -39,14 +40,12 @@ namespace XTimelineViewer.Views.Settings
             var edgeVersion = _parent?.EdgeVersion ?? R.Get("Version_Unknown");
             var versionInfoText = $"XTimelineViewer (xTV) {versionWithChannel}\r\n{edgeChannel} {edgeVersion}";
 
-            var repoUrl = "https://github.com/daruyanagi/XTimelineViewer";
-            var fallbackUrl = repoUrl + "/releases/latest";
 
             // ── 1. アプリ情報ヘッダー ────────────────────────────────────────
             BuildHeaderCard(versionWithChannel, versionInfoText);
 
             // ── 2. 更新を確認 ────────────────────────────────────────────────
-            BuildUpdateSection(currentVersion, repoUrl, fallbackUrl);
+            BuildUpdateSection(currentVersion, AppUrls.LatestRelease);
 
             // ── 3. ライセンス ────────────────────────────────────────────────
             var licenseCard = new CommunityToolkit.WinUI.Controls.SettingsCard
@@ -144,7 +143,14 @@ namespace XTimelineViewer.Views.Settings
             RootPanel.Children.Add(headerCard);
         }
 
-        private void BuildUpdateSection(Version currentVersion, string repoUrl, string fallbackUrl)
+        /// <summary>
+        /// 更新の確認と状態表示（#382）。
+        ///
+        /// 以前は SettingsCard の右側にボタン・状態文・ボタンを縦に積んでいた。
+        /// 狭い上に、重要な「更新がある」が小さな地の文で埋もれていた。
+        /// PowerToys にならい、操作（確認ボタン）と状態（InfoBar）を分ける。
+        /// </summary>
+        private void BuildUpdateSection(Version currentVersion, string releaseUrl)
         {
             if (_parent is null) return;
 
@@ -153,64 +159,127 @@ namespace XTimelineViewer.Views.Settings
             if (PackageContext.IsPackaged) return;
 
             // winget 版なら winget upgrade に委譲でき、それ以外はリリースページへ誘導する。
+            // ZIP 版の「再起動して更新」は自己置き換えが要るので #328 段階2 待ち。
             bool useWinget = PackageContext.Channel == InstallChannel.Winget && _parent.HasWinget;
 
             var settings = _parent.Settings;
 
-            var statusText = new TextBlock
+            var infoBar = new InfoBar
             {
-                FontSize   = 13,
-                Margin     = new Thickness(0, 4, 0, 0),
-                Visibility = Visibility.Collapsed,
+                IsOpen     = true,
+                IsClosable = false,
             };
+
+            // 「最新の状態です」のときでも変更履歴を見に行けるようにしておく。
+            var releaseLink = new HyperlinkButton { Content = R.Get("CheckUpdate_Download_Zip") };
+            releaseLink.Click += (_, _) => OpenUri(new Uri(releaseUrl));
 
             var updateBtn = new Button
             {
-                Content    = useWinget ? R.Get("CheckUpdate_Download_Winget")
-                                       : R.Get("CheckUpdate_Download_Zip"),
-                Margin     = new Thickness(0, 4, 0, 0),
-                Visibility = Visibility.Collapsed,
+                Content = useWinget ? R.Get("CheckUpdate_Download_Winget")
+                                    : R.Get("CheckUpdate_Download_Zip"),
             };
 
-            // キャッシュがあれば初期表示
+            var checkBtn = new Button { Content = R.Get("CheckUpdate_Btn") };
+
+            var updateCard = new CommunityToolkit.WinUI.Controls.SettingsCard
+            {
+                Header     = R.Get("CheckUpdate_Btn"),
+                HeaderIcon = new FontIcon
+                {
+                    Glyph      = "\uE895",
+                    FontFamily = new FontFamily("Segoe Fluent Icons"),
+                },
+                Content = checkBtn,
+            };
+
+            void ShowChecking()
+            {
+                infoBar.Severity     = InfoBarSeverity.Informational;
+                infoBar.Message      = R.Get("CheckUpdate_Checking");
+                infoBar.ActionButton = null;
+            }
+
+            void ShowAvailable(string tag)
+            {
+                infoBar.Severity     = InfoBarSeverity.Warning;
+                infoBar.Message      = string.Format(R.Get("CheckUpdate_Available"), tag);
+                infoBar.ActionButton = updateBtn;
+            }
+
+            void ShowUpToDate()
+            {
+                infoBar.Severity     = InfoBarSeverity.Success;
+                infoBar.Message      = R.Get("CheckUpdate_Latest");
+                infoBar.ActionButton = releaseLink;
+            }
+
+            void ShowError()
+            {
+                infoBar.Severity     = InfoBarSeverity.Error;
+                infoBar.Message      = R.Get("CheckUpdate_Error");
+                infoBar.ActionButton = releaseLink;
+            }
+
+            // 初期表示。CachedLatestVersion の null だけでは「最新」と「未確認」を
+            // 区別できないので、一度も確認できていないうちは断定しない。
             if (settings.CachedLatestVersion is { } cached
                 && Version.TryParse(cached.TrimStart('v'), out var cachedVersion)
                 && cachedVersion > currentVersion)
             {
-                statusText.Text       = string.Format(R.Get("CheckUpdate_Available"), cached);
-                statusText.Visibility = Visibility.Visible;
-                updateBtn.Visibility  = Visibility.Visible;
+                ShowAvailable(cached);
+            }
+            else if (settings.LastUpdateCheck is not null)
+            {
+                ShowUpToDate();
+            }
+            else
+            {
+                infoBar.Severity     = InfoBarSeverity.Informational;
+                infoBar.Message      = R.Get("CheckUpdate_NotChecked");
+                infoBar.ActionButton = releaseLink;
             }
 
-            var checkBtn = new Button { Content = R.Get("CheckUpdate_Btn") };
+            SetLastCheckedDescription(updateCard, settings.LastUpdateCheck);
+
             checkBtn.Click += async (_, _) =>
             {
-                checkBtn.IsEnabled    = false;
-                statusText.Text       = R.Get("CheckUpdate_Checking");
-                statusText.Visibility = Visibility.Visible;
-                updateBtn.Visibility  = Visibility.Collapsed;
+                checkBtn.IsEnabled = false;
+                ShowChecking();
                 try
                 {
                     if (_parent.FetchLatestVersionAsync is null) return;
                     var latest = await _parent.FetchLatestVersionAsync();
-                    if (latest is not null && latest > currentVersion)
+                    if (latest is null)
+                    {
+                        // 取得できなかったのに「最新です」と出すと、更新を見落とす。
+                        AppLog.Debug("UpdateCheck(manual): 最新バージョンを取得できなかった");
+                        ShowError();
+                        return;
+                    }
+
+                    if (latest > currentVersion)
                     {
                         var tag = $"v{latest.ToString(3)}";
                         settings.CachedLatestVersion = tag;
-                        statusText.Text      = string.Format(R.Get("CheckUpdate_Available"), tag);
-                        updateBtn.Visibility = Visibility.Visible;
+                        ShowAvailable(tag);
                     }
                     else
                     {
                         settings.CachedLatestVersion = null;
-                        statusText.Text = R.Get("CheckUpdate_Latest");
+                        ShowUpToDate();
                     }
+                    settings.LastUpdateCheck = DateTimeOffset.Now;
+                    SetLastCheckedDescription(updateCard, settings.LastUpdateCheck);
+                    AppLog.Debug($"UpdateCheck(manual): current=v{currentVersion.ToString(3)} "
+                               + $"latest=v{latest.ToString(3)} available={settings.CachedLatestVersion is not null}");
                     _parent.SaveSettingsOnly?.Invoke();
                     _parent.UpdateMenuBadge?.Invoke();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    statusText.Text = R.Get("CheckUpdate_Error");
+                    AppLog.Error("UpdateCheck(manual)", ex);
+                    ShowError();
                 }
                 finally
                 {
@@ -223,8 +292,8 @@ namespace XTimelineViewer.Views.Settings
                 // ZIP 版は自己置き換えを行わず、リリースページへ誘導する (#328)
                 if (!useWinget)
                 {
-                    if (_parent.LaunchUriAsync is not null)
-                        await _parent.LaunchUriAsync(new Uri(fallbackUrl));
+                    AppLog.Debug("UpdateCheck: リリースページを開く");
+                    OpenUri(new Uri(releaseUrl));
                     return;
                 }
 
@@ -242,27 +311,35 @@ namespace XTimelineViewer.Views.Settings
                     RequestedTheme    = ((FrameworkElement)_parent.Content).ActualTheme,
                 };
                 if (await confirmDlg.ShowAsync() != ContentDialogResult.Primary) return;
+
+                AppLog.Debug("UpdateCheck: winget upgrade を起動してアプリを終了する");
                 _parent.ExitAndRunWingetUpdate?.Invoke();
             };
 
-            var updateCard = new CommunityToolkit.WinUI.Controls.SettingsCard
-            {
-                Header     = R.Get("CheckUpdate_Btn"),
-                HeaderIcon = new FontIcon
-                {
-                    Glyph      = "",
-                    FontFamily = new FontFamily("Segoe Fluent Icons"),
-                },
-            };
-
-            var updateContent = new StackPanel { Spacing = 4 };
-            updateContent.Children.Add(checkBtn);
-            updateContent.Children.Add(statusText);
-            updateContent.Children.Add(updateBtn);
-            updateCard.Content = updateContent;
-
             RootPanel.Children.Add(updateCard);
+            RootPanel.Children.Add(infoBar);
         }
+
+        /// <summary>「最終確認: ...」をカードの説明に出す。未確認なら何も出さない。</summary>
+        private static void SetLastCheckedDescription(
+            CommunityToolkit.WinUI.Controls.SettingsCard card, DateTimeOffset? lastCheck)
+        {
+            // Description は object なので null を入れると警告になる。
+            // 空文字を入れれば SettingsCard 側が行を出さない。
+            card.Description = lastCheck is null
+                ? string.Empty
+                : string.Format(R.Get("CheckUpdate_LastChecked"), lastCheck.Value.LocalDateTime);
+        }
+
+        /// <summary>親が持つ起動経路があればそれを使う。無ければ直接開く。</summary>
+        private void OpenUri(Uri uri)
+        {
+            if (_parent?.LaunchUriAsync is not null)
+                _parent.LaunchUriAsync(uri).FireAndForget("OpenReleasePage");
+            else
+                Windows.System.Launcher.LaunchUriAsync(uri).AsTask().FireAndForget("OpenReleasePage");
+        }
+
 
         private void BuildComponentsExpander(string edgeChannel, string edgeVersion)
         {

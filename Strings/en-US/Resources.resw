@@ -199,6 +199,8 @@
   <data name="CheckUpdate_Available" xml:space="preserve"><value>{0} is available</value></data>
   <data name="CheckUpdate_Download_Winget" xml:space="preserve"><value>Exit and Update via winget</value></data>
   <data name="CheckUpdate_Download_Zip" xml:space="preserve"><value>Open the release page</value></data>
+  <data name="CheckUpdate_NotChecked" xml:space="preserve"><value>Not checked for updates yet</value></data>
+  <data name="CheckUpdate_LastChecked" xml:space="preserve"><value>Last checked: {0:yyyy/MM/dd HH:mm}</value></data>
   <data name="CheckUpdate_Error" xml:space="preserve"><value>Update check failed</value></data>
   <data name="CheckUpdate_WingetTitle" xml:space="preserve"><value>Update via winget</value></data>
   <data name="CheckUpdate_WingetBody" xml:space="preserve"><value>The app will close and update via winget. Please restart the app manually after the update completes.</value></data>
