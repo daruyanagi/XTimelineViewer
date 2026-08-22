@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Text.Json;
 using XTimelineViewer.Services;
 using XTimelineViewer.Views;
@@ -98,12 +99,71 @@ namespace XTimelineViewer
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
+            // 更新の仕上げ役として起動されたときは、UI を出さずに差し替えだけ行って終わる（#328）。
+            // このプロセスは展開先（インストール先の隣）から動いており、
+            // 差し替え対象の外にいるので、実行中の exe / DLL を掴んでいない。
+            if (UpdateSwap.ParseFinishArgs(Environment.GetCommandLineArgs()[1..]) is { } finish)
+            {
+                FinishUpdateAsync(finish.InstallDir, finish.WaitForPid)
+                    .FireAndForget(nameof(FinishUpdateAsync));
+                return;
+            }
+
             // WinAppSDK 1.6+ の Microsoft.Windows.Globalization 経由で packaged / unpackaged
             // 両対応の言語上書きを行う（R.Initialize 内で設定）。リソース読み込み前に呼ぶこと。
             var lang = ReadLanguageSetting();
             R.Initialize(lang);
+
+            // 前回の更新で残った .old を片付ける。消せなくても支障は無い。
+            UpdateSwap.CleanupBackup(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
+
             _window = new MainWindow();
             _window.Activate();
+        }
+
+        /// <summary>
+        /// 旧プロセスの終了を待って差し替え、本来の場所から起動し直す（#328）。
+        ///
+        /// 失敗しても旧版が起動できる状態に戻すのが最優先。
+        /// 「更新できなかった」はやり直せるが、「更新に失敗して壊れた」は戻せない。
+        /// </summary>
+        private static async Task FinishUpdateAsync(string installDir, int waitForPid)
+        {
+            var staging = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+            AppLog.Debug($"FinishUpdate: staging={staging} install={installDir} pid={waitForPid}");
+
+            // 待ちきれないまま差し替えると、掴まれたままのファイルを動かすことになる。
+            if (!await UpdateSwap.WaitForExitAsync(waitForPid, TimeSpan.FromSeconds(30)))
+            {
+                AppLog.Debug("FinishUpdate: 旧プロセスが終わらないので差し替えを中止する");
+                LaunchAndExit(Path.Combine(installDir, "XTimelineViewer.exe"));
+                return;
+            }
+
+            var result = UpdateSwap.Swap(installDir, staging);
+            AppLog.Debug($"FinishUpdate: {result}");
+
+            // Broken のときは installDir に何も無い。起動しても失敗するが、
+            // ここで黙って終わるより、ログを残したうえで試みたほうが手がかりが残る。
+            LaunchAndExit(Path.Combine(installDir, "XTimelineViewer.exe"));
+        }
+
+        private static void LaunchAndExit(string exePath)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName         = exePath,
+                    WorkingDirectory = Path.GetDirectoryName(exePath)!,
+                    UseShellExecute  = true,
+                });
+            }
+            catch (Exception ex)
+            {
+                AppLog.Error("FinishUpdate(launch)", ex);
+            }
+            Current.Exit();
         }
 
         private static string? ReadLanguageSetting()
