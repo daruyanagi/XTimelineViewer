@@ -559,6 +559,18 @@ namespace XTimelineViewer.Views
                 return;
             }
 
+            // Shift+ホイールでペインを横スクロール（#371）。
+            // ヘッダーや余白の上では WinUI の ScrollViewer が縦ホイールを
+            // 横へ回すので、ここは WebView2 の上だけを補う。
+            if (message.StartsWith("scrollPanes:") &&
+                double.TryParse(message["scrollPanes:".Length..],
+                                System.Globalization.NumberStyles.Float,
+                                System.Globalization.CultureInfo.InvariantCulture, out var wheelDelta))
+            {
+                ScrollPanesBy(wheelDelta);
+                return;
+            }
+
             if (message.StartsWith("openTimestamp:") &&
                 Uri.TryCreate(message[14..], UriKind.Absolute, out var timestampUri))
             {
@@ -934,6 +946,18 @@ namespace XTimelineViewer.Views
         {
             if (PaneOf(senderWebView) is { } pane)
                 MovePaneAdjacent(pane, direction);
+        }
+
+        /// <summary>
+        /// ペインの帯を横へスクロールする（#371）。
+        /// delta はブラウザーの wheel イベントの deltaY（通常 1 ノッチ = 100 前後）。
+        /// </summary>
+        private void ScrollPanesBy(double delta)
+        {
+            // ペイン幅の既定は 350px。deltaY をそのまま使うと遅いので少し速める。
+            const double Scale = 1.6;
+            var target = TimelineScroll.HorizontalOffset + delta * Scale;
+            TimelineScroll.ChangeView(target, null, null, disableAnimation: true);
         }
 
         private void FocusAdjacentTimeline(WebView2 senderWebView, int direction)

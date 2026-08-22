@@ -228,6 +228,22 @@ namespace XTimelineViewer.Views
                     lastAct = now;
                     if (!document.hasFocus()) window.chrome.webview.postMessage('activate');
                 }, { passive: true, capture: true });
+
+                // Shift+ホイールでペインを横スクロールする（#371）。
+                // ヘッダーや余白の上では WinUI の ScrollViewer が縦ホイールを
+                // 自動で横へ回すが、ここは WebView2 なので届かない。
+                //
+                // 上のリスナーは passive なので preventDefault が効かない。別に登録する。
+                // 非 passive はブラウザーのスクロール高速パスを外すので、
+                // Shift が無いときは最初の 1 行で抜けること。
+                document.addEventListener('wheel', function (e) {
+                    if (!e.shiftKey || e.ctrlKey || e.altKey) return;
+                    // X 側に横方向のオーバーフローがある画面で、
+                    // ページが横に動いてしまうのを防ぐ。
+                    e.preventDefault();
+                    var d = e.deltaY || e.deltaX;
+                    if (d) window.chrome.webview.postMessage('scrollPanes:' + d);
+                }, { passive: false, capture: true });
             })();
             """;
 
