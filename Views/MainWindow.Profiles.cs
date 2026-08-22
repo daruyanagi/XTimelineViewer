@@ -72,6 +72,11 @@ namespace XTimelineViewer.Views
             if (_focusedHeaderGrid == null)
                 foreach (var r in _headerRefreshers) r();
 
+            // 番号バッジは表示順に依存するので、削除後は振り直す（#359）。
+            // ⚙ ダイアログからの削除では呼んでいたが、こちらの経路では抜けており、
+            // Ctrl+数字（位置で判定）とバッジの表示が食い違っていた。
+            RefreshTimelineNumbers();
+
             ViewModel.HasTimelines = TimelinePanel.Children.Count > 0;
         }
 
