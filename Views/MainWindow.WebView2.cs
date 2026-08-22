@@ -232,13 +232,21 @@ namespace XTimelineViewer.Views
             await webView.CoreWebView2.ExecuteScriptAsync(BuildHideComposeJs(hide));
         }
 
-        private async Task LoadExtensionsAsync(WebView2 webView)
+        /// <summary>
+        /// 拡張機能をこの WebView2 のプロファイルへ読み込む（#397）。
+        ///
+        /// 拡張機能は <c>CoreWebView2Profile</c> 単位で登録される。以前は
+        /// アプリ起動につき一度しか走らず、<b>最初に作られた WebView2 の
+        /// プロファイルにしか入らなかった</b>。どのプロファイルになるかは
+        /// ペインの並びと生成順まかせで、後から追加したプロファイルには入らない。
+        ///
+        /// ペインの WebView2 初期化から呼ばれるので、プロファイル単位にするだけで
+        /// 後から追加したプロファイルも自然に拾える。
+        /// </summary>
+        private async Task LoadExtensionsAsync(WebView2 webView, string profileId)
         {
-            if (_extensionsLoaded) return;
-            _extensionsLoaded = true;
+            if (!_extensionsLoadedProfiles.Add(profileId)) return;
 
-            // MSIX パッケージ内の extensions は WindowsApps 配下に置かれ WebView2 から直接アクセスできない。
-            // LocalState へコピーしてから読み込む。アンパッケージド環境は BaseDirectory を使う。
             var extensionsDir = GetExtensionsDir();
             if (!Directory.Exists(extensionsDir)) return;
 
@@ -250,11 +258,21 @@ namespace XTimelineViewer.Views
             {
                 try
                 {
+                    // 登録は永続化されるが、同じものを足し直しても問題ない
+                    // （従来から起動のたびに呼んでおり、エラーになっていない）。
                     var ext = await webView.CoreWebView2.Profile.AddBrowserExtensionAsync(extDir);
-                    AddExtensionButton(ext, extDir);
+
+                    // 一覧とツールバーへ出すのは拡張機能ごとに 1 回だけ。読み込みは
+                    // プロファイルごとに走るので、素直に呼ぶと同じボタンが並ぶ。
+                    if (_surfacedExtensionIds.Add(ext.Id)) AddExtensionButton(ext, extDir);
                 }
                 catch (Exception ex)
                 {
+                    AppLog.Error($"LoadExtensions({Path.GetFileName(extDir)}, {profileId})", ex);
+
+                    // 同じ失敗をプロファイルの数だけ知らせない。
+                    if (!_reportedExtensionErrors.Add(extDir)) continue;
+
                     errors.AppendLine($"・{Path.GetFileName(extDir)}");
                     errors.AppendLine($"  {ex}");
                 }
@@ -550,7 +568,7 @@ namespace XTimelineViewer.Views
                     CaptureVideoVariantsAsync(args).FireAndForget(nameof(CaptureVideoVariantsAsync));
                 };
 
-                await LoadExtensionsAsync(webView);
+                await LoadExtensionsAsync(webView, cfg.ProfileId);
                 ApplyThemeToWebViews();
             }
             catch (Exception ex)
