@@ -30,54 +30,32 @@ namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
     {
-        // ── Persistence ───────────────────────────────────────────────────────
+        // ── Persistence ───────────────────────────────────────────
+        // 実体は Services/TimelineStore.cs（#368）。ここは例外を握って記録するだけ。
 
-        // 保存の同時実行を防ぐ。追加・並べ替えなどから fire-and-forget で呼ばれるため、
-        // I/O が重なって timelines.json が競合するのを避ける（#338）。
-        private readonly SemaphoreSlim _saveTimelinesLock = new(1, 1);
-
+        /// <summary>
+        /// タイムライン一覧を保存する。fire-and-forget で呼ばれるので、
+        /// 例外は呼び出し元で観測されない。ここで必ず記録する。
+        /// </summary>
         private async Task SaveTimelinesAsync()
         {
-            // JSON 化は UI スレッド上で同期的に行い、_configs のスナップショットを取る。
-            // await の後で _configs が変更されても、書き出す内容がぶれないようにするため。
-            var json = JsonSerializer.Serialize(_configs, JsonOptions);
-
-            await _saveTimelinesLock.WaitAsync();
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(SaveFilePath)!);
-
-                // 一時ファイルに書いてから置換する原子的保存（#338）。
-                // WriteAllTextAsync は truncate してから書くため、途中で落ちると
-                // timelines.json が壊れる。RestoreTimelinesAsync は例外を握りつぶすので、
-                // 壊れると全ペインが黙って消えてしまう。
-                var tmp = SaveFilePath + ".tmp";
-                await File.WriteAllTextAsync(tmp, json);
-                File.Move(tmp, SaveFilePath, overwrite: true);
+                await TimelineStore.SaveAsync(SaveFilePath, _configs);
             }
             catch (Exception ex)
             {
-                // fire-and-forget の呼び出し元では観測されないので、ここで必ず記録する。
                 LogError("SaveTimelinesAsync", ex);
-            }
-            finally
-            {
-                _saveTimelinesLock.Release();
             }
         }
 
-        private async Task RestoreTimelinesAsync()
+        /// <summary>保存されているタイムラインを復元する。</summary>
+        private void RestoreTimelines()
         {
-            try
-            {
-                var json    = await File.ReadAllTextAsync(SaveFilePath);
-                var configs = JsonSerializer.Deserialize<List<TimelineConfig>>(json);
-                if (configs is not null)
-                    foreach (var cfg in configs)
-                        AddTimeline(cfg);
-            }
-            catch { /* ファイルが存在しない場合などは無視 */ }
+            foreach (var cfg in TimelineStore.Load(SaveFilePath))
+                AddTimeline(cfg);
         }
+
 
         // ── Drag & Drop ───────────────────────────────────────────────────────
 

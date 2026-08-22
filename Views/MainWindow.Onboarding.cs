@@ -14,7 +14,7 @@ namespace XTimelineViewer.Views
         /// </summary>
         private async Task InitializeAsync()
         {
-            await RestoreTimelinesAsync();
+            RestoreTimelines();
             UpdateHasNamedProfiles();
 
             // 投稿ウィンドウのプリロード（#244 案B）。設定 OFF のときは内部で何もしない。
