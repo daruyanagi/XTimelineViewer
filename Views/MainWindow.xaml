@@ -1,4 +1,4 @@
-﻿<Window
+<Window
     x:Class="XTimelineViewer.Views.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -214,5 +214,26 @@
                             Padding="4"/>
             </ScrollViewer>
         </Grid>
+
+        <!--
+            設定ウィンドウを開いている間、メイン画面を覆う（#394）。
+            設定はモーダル（親を EnableWindow(false) で無効化）なので操作できないが、
+            見た目が変わらないため「クリックが効かない」と受け取られてしまう。
+
+            ルート Grid の最後に置き、RowSpan で全行をまたぐ（Grid.Row を省くと
+            1 行目＝ツールバーだけを覆ってしまう）。
+            WinUI 3 の WebView2 は XAML の視覚ツリーに合成されるので、この覆いは
+            ペインの上にも描かれる（WPF のような airspace の問題は起きない）。
+
+            色は直書きせず ContentDialog と同じトークンを使う。ライト / ダーク /
+            High Contrast（#341）に追従させるため。
+            なお SystemControlPageBackgroundMediumAltMediumBrush は UWP 時代のキーで、
+            WinUI 3 では透明に解決されて何も起きない。
+        -->
+        <Grid x:Name="ModalScrim"
+              Grid.Row="0" Grid.RowSpan="2"
+              Background="{ThemeResource SmokeFillColorDefaultBrush}"
+              Visibility="Collapsed"
+              IsHitTestVisible="False"/>
     </Grid>
 </Window>

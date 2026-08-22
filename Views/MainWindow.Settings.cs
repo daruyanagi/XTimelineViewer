@@ -181,6 +181,11 @@ namespace XTimelineViewer.Views
             if (initialPage != "General")
                 settingsWin.SelectPage(initialPage);
 
+            // 設定を開いている間はメイン画面を覆う（#394）。
+            // モーダルであることを見て分かるようにする。
+            ModalScrim.Visibility = Visibility.Visible;
+            settingsWin.Closed += (_, _) => ModalScrim.Visibility = Visibility.Collapsed;
+
             settingsWin.Activate();
         }
 
