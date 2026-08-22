@@ -190,6 +190,12 @@
   <data name="ExtSettings_OpenSettings" xml:space="preserve"><value>Open Settings</value></data>
   <data name="Extensions_InfoBar_Empty" xml:space="preserve"><value>No extensions are installed. Place an unpacked extension in the extensions folder to load it at startup.</value></data>
   <data name="Extensions_InfoBar_Installed" xml:space="preserve"><value>Place an unpacked extension in the extensions folder to load it at startup.</value></data>
+  <data name="Extensions_DefaultForNewProfiles" xml:space="preserve"><value>Default for new profiles</value></data>
+  <data name="Extensions_DefaultForNewProfiles_Desc" xml:space="preserve"><value>Whether this extension is enabled when a profile is added later</value></data>
+  <data name="Extensions_Uninstall" xml:space="preserve"><value>Uninstall</value></data>
+  <data name="Extensions_Uninstall_Desc" xml:space="preserve"><value>Unregisters it from every profile and deletes the folder</value></data>
+  <data name="Extensions_Uninstall_Confirm" xml:space="preserve"><value>"{0}" will be uninstalled. It will be unregistered from every profile and its folder will be deleted.</value></data>
+  <data name="Extensions_Uninstall_Failed" xml:space="preserve"><value>Could not uninstall. The files may be in use. Please close the app and try again.</value></data>
   <data name="Extensions_OpenFolder" xml:space="preserve"><value>Open extensions folder</value></data>
 
   <!-- Update check -->

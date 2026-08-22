@@ -81,6 +81,21 @@ namespace XTimelineViewer.Views
         /// <summary>アプリを終了するコールバック（更新の仕上げに使う）。</summary>
         internal Action? ExitApp { get; set; }
 
+        /// <summary>拡張機能をプロファイル単位で有効・無効にする（#398）。</summary>
+        internal Func<string, string, bool, Task>? SetExtensionEnabledAsync { get; set; }
+
+        /// <summary>拡張機能をアンインストールする（#398）。成功したら true。</summary>
+        internal Func<string, Task<bool>>? UninstallExtensionAsync { get; set; }
+
+        /// <summary>新しく追加されたプロファイルでの既定を変える（#398）。</summary>
+        internal Action<string, bool>? SetExtensionDefault { get; set; }
+
+        /// <summary>拡張機能がこのプロファイルで有効か（#398）。</summary>
+        internal Func<string, string, bool>? IsExtensionEnabled { get; set; }
+
+        /// <summary>拡張機能の「新しいプロファイルでの既定」（#398）。</summary>
+        internal Func<string, bool>? IsExtensionEnabledByDefault { get; set; }
+
         /// <summary>設定のみ保存する（テーマ適用等はしない）コールバック。</summary>
         internal Action? SaveSettingsOnly { get; set; }
 

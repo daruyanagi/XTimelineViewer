@@ -124,6 +124,15 @@ namespace XTimelineViewer.Views
         // 読み込みに失敗して既に知らせた拡張機能（#397）。
         // 読み込みがプロファイルごとに走るので、これが無いと
         // 同じ失敗でダイアログがプロファイルの数だけ出る。
+        // 読み込んだ拡張機能の実体（#398）。(プロファイル ID, フォルダー名) で引く。
+        // 有効・無効の切り替えとアンインストールに使う。
+        private readonly Dictionary<(string ProfileId, string Key), CoreWebView2BrowserExtension>
+            _liveExtensions = [];
+
+        // 拡張機能ごとのツールバーボタン（#398）。アンインストールで取り除く。
+        private readonly Dictionary<string, Button> _extensionButtons =
+            new(StringComparer.OrdinalIgnoreCase);
+
         private readonly HashSet<string> _reportedExtensionErrors =
             new(StringComparer.OrdinalIgnoreCase);
         private readonly List<ExtensionInfo> _loadedExtensions = [];
