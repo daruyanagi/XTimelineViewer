@@ -20,12 +20,15 @@ namespace XTimelineViewer.Views
                 var pane = (Grid)TimelinePanel.Children[i];
                 var headerGrid = pane.Children.OfType<Grid>().FirstOrDefault();
                 if (headerGrid == null) continue;
+                // バッジは列 2（列構成: 0 番号 / 1 種別アイコン / 2 バッジ / 3 URL / 4 ボタン）。
+                // #337 で AddTimeline 側を 1 → 2 に直したときここを見落としており、
+                // 古いバッジを見つけられず重複していた（プロファイル変更時に発現）。
                 var oldBadge = headerGrid.Children.OfType<Border>()
-                    .FirstOrDefault(b => Grid.GetColumn(b) == 1);
+                    .FirstOrDefault(b => Grid.GetColumn(b) == 2);
                 if (oldBadge != null)
                     headerGrid.Children.Remove(oldBadge);
                 var newBadge = CreateProfileBadge(_configs[i].ProfileId);
-                Grid.SetColumn(newBadge, 1);
+                Grid.SetColumn(newBadge, 2);
                 headerGrid.Children.Add(newBadge);
             }
         }
@@ -118,9 +121,20 @@ namespace XTimelineViewer.Views
                 : (name.Length > 3 ? name[..3] : name);
             var color = GetProfileColor(profile, profileId);
 
+            // コントラストテーマ中は固定色を使わない（#341）。
+            // バッジはプロファイル名の先頭数文字を表示しているので、
+            // 色を落としても識別は成立する。枠線でバッジだと分かるようにする。
+            bool hc = IsHighContrast();
+            var bg = hc ? (Brush)Application.Current.Resources["SystemColorWindowColorBrush"]
+                        : new SolidColorBrush(color);
+            var fg = hc ? (Brush)Application.Current.Resources["SystemColorWindowTextColorBrush"]
+                        : new SolidColorBrush(Microsoft.UI.Colors.White);
+
             return new Border
             {
-                Background    = new SolidColorBrush(color),
+                Background      = bg,
+                BorderBrush     = hc ? fg : null,
+                BorderThickness = new Thickness(hc ? 1 : 0),
                 CornerRadius  = new CornerRadius(4),
                 Padding       = new Thickness(4, 1, 4, 1),
                 Margin        = new Thickness(0, 0, 6, 0),
@@ -131,7 +145,7 @@ namespace XTimelineViewer.Views
                     Text       = badgeText,
                     FontSize   = 10,
                     FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                    Foreground = new SolidColorBrush(Microsoft.UI.Colors.White),
+                    Foreground = fg,
                 }
             };
         }
