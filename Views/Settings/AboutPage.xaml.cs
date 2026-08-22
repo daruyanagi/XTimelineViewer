@@ -276,9 +276,17 @@ namespace XTimelineViewer.Views.Settings
             void ShowChecking()
                 => SetState(InfoBarSeverity.Informational, R.Get("CheckUpdate_Checking"), null);
 
+            // 「更新あり」で見せた版数。取り消しなどで表示を戻すときに使う。
+            // settings を読み直すと、null だったときに「 が利用可能です」と
+            // 版数が抜けた文言になってしまう。
+            string availableTag = string.Empty;
+
             void ShowAvailable(string tag)
-                => SetState(InfoBarSeverity.Warning,
-                            string.Format(R.Get("CheckUpdate_Available"), tag), updateBtn);
+            {
+                availableTag = tag;
+                SetState(InfoBarSeverity.Warning,
+                         string.Format(R.Get("CheckUpdate_Available"), tag), updateBtn);
+            }
 
             void ShowUpToDate()
                 => SetState(InfoBarSeverity.Success, R.Get("CheckUpdate_Latest"), releaseLink);
@@ -435,11 +443,13 @@ namespace XTimelineViewer.Views.Settings
                             // .sha256 の無い古いリリース。検証できないので手動へ回す。
                             // 失敗ではなく案内なので赤にしない。また、どの版が来ているのかを
                             // 消してしまうと、リリースページで何を選べばよいか分からなくなる。
-                            ShowSelfUpdateUnavailable(settings.CachedLatestVersion ?? string.Empty);
+                            ShowSelfUpdateUnavailable(availableTag);
                             return;
 
                         case ZipUpdateRunner.RunResult.Canceled:
-                            ShowAvailable(settings.CachedLatestVersion ?? string.Empty);
+                            // 取り消したら「vX.Y.Z が利用可能です ／ 再起動して更新」に戻す。
+                            // 押す前の状態に戻らないと、もう一度試す導線が消える。
+                            ShowAvailable(availableTag);
                             return;
 
                         default:
