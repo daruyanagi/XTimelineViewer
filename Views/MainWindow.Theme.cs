@@ -59,7 +59,7 @@ namespace XTimelineViewer.Views
             _uiSettings.ColorValuesChanged += (_, _) =>
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    foreach (var r in _headerRefreshers) r();
+                    foreach (var r in _headerRefreshers.Values) r();
                     RefreshAllProfileBadges();
                 });
         }

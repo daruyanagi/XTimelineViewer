@@ -500,12 +500,12 @@ namespace XTimelineViewer.Views
             // ── Focus ─────────────────────────────────────────────────────────
 
             Action refreshHeader = () => ApplyPaneTheme(pane.ActualTheme);
-            _headerRefreshers.Add(refreshHeader);
+            _headerRefreshers[pane] = refreshHeader;
 
             void SetFocus()
             {
                 _focusedHeaderGrid = headerGrid;
-                foreach (var r in _headerRefreshers) r();
+                foreach (var r in _headerRefreshers.Values) r();
                 webView.Focus(FocusState.Programmatic);
             }
             _paneToSetFocus[pane] = SetFocus;
@@ -525,7 +525,7 @@ namespace XTimelineViewer.Views
                 wv.GotFocus += (s, e) =>
                 {
                     _focusedHeaderGrid = headerGrid;
-                    foreach (var r in _headerRefreshers) r();
+                    foreach (var r in _headerRefreshers.Values) r();
                 };
                 wv.PointerEntered += (s, e) => { _pointerOverWebViews.Add(wv);    EvaluateHardReloadPause(wv); };
                 wv.PointerExited  += (s, e) =>
@@ -739,11 +739,11 @@ namespace XTimelineViewer.Views
                     _paneNumberLabels.Remove(pane);
                     _headerGridToPane.Remove(headerGrid);
                     _paneToConfig.Remove(pane);
-                    _headerRefreshers.Remove(refreshHeader);
+                    _headerRefreshers.Remove(pane);
                     if (_focusedHeaderGrid == headerGrid)
                     {
                         _focusedHeaderGrid = null;
-                        foreach (var r in _headerRefreshers) r();
+                        foreach (var r in _headerRefreshers.Values) r();
                     }
                     await SaveTimelinesAsync();
 
