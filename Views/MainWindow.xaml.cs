@@ -111,7 +111,21 @@ namespace XTimelineViewer.Views
         // ペイン → ヘッダーの配色を再適用する処理。
         // 以前は List<Action> だったが、除去が参照一致になるため
         // デリゲート実体を持たない削除経路からは掃除できなかった（#362）。
-        private bool _extensionsLoaded = false;
+        // 拡張機能を読み込み済みのプロファイル（#397）。
+        // 以前は bool 1 つで、最初に作られた WebView2 のプロファイルにしか
+        // 入らなかった。拡張機能は CoreWebView2Profile 単位で登録される。
+        private readonly HashSet<string> _extensionsLoadedProfiles = [];
+
+        // 一覧とツールバーへ出した拡張機能（#397）。
+        // 読み込みはプロファイルごとに走るので、これが無いと同じ拡張機能の
+        // ボタンがプロファイルの数だけ並んでしまう。
+        private readonly HashSet<string> _surfacedExtensionIds = [];
+
+        // 読み込みに失敗して既に知らせた拡張機能（#397）。
+        // 読み込みがプロファイルごとに走るので、これが無いと
+        // 同じ失敗でダイアログがプロファイルの数だけ出る。
+        private readonly HashSet<string> _reportedExtensionErrors =
+            new(StringComparer.OrdinalIgnoreCase);
         private readonly List<ExtensionInfo> _loadedExtensions = [];
         // 環境そのものではなく「生成中の Task」をキャッシュする（#339）。
         // TryGetValue と await の間に隙間があると、同一プロファイルのペインを並行復元した
