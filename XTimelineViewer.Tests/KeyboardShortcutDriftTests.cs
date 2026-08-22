@@ -14,7 +14,7 @@ namespace XTimelineViewer.Tests
     /// の両経路に定義されていなければ、特定のフォーカス状態でだけ効かなくなる（#225 / #227 / #228）。
     ///
     /// 新しいショートカットを足したときの片側追加漏れを CI で自動検出するため、
-    /// 両ソース（MainWindow.xaml / MainWindow.xaml.cs）を文字列スキャンして存在を照合する。
+    /// 両ソース（MainWindow.xaml / Scripts/KeyboardShortcut.js）を文字列スキャンして照合する。
     /// WebView2 内コンテンツ操作（Ctrl+↑↓ / Ctrl+R・B・L / Home・End / F5 / Backspace）は
     /// JS 単独管理が正しいため対象外。
     /// </summary>
@@ -34,7 +34,9 @@ namespace XTimelineViewer.Tests
         }
 
         private static readonly string Xaml = File.ReadAllText(FindRepoFile("Views/MainWindow.xaml"));
-        private static readonly string Js   = File.ReadAllText(FindRepoFile("Views/MainWindow.xaml.cs"));
+        // 注入 JS は Scripts/*.js へ出した（#345）。以前は MainWindow.xaml.cs の
+        // 生文字列を読んでいた。
+        private static readonly string Js   = File.ReadAllText(FindRepoFile("Scripts/KeyboardShortcut.js"));
 
         // 表示名, JS 側トークン, XAML 側トークン（複数指定時は全て必要）
         public static TheoryData<string, string, string[]> GlobalShortcuts() => new()
