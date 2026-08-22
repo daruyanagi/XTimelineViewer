@@ -5,6 +5,12 @@
 #   - ツールバーの主要ボタンが存在する
 #   - メニューが開き、設定ウィンドウを開ける
 #   - 設定のナビゲーションと主要コントロールが存在する
+#   - タイムラインペインの番号バッジが 1..N の連番になっている
+#
+# 注意: ペインのテストは timelines.json があるときだけ実行される。
+# CI ランナーには X ログインもタイムライン設定も無いのでペインは 0 件になり、
+# このセクションは実質ローカル実行専用になる。CI で効く構造の検査は
+# XTimelineViewer.Tests/TimelinePaneStructureTests.cs 側で行う。
 # 機能の詳細な検証（テーマ切り替えの結果など）は意図的に含めない。UI の些細な
 # 変更で落ちると保守されなくなり、旧 ui-tests.ps1 と同じ末路をたどるため。
 #
@@ -28,6 +34,22 @@ $script:pass = 0
 $script:fail = 0
 $script:failures = @()
 $launched = $null
+
+
+# winapp は AutomationId が見つからないとツリー全体（WebView2 の中身を含む）を
+# 走査し、-t を超えて数分戻らないことがある。プロセスごと打ち切って FAIL にする。
+function Test-PaneId {
+    param([string]$Id, [int]$TimeoutSec = 20)
+    $proc = Start-Process -FilePath 'winapp' -PassThru -WindowStyle Hidden `
+        -ArgumentList @('ui', 'wait-for', $Id, '-a', $AppPid, '-t', '8000')
+    if (-not $proc.WaitForExit($TimeoutSec * 1000)) {
+        try { $proc.Kill() } catch { }
+        Write-Output "'$Id' が $TimeoutSec 秒以内に見つかりません（打ち切り）"
+        $global:LASTEXITCODE = 1
+        return
+    }
+    $global:LASTEXITCODE = $proc.ExitCode
+}
 
 function Write-Section($name) { Write-Host "`n[$name]" -ForegroundColor Cyan }
 
@@ -120,7 +142,39 @@ Write-Section "ツールバー"
 Test-Smoke "投稿ボタン (PostBtn)"     { winapp ui wait-for "PostBtn"    -a $AppPid -t 5000 }
 Test-Smoke "メニューボタン (AppMenuBtn)" { winapp ui wait-for "AppMenuBtn" -a $AppPid -t 5000 }
 
-# ── 3. メニュー ───────────────────────────────────────────────────────────────
+# ── 3. タイムラインペイン ──────────────────────────────────────
+# 番号バッジは「左から N 番目」を表す約束（#225）で、Ctrl+数字 の飛び先と対応する。
+# 削除や並べ替えのあとに振り直しが漏れるとここが飛ぶ（#359）。
+Write-Section "タイムラインペイン"
+
+$timelinesJson = Join-Path (Join-Path $env:LOCALAPPDATA 'XTimelineViewer') 'timelines.json'
+$paneCount = 0
+if (Test-Path $timelinesJson) {
+    try { $paneCount = @(Get-Content $timelinesJson -Raw | ConvertFrom-Json).Count } catch { $paneCount = 0 }
+}
+
+if ($paneCount -eq 0) {
+    Write-Host "  SKIP: タイムラインが 0 件（timelines.json なし）。ペインの検査を飛ばします" -ForegroundColor DarkGray
+} else {
+    # 番号バッジは 9 番まで。それ以降は非表示なので検査対象外。
+    $checkCount = [Math]::Min($paneCount, 9)
+    Write-Host "  タイムライン $paneCount 件、番号バッジ 1..$checkCount を検査" -ForegroundColor DarkGray
+
+    foreach ($i in 1..$checkCount) {
+        # GetNewClosure() は使わない。別モジュールスコープに束縛され、
+        # スクリプト内の Test-PaneId が見えなくなる。
+        # Test-Smoke はその場で実行するので $i はそのまま使える。
+        Test-Smoke "番号バッジ $i (PaneNumber$i)" {
+            Test-PaneId "PaneNumber$i"
+        }
+    }
+
+    Test-Smoke "ペインの設定ボタン (PaneSettingsBtn)" {
+        Test-PaneId "PaneSettingsBtn"
+    }
+}
+
+# ── 4. メニュー ───────────────────────────────────────────────────────────────
 Write-Section "メニュー"
 winapp ui invoke "AppMenuBtn" -a $AppPid 2>$null | Out-Null
 Start-Sleep -Milliseconds 1500
@@ -129,7 +183,7 @@ Start-Sleep -Milliseconds 1500
 Test-Smoke "設定メニュー項目 (AppSettingsMenuItem)"   { winapp ui wait-for "AppSettingsMenuItem" -a $AppPid -t 5000 }
 Test-Smoke "タイムライン追加サブメニュー (AddTimelineSubMenu)" { winapp ui wait-for "AddTimelineSubMenu" -a $AppPid -t 5000 }
 
-# ── 4. 設定ウィンドウ ─────────────────────────────────────────────────────────
+# ── 5. 設定ウィンドウ ─────────────────────────────────────────────────────────
 Write-Section "設定ウィンドウ"
 winapp ui invoke "AppSettingsMenuItem" -a $AppPid 2>$null | Out-Null
 Start-Sleep -Seconds 3

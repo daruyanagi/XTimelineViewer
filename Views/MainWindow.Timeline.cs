@@ -216,12 +216,16 @@ namespace XTimelineViewer.Views
                     label.Visibility = Visibility.Visible;
                     // ツールチップにアクティブ化ホットキーを表示（#237）
                     ToolTipService.SetToolTip(label, string.Format(R.Get("Tooltip_ActivateHotkey"), n));
+                    // 番号ごとに一意な id を振ると、ui-smoke.ps1 から
+                    // 「1..N の連番になっているか」を検査できる（#345 / #359 の再発検知）。
+                    AutomationProperties.SetAutomationId(label, $"PaneNumber{n}");
                 }
                 else
                 {
                     label.Text       = string.Empty;
                     label.Visibility = Visibility.Collapsed;
                     ToolTipService.SetToolTip(label, null);
+                    AutomationProperties.SetAutomationId(label, string.Empty);
                 }
                 n++;
             }
@@ -448,6 +452,7 @@ namespace XTimelineViewer.Views
             };
             ToolTipService.SetToolTip(settingsBtn, R.Get("Pane_Settings_Tooltip"));
             AutomationProperties.SetName(settingsBtn, R.Get("Pane_Settings_Tooltip"));
+            AutomationProperties.SetAutomationId(settingsBtn, "PaneSettingsBtn");
             AutomationProperties.SetName(webView, displayText);
 
             // ホーム自動更新インジケーター（#207）。ホームペインのみ表示し、設定ギアの左に置く。
