@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -32,6 +32,8 @@
     <Compile Include="..\Services\TimelineStore.cs" Link="Services\TimelineStore.cs" />
     <Compile Include="..\Services\AppLog.cs" Link="Services\AppLog.cs" />
     <Compile Include="..\Services\TaskExtensions.cs" Link="Services\TaskExtensions.cs" />
+    <Compile Include="..\Services\ZipUpdater.cs" Link="Services\ZipUpdater.cs" />
+    <Compile Include="..\Services\UpdateSwap.cs" Link="Services\UpdateSwap.cs" />
     <Compile Include="..\Services\EdgeService.cs"    Link="Services\EdgeService.cs" />
     <Compile Include="..\Services\UrlHelper.cs"      Link="Services\UrlHelper.cs" />
     <Compile Include="..\Services\SearchQueryHelper.cs" Link="Services\SearchQueryHelper.cs" />
