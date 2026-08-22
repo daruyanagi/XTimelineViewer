@@ -89,7 +89,7 @@ namespace XTimelineViewer.Views
             PrimaryBtn.IsEnabled = false; // ログイン検出まで無効
             SkipBtn.Content      = R.Get("Button_Skip");
 
-            _ = LoginControl.InitializeAsync();
+            LoginControl.InitializeAsync().FireAndForget("LoginControl.InitializeAsync");
         }
 
         private void TryCreateProfile()

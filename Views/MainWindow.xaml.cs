@@ -341,8 +341,8 @@ namespace XTimelineViewer.Views
             CleanupOrphanedProfiles();
             ApplySavedTheme();
             UpdateMenuUpdateBadge();
-            _ = InitializeAsync();
-            _ = CheckForUpdatesInBackgroundAsync();
+            InitializeAsync().FireAndForget(nameof(InitializeAsync));
+            CheckForUpdatesInBackgroundAsync().FireAndForget(nameof(CheckForUpdatesInBackgroundAsync));
         }
 
         // ツールバー・メニューなど常駐 UI の静的テキストを現在の言語で再適用する。

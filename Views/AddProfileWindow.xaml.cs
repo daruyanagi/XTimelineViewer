@@ -22,7 +22,7 @@ namespace XTimelineViewer.Views
 
             // ログイン検出で作成ボタンを表示する。実処理は共通コントロールが担う (#157)。
             LoginControl.LoginDetected += _ => CreateBtn.Visibility = Visibility.Visible;
-            _ = LoginControl.InitializeAsync();
+            LoginControl.InitializeAsync().FireAndForget("LoginControl.InitializeAsync");
         }
 
         /// <summary>

@@ -16,6 +16,8 @@ using XTimelineViewer.Models;
 
 using XTimelineViewer.Views.Controls;
 
+using XTimelineViewer.Services;
+
 namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
@@ -23,7 +25,7 @@ namespace XTimelineViewer.Views
         private async void PostBtn_Click(object _, RoutedEventArgs __)
         {
             if (_appSettings.OpenComposerInBrowser)
-                _ = LaunchUriByEdgeProfileAsync(new Uri("https://x.com/compose/post"));
+                LaunchUriByEdgeProfileAsync(new Uri("https://x.com/compose/post")).FireAndForget(nameof(LaunchUriByEdgeProfileAsync));
             else
                 await OpenPostDialogAsync();
         }
@@ -249,7 +251,7 @@ namespace XTimelineViewer.Views
                 target?.SetFocus();
 
                 // 次回に備えて再プリロード（設定 ON のとき。同プロファイルなら no-op）
-                _ = WarmUpComposeAsync();
+                WarmUpComposeAsync().FireAndForget(nameof(WarmUpComposeAsync));
             }
         }
 
@@ -560,7 +562,7 @@ namespace XTimelineViewer.Views
             if (message.StartsWith("openTimestamp:") &&
                 Uri.TryCreate(message[14..], UriKind.Absolute, out var timestampUri))
             {
-                _ = LaunchUriByEdgeProfileAsync(timestampUri);
+                LaunchUriByEdgeProfileAsync(timestampUri).FireAndForget(nameof(LaunchUriByEdgeProfileAsync));
                 return;
             }
 
@@ -569,7 +571,7 @@ namespace XTimelineViewer.Views
                 // 形式: saveFrame:<handle>|<status>|<base64>
                 var parts = message["saveFrame:".Length..].Split('|', 3);
                 if (parts.Length == 3)
-                    _ = SaveVideoFrameAsync(senderWebView, parts[0], parts[1], parts[2]);
+                    SaveVideoFrameAsync(senderWebView, parts[0], parts[1], parts[2]).FireAndForget(nameof(SaveVideoFrameAsync));
                 return;
             }
 
@@ -578,7 +580,7 @@ namespace XTimelineViewer.Views
                 // 形式: saveGif:<handle>|<status>|<url>（url は残り全部）
                 var parts = message["saveGif:".Length..].Split('|', 3);
                 if (parts.Length == 3)
-                    _ = DownloadMediaAsync(senderWebView, parts[0], parts[1], parts[2], "mp4", "gifSaved");
+                    DownloadMediaAsync(senderWebView, parts[0], parts[1], parts[2], "mp4", "gifSaved").FireAndForget(nameof(DownloadMediaAsync));
                 return;
             }
 
@@ -586,7 +588,7 @@ namespace XTimelineViewer.Views
             {
                 var parts = message["saveImg:".Length..].Split('|', 3);
                 if (parts.Length == 3)
-                    _ = DownloadMediaAsync(senderWebView, parts[0], parts[1], parts[2], "jpg", "imgSaved");
+                    DownloadMediaAsync(senderWebView, parts[0], parts[1], parts[2], "jpg", "imgSaved").FireAndForget(nameof(DownloadMediaAsync));
                 return;
             }
 
@@ -601,7 +603,7 @@ namespace XTimelineViewer.Views
                     var hit = _videoMp4ByStatus.TryGetValue(status, out var mp4Url);
                     LogDebug($"saveVideo status={status} handle={handle} hit={hit} mapTotal={_videoMp4ByStatus.Count}");
                     if (hit)
-                        _ = DownloadMediaAsync(senderWebView, handle, status, mp4Url!, "mp4", "videoSaved");
+                        DownloadMediaAsync(senderWebView, handle, status, mp4Url!, "mp4", "videoSaved").FireAndForget(nameof(DownloadMediaAsync));
                     else
                         try { senderWebView.CoreWebView2?.PostWebMessageAsString("videoUnavailable"); } catch { }
                 }
@@ -622,7 +624,7 @@ namespace XTimelineViewer.Views
 
             if (message == "openHelp")  // #310: 動画DL 失敗トーストの「対処法を見る」リンク
             {
-                _ = LaunchUriByEdgeProfileAsync(new Uri("https://daruyanagi.jp/posts/2026/07/16/"));
+                LaunchUriByEdgeProfileAsync(new Uri("https://daruyanagi.jp/posts/2026/07/16/")).FireAndForget(nameof(LaunchUriByEdgeProfileAsync));
                 return;
             }
 
@@ -640,7 +642,7 @@ namespace XTimelineViewer.Views
                         var q = $"from:{handle} include:nativeretweets until_time:{t}";
                         var path = "/search?q=" + Uri.EscapeDataString(q) + "&f=live";
                         // 既存の検索 UI を再利用（非破壊・履歴を汚さない）。閲覧目的なので追加ボタンは出さない。
-                        _ = OpenSearchDialogAsync(path, showAddButton: false);
+                        OpenSearchDialogAsync(path, showAddButton: false).FireAndForget(nameof(OpenSearchDialogAsync));
                     }
                 }
                 return;
@@ -655,9 +657,9 @@ namespace XTimelineViewer.Views
                 case "movePanePrev": MoveTimelinePane(senderWebView, -1); break;
                 case "newPost":
                     if (_appSettings.OpenComposerInBrowser)
-                        _ = LaunchUriByEdgeProfileAsync(new Uri("https://x.com/compose/post"));
+                        LaunchUriByEdgeProfileAsync(new Uri("https://x.com/compose/post")).FireAndForget(nameof(LaunchUriByEdgeProfileAsync));
                     else
-                        _ = OpenPostDialogAsync(senderWebView);
+                        OpenPostDialogAsync(senderWebView).FireAndForget(nameof(OpenPostDialogAsync));
                     break;
                 case "focusSearch":
                     SearchBox.Focus(FocusState.Programmatic);
