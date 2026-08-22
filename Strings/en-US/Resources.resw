@@ -208,8 +208,11 @@
   <data name="Settings_DefaultTimeline" xml:space="preserve"><value>Timeline Defaults</value></data>
   <data name="Settings_DefaultTimeline_Description" xml:space="preserve"><value>Display options applied to new timelines</value></data>
   <data name="Settings_DefaultSidebar" xml:space="preserve"><value>Sidebar</value></data>
+  <data name="Settings_DefaultSidebar_Description" xml:space="preserve"><value>The column of icons (Home, Notifications, and so on) down the left side of X. Hiding it gives each timeline more room.</value></data>
   <data name="Settings_DefaultCompose" xml:space="preserve"><value>Compose Area</value></data>
+  <data name="Settings_DefaultCompose_Description" xml:space="preserve"><value>The box at the top of a timeline where you type a post. You can also post from the Post button in the toolbar.</value></data>
   <data name="Settings_DefaultListHeader" xml:space="preserve"><value>Notifications / Search / Bookmarks / List Header</value></data>
+  <data name="Settings_DefaultListHeader_Description" xml:space="preserve"><value>The heading row shown at the top of the Notifications, Search, Bookmarks, and List pages.</value></data>
   <data name="Onboarding_DefaultsHint" xml:space="preserve"><value>You can change these later in Settings</value></data>
 
   <!-- Search box (#182) -->

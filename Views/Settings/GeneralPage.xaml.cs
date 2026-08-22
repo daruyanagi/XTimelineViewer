@@ -63,12 +63,15 @@ namespace XTimelineViewer.Views.Settings
             DefaultTimelineExpander.Header      = R.Get("Settings_DefaultTimeline");
             DefaultTimelineExpander.Description = R.Get("Settings_DefaultTimeline_Description");
             SidebarCard.Header       = R.Get("Settings_DefaultSidebar");
+            SidebarCard.Description  = R.Get("Settings_DefaultSidebar_Description");
             SidebarToggle.OnContent  = R.Get("Toggle_Show");
             SidebarToggle.OffContent = R.Get("Toggle_Hide");
             ComposeCard.Header       = R.Get("Settings_DefaultCompose");
+            ComposeCard.Description  = R.Get("Settings_DefaultCompose_Description");
             ComposeToggle.OnContent  = R.Get("Toggle_Show");
             ComposeToggle.OffContent = R.Get("Toggle_Hide");
             ListHeaderCard.Header       = R.Get("Settings_DefaultListHeader");
+            ListHeaderCard.Description  = R.Get("Settings_DefaultListHeader_Description");
             ListHeaderToggle.OnContent  = R.Get("Toggle_Show");
             ListHeaderToggle.OffContent = R.Get("Toggle_Hide");
 

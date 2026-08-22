@@ -123,16 +123,19 @@ namespace XTimelineViewer.Views
                 var s = _appSettings;
 
                 SidebarLabel.Text          = R.Get("Settings_DefaultSidebar");
+                SidebarDesc.Text           = R.Get("Settings_DefaultSidebar_Description");
                 SidebarToggle.OnContent    = R.Get("Toggle_Show");
                 SidebarToggle.OffContent   = R.Get("Toggle_Hide");
                 SidebarToggle.IsOn         = !s.DefaultHideSidebar;
 
                 ComposeLabel.Text          = R.Get("Settings_DefaultCompose");
+                ComposeDesc.Text           = R.Get("Settings_DefaultCompose_Description");
                 ComposeToggle.OnContent    = R.Get("Toggle_Show");
                 ComposeToggle.OffContent   = R.Get("Toggle_Hide");
                 ComposeToggle.IsOn         = !s.DefaultHideCompose;
 
                 ListHeaderLabel.Text       = R.Get("Settings_DefaultListHeader");
+                ListHeaderDesc.Text        = R.Get("Settings_DefaultListHeader_Description");
                 ListHeaderToggle.OnContent = R.Get("Toggle_Show");
                 ListHeaderToggle.OffContent= R.Get("Toggle_Hide");
                 ListHeaderToggle.IsOn      = !s.DefaultHideListHeader;

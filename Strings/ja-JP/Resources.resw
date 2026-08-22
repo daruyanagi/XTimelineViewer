@@ -208,8 +208,11 @@
   <data name="Settings_DefaultTimeline" xml:space="preserve"><value>タイムラインの既定値</value></data>
   <data name="Settings_DefaultTimeline_Description" xml:space="preserve"><value>新しいタイムラインに適用される表示設定</value></data>
   <data name="Settings_DefaultSidebar" xml:space="preserve"><value>サイドバー</value></data>
+  <data name="Settings_DefaultSidebar_Description" xml:space="preserve"><value>X の左側に縦に並ぶ、ホーム・通知などのアイコン列です。非表示にすると、その分タイムラインを広く使えます。</value></data>
   <data name="Settings_DefaultCompose" xml:space="preserve"><value>投稿画面</value></data>
+  <data name="Settings_DefaultCompose_Description" xml:space="preserve"><value>タイムライン上部にある、ポストの入力ボックスです。投稿はツールバーの［投稿］ボタンからも行えます。</value></data>
   <data name="Settings_DefaultListHeader" xml:space="preserve"><value>通知・検索・ブックマーク・リストのヘッダー</value></data>
+  <data name="Settings_DefaultListHeader_Description" xml:space="preserve"><value>通知・検索・ブックマーク・リストの各ページ上部に表示される見出し行です。</value></data>
   <data name="Onboarding_DefaultsHint" xml:space="preserve"><value>これらの設定は後から変更できます</value></data>
 
   <!-- Search box (#182) -->
