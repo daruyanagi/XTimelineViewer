@@ -10,6 +10,8 @@ using Windows.Graphics;
 using Windows.UI;
 using XTimelineViewer.Models;
 
+using XTimelineViewer.Services;
+
 namespace XTimelineViewer.Views
 {
     public sealed partial class SettingsWindow : Window
@@ -147,17 +149,21 @@ namespace XTimelineViewer.Views
             NavAbout.Content       = R.Get("Nav_About");
         }
 
-        /// <summary>指定タグのナビゲーション項目を選択する。</summary>
+        /// <summary>
+        /// 指定タグのナビゲーション項目を選択する。
+        ///
+        /// フッター側も探すこと（#392）。「バージョン情報」は
+        /// FooterMenuItems にあるため、MenuItems だけ走査していた頃は
+        /// <b>黙って何もしない</b>状態だった。
+        /// </summary>
         internal void SelectPage(string tag)
         {
-            foreach (var item in NavView.MenuItems.OfType<NavigationViewItem>())
-            {
-                if (item.Tag?.ToString() == tag)
-                {
-                    NavView.SelectedItem = item;
-                    break;
-                }
-            }
+            var item = NavView.MenuItems.OfType<NavigationViewItem>()
+                       .Concat(NavView.FooterMenuItems.OfType<NavigationViewItem>())
+                       .FirstOrDefault(i => i.Tag?.ToString() == tag);
+
+            if (item is not null) NavView.SelectedItem = item;
+            else AppLog.Debug($"SettingsWindow: 選択できないページを指定された: {tag}");
         }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)

@@ -185,18 +185,23 @@ namespace XTimelineViewer.Views
         }
 
         /// <summary>
-        /// メニューからはリリースページを開くだけにする。
-        /// 更新の実行（アプリの終了を伴う）は戻せないので、
-        /// メニューの 1 クリックでは起こさない。
+        /// メニューからは設定のバージョン情報（更新欄）へ送る（#392）。
+        ///
+        /// 以前は外部ブラウザーでリリースページを開いていた。この項目を作った
+        /// 時点（#382）では、ZIP 版にできることが「手で入れ直す」だけだったため。
+        /// #328 でアプリ内から更新できるようになった後もそのままだったので、
+        /// せっかくの「再起動して更新」に辿り着けず遠回りさせていた。
+        ///
+        /// 更新欄には経路に応じた操作（再起動して更新／終了して更新／
+        /// リリースページを開く）が出るので、どの環境の人も適切な手段に届く。
+        /// 更新の実行はアプリの終了を伴い戻せないので、メニューの
+        /// 1 クリックでは起こさない、という方針は変えていない。
         /// </summary>
         private void UpdateAvailableMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            AppLog.Debug($"UpdateCheck: メニューからリリースページを開く latest={_appSettings.CachedLatestVersion}");
-            OpenReleasePageAsync().FireAndForget(nameof(UpdateAvailableMenuItem_Click));
+            AppLog.Debug($"UpdateCheck: メニューから更新欄を開く latest={_appSettings.CachedLatestVersion}");
+            OpenSettingsWindow("About");
         }
-
-        private static async Task OpenReleasePageAsync()
-            => await Windows.System.Launcher.LaunchUriAsync(new Uri(AppUrls.LatestRelease));
 
         private static string? FindWinget()
         {
