@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using XTimelineViewer.Services;
 using Xunit;
@@ -37,7 +38,10 @@ namespace XTimelineViewer.Tests.Services
         /// %LOCALAPPDATA%\XTimelineViewer\error.log をローテーションしてしまう。
         /// </summary>
         private static void ResetToSink()
-            => AppLog.Initialize(Path.Combine(Path.GetTempPath(), "xtv-test-log-sink.log"));
+        {
+            AppLog.SetSessionHeader(null);
+            AppLog.Initialize(Path.Combine(Path.GetTempPath(), "xtv-test-log-sink.log"));
+        }
 
         private void Write(long bytes, string fill = "x")
             => File.WriteAllText(_file, new StringBuilder().Insert(0, fill, (int)bytes).ToString());
@@ -127,5 +131,116 @@ namespace XTimelineViewer.Tests.Services
                 ResetToSink();
             }
         }
+
+        // --- セッション見出し（#340） -------------------------------------------------
+        // ログに例外だけが並んでいても、どの版・どの配布経路で
+        // 起きたのか分からないと、報告を受けても切り分けられない。
+
+        [Fact]
+        public void SessionHeader_IsWrittenBeforeTheFirstEntry()
+        {
+            try
+            {
+                AppLog.Initialize(_file);
+                AppLog.SetSessionHeader("=== xTV v9.9.9 (zip) ===");
+                AppLog.Error("Ctx", new InvalidOperationException("boom"));
+
+                var lines = File.ReadAllLines(_file);
+                Assert.StartsWith("=== xTV v9.9.9 (zip) ===", lines[0]);
+                Assert.Contains(lines, l => l.Contains("boom"));
+            }
+            finally
+            {
+                ResetToSink();
+            }
+        }
+
+        [Fact]
+        public void SessionHeader_IsWrittenOnlyOnce()
+        {
+            try
+            {
+                AppLog.Initialize(_file);
+                AppLog.SetSessionHeader("=== HEADER ===");
+                AppLog.Debug("one");
+                AppLog.Debug("two");
+                AppLog.Error("Ctx", new InvalidOperationException("boom"));
+
+                var count = File.ReadAllLines(_file).Count(l => l.Contains("=== HEADER ==="));
+                Assert.Equal(1, count);
+            }
+            finally
+            {
+                ResetToSink();
+            }
+        }
+
+        [Fact]
+        public void SessionHeader_QuietSession_WritesNothing()
+        {
+            // 何も起きなかった起動でファイルを肥やさないこと。
+            // 毎回見出しを先行書きすると、それだけでローテーションが近づいてしまう。
+            try
+            {
+                AppLog.Initialize(_file);
+                AppLog.SetSessionHeader("=== HEADER ===");
+
+                Assert.False(File.Exists(_file));
+            }
+            finally
+            {
+                ResetToSink();
+            }
+        }
+
+        [Fact]
+        public void SessionHeader_SurvivesMidSessionRotation()
+        {
+            // 実際に肥大化させているのは起動時の Initialize ではなく、
+            // 走行中の追記の方。こちらで退避したときに見出しが出直されないと、
+            // 手元に残る error.log がちょうどバージョン不明な方になる。
+            try
+            {
+                AppLog.Initialize(_file, maxBytes: 1000);
+                AppLog.SetSessionHeader("=== HEADER ===");
+                AppLog.Debug("first");
+
+                Write(2000, "z");                                  // 走行中に上限を超えた状態
+                for (int i = 0; i < 250; i++) AppLog.Debug("n");    // 退避の確認間隔（200）を越えさせる
+
+                Assert.True(File.Exists(_file + ".1"));            // 退避が起きていること
+                Assert.Contains("=== HEADER ===", File.ReadAllText(_file));
+            }
+            finally
+            {
+                ResetToSink();
+            }
+        }
+
+        [Fact]
+        public void SessionHeader_IsWrittenAgainAfterRotation()
+        {
+            // 退避後の新しいファイルに見出しが無いと、残った方だけが
+            // バージョン不明になる。Initialize を通した再出力を確かめる。
+            try
+            {
+                AppLog.Initialize(_file);
+                AppLog.SetSessionHeader("=== HEADER ===");
+                AppLog.Debug("first");
+
+                Write(2000, "z");                       // 上限超えの状態を作る
+                AppLog.Initialize(_file, maxBytes: 1000);   // 退避し、見出しを未出力に戻す
+                AppLog.Debug("second");
+
+                var text = File.ReadAllText(_file);
+                Assert.Contains("=== HEADER ===", text);
+                Assert.Contains("DBG second", text);
+            }
+            finally
+            {
+                ResetToSink();
+            }
+        }
+
     }
 }
