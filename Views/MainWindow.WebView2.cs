@@ -859,31 +859,14 @@ namespace XTimelineViewer.Views
             await ShowDialogAsync(dlg);
         }
 
-        private static readonly string LogFilePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "XTimelineViewer", "error.log");
+        // 実体は Services/AppLog.cs（#374）。以前はここと App.xaml.cs に
+        // 同じ error.log へ書く実装が別々にあり、パスも書式も揃っていなかった。
+        private static string LogFilePath => AppLog.FilePath;
 
-        private static void LogError(string context, Exception ex)
-        {
-            try
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(LogFilePath)!);
-                File.AppendAllText(LogFilePath,
-                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {context}\n{ex}\n\n");
-            }
-            catch { /* ログ書き込み失敗は無視 */ }
-        }
+        private static void LogError(string context, Exception ex) => AppLog.Error(context, ex);
 
-        // 一時診断用（動画DL の GraphQL 傍受調査）。1 行だけ error.log に追記する。
-        private static void LogDebug(string msg)
-        {
-            try
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(LogFilePath)!);
-                File.AppendAllText(LogFilePath, $"[{DateTime.Now:HH:mm:ss}] DBG {msg}\n");
-            }
-            catch { }
-        }
+        // 一時診断用（動画DL の GraphQL 働受調査、#310）。
+        private static void LogDebug(string msg) => AppLog.Debug(msg);
 
         /// <summary>
         /// 現在アクティブなアカウントの X スクリーンネームをセッションからライブ取得する。

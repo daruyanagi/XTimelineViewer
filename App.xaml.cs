@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using XTimelineViewer.Services;
 using XTimelineViewer.Views;
 
 namespace XTimelineViewer
@@ -32,30 +33,21 @@ namespace XTimelineViewer
             }
             this.InitializeComponent();
 
+            // ログの初期化は例外ハンドラーを張る前に。
+            // ここで肥大化した error.log を 1 世代退避する（#374）。
+            AppLog.Initialize();
+
             // UI スレッドの未処理例外でプロセスが即死するのを防ぐ。
             // winget バリデーション VM など特殊環境でのサイレントクラッシュを診断しやすくする。
             this.UnhandledException += (sender, e) =>
             {
                 Debug.WriteLine($"[App] UnhandledException: {e.Exception}");
-                LogUnhandledException(e.Exception);
+                AppLog.Error("UnhandledException", e.Exception);
                 e.Handled = true;
             };
         }
 
-        private static void LogUnhandledException(Exception ex)
-        {
-            try
-            {
-                var dir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "XTimelineViewer");
-                Directory.CreateDirectory(dir);
-                File.AppendAllText(
-                    Path.Combine(dir, "error.log"),
-                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] UnhandledException\n{ex}\n\n");
-            }
-            catch { /* ログ書き込み失敗は無視 */ }
-        }
+        // 以前はここでパスを手書きで組み直していた。Services/AppLog.cs へ集約（#374）。
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
