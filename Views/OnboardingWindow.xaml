@@ -58,13 +58,14 @@
             <StackPanel x:Name="DefaultsPanel"
                         Visibility="Collapsed"
                         HorizontalAlignment="Center"
+                        MaxWidth="380"
                         Margin="0,8,0,0"
                         Spacing="16">
                 <TextBlock x:Name="DefaultsHintText"
                            FontSize="12" Opacity="0.6"
                            Visibility="Collapsed"
                            TextWrapping="Wrap"/>
-                <Grid ColumnSpacing="12">
+                <Grid ColumnSpacing="12" RowSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
@@ -75,23 +76,32 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock x:Name="SidebarLabel" Grid.Row="0" Grid.Column="0"
-                               VerticalAlignment="Center" HorizontalAlignment="Left"
-                               TextWrapping="Wrap"/>
+                    <StackPanel Grid.Row="0" Grid.Column="0"
+                                VerticalAlignment="Center" Spacing="2">
+                        <TextBlock x:Name="SidebarLabel" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="SidebarDesc"
+                                   FontSize="12" Opacity="0.6" TextWrapping="Wrap"/>
+                    </StackPanel>
                     <ToggleSwitch x:Name="SidebarToggle" Grid.Row="0" Grid.Column="1"
                                   Toggled="SidebarToggle_Toggled"
                                   MinWidth="0" Margin="0,4"/>
 
-                    <TextBlock x:Name="ComposeLabel" Grid.Row="1" Grid.Column="0"
-                               VerticalAlignment="Center" HorizontalAlignment="Left"
-                               TextWrapping="Wrap"/>
+                    <StackPanel Grid.Row="1" Grid.Column="0"
+                                VerticalAlignment="Center" Spacing="2">
+                        <TextBlock x:Name="ComposeLabel" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="ComposeDesc"
+                                   FontSize="12" Opacity="0.6" TextWrapping="Wrap"/>
+                    </StackPanel>
                     <ToggleSwitch x:Name="ComposeToggle" Grid.Row="1" Grid.Column="1"
                                   Toggled="ComposeToggle_Toggled"
                                   MinWidth="0" Margin="0,4"/>
 
-                    <TextBlock x:Name="ListHeaderLabel" Grid.Row="2" Grid.Column="0"
-                               VerticalAlignment="Center" HorizontalAlignment="Left"
-                               TextWrapping="Wrap"/>
+                    <StackPanel Grid.Row="2" Grid.Column="0"
+                                VerticalAlignment="Center" Spacing="2">
+                        <TextBlock x:Name="ListHeaderLabel" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="ListHeaderDesc"
+                                   FontSize="12" Opacity="0.6" TextWrapping="Wrap"/>
+                    </StackPanel>
                     <ToggleSwitch x:Name="ListHeaderToggle" Grid.Row="2" Grid.Column="1"
                                   Toggled="ListHeaderToggle_Toggled"
                                   MinWidth="0" Margin="0,4"/>
