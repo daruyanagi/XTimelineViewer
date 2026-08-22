@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 using System;
@@ -110,6 +110,13 @@ namespace XTimelineViewer.Views
             settingsWin.FetchLatestVersionAsync = FetchLatestVersionAsync;
             settingsWin.SaveSettingsOnly = SaveSettings;
             settingsWin.UpdateMenuBadge = UpdateMenuUpdateBadge;
+            // ZIP 版の自前更新（#328）。インストール先は実行中の exe が居る場所。
+            settingsWin.RunZipUpdateAsync = (progress, ct) => ZipUpdateRunner.RunAsync(
+                _downloadHttp,
+                AppContext.BaseDirectory.TrimEnd(System.IO.Path.DirectorySeparatorChar),
+                progress, ct);
+            settingsWin.ExitApp = () => Application.Current.Exit();
+
             settingsWin.ExitAndRunWingetUpdate = () =>
             {
                 Process.Start(new ProcessStartInfo

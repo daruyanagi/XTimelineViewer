@@ -162,6 +162,11 @@ namespace XTimelineViewer.Views
         private static readonly System.Net.Http.HttpClient _updateHttp =
             new() { Timeout = TimeSpan.FromSeconds(15) };
 
+        // 更新チェック用の 15 秒では 90 MB の ZIP を取り切れない。
+        // 実際の打ち切りは CancellationToken（取り消しボタン）で行う。
+        private static readonly System.Net.Http.HttpClient _downloadHttp =
+            new() { Timeout = System.Threading.Timeout.InfiniteTimeSpan };
+
         private void UpdateMenuUpdateBadge()
         {
             var latest = _appSettings.CachedLatestVersion;
