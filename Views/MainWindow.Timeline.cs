@@ -284,7 +284,6 @@ namespace XTimelineViewer.Views
             // 繰り返し起きていたので TimelinePane.xaml へ移した（#345）。
             var pane       = new TimelinePane(cfg);
             var headerGrid = pane.Header;
-            var webView    = pane.WebView;
             ApplyProfileBadge(pane);
 
             // Theme
@@ -304,23 +303,7 @@ namespace XTimelineViewer.Views
             UpdateAutoLoadIndicator(pane, _appSettings.HomeAutoLoadEnabled ? "running" : "off");
 
 
-            // ⚙ でプロファイルを切り替えると WebView2 を作り直すので、
-            // 購読をここに集めて両方から呼ぶ（#361）。
-            // フォーカス（GotFocus）は TimelinePane が自分で拾うのでここには無い。
-            // 残るのは MainWindow の状態（ハードリロード）に依存するものだけ。
-            void AttachWebViewHandlers(WebView2 wv)
-            {
-                wv.PointerEntered += (s, e) => { _pointerOverWebViews.Add(wv);    EvaluateHardReloadPause(wv); };
-                wv.PointerExited  += (s, e) =>
-                {
-                    _pointerOverWebViews.Remove(wv);
-                    EvaluateHardReloadPause(wv);
-                };
-
-                _hardReloadUiUpdaters[wv] = () => UpdateHardReloadTooltip(wv, pane.HardReloadTooltip);
-                EnsureHardReloadUiTimer();
-            }
-            AttachWebViewHandlers(webView);
+            AttachWebViewHandlers(pane, pane.WebView);
 
             // ── Drag & Drop reorder ───────────────────────────────────────────
 
@@ -357,243 +340,271 @@ namespace XTimelineViewer.Views
 
             // ── Settings dialog ───────────────────────────────────────────────
 
-            pane.SettingsButton.Click += async (s, e2) =>
+            pane.SettingsButton.Click += async (s, e2) => await ShowPaneSettingsDialogAsync(pane);
+
+            _ = InitWebViewAsync(pane.WebView, cfg);
+        }
+
+        // ⚙ でプロファイルを切り替えると WebView2 を作り直すので、
+        // 購読をここに集めて両方から呼ぶ（#361）。
+        // フォーカス（GotFocus）は TimelinePane が自分で拾うのでここには無い。
+        // 残るのは MainWindow の状態（ハードリロード）に依存するものだけ。
+        private void AttachWebViewHandlers(TimelinePane pane, WebView2 wv)
+        {
+            wv.PointerEntered += (s, e) => { _pointerOverWebViews.Add(wv);    EvaluateHardReloadPause(wv); };
+            wv.PointerExited  += (s, e) =>
             {
-                var widthBox = new NumberBox
-                {
-                    Header                  = R.Get("Timeline_Width"),
-                    Value                   = cfg.Width,
-                    Minimum                 = 100,
-                    Maximum                 = 2000,
-                    SmallChange             = 10,
-                    LargeChange             = 50,
-                    SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline,
-                    Width                   = 160,
-                    HorizontalAlignment     = HorizontalAlignment.Left,
-                };
-
-                var hideSidebarToggle = new ToggleSwitch
-                {
-                    Header     = R.Get("Timeline_Sidebar"),
-                    IsOn       = cfg.HideSidebar,
-                    OnContent  = R.Get("Toggle_Hide"),
-                    OffContent = R.Get("Toggle_Show")
-                };
-
-                var hideComposeToggle = new ToggleSwitch
-                {
-                    Header     = R.Get("Timeline_Compose"),
-                    IsOn       = cfg.HideCompose,
-                    OnContent  = R.Get("Toggle_Hide"),
-                    OffContent = R.Get("Toggle_Show")
-                };
-
-                var listHeaderApplicable = UrlHelper.IsListHeaderApplicable(cfg.Url);
-                var hideListHeaderToggle = new ToggleSwitch
-                {
-                    Header     = R.Get("Timeline_ListHeader"),
-                    IsOn       = cfg.HideListHeader,
-                    IsEnabled  = listHeaderApplicable,
-                    OnContent  = R.Get("Toggle_Hide"),
-                    OffContent = R.Get("Toggle_Show")
-                };
-
-                var hardReloadToggle = new ToggleSwitch
-                {
-                    Header     = R.Get("Timeline_ReloadInterval"),
-                    IsOn       = cfg.HardReloadEnabled,
-                    OnContent  = R.Get("Toggle_On"),
-                    OffContent = R.Get("Toggle_Off"),
-                };
-                var hardReloadIntervalBox = new NumberBox
-                {
-                    Value                   = cfg.HardReloadInterval,
-                    Minimum                 = 1,
-                    Maximum                 = 60,
-                    SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline,
-                    Width                   = 160,
-                    HorizontalAlignment     = HorizontalAlignment.Left,
-                    IsEnabled               = cfg.HardReloadEnabled,
-                };
-                hardReloadToggle.Toggled += (_, _) =>
-                    hardReloadIntervalBox.IsEnabled = hardReloadToggle.IsOn;
-                // トグルと同じラベルのグループなので、見た目は変えず名前だけ UIA に与える（#344）
-                AutomationProperties.SetName(hardReloadIntervalBox, R.Get("Timeline_ReloadInterval"));
-
-                var deleteBtn = new Button
-                {
-                    Content             = R.Get("Pane_Delete"),
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Margin              = new Thickness(0, 16, 0, 0),
-                    Foreground          = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"],
-                };
-
-                var profileBox = new ComboBox
-                {
-                    Header              = R.Get("Timeline_Profile"),
-                    MinWidth            = 200,
-                    HorizontalAlignment = HorizontalAlignment.Left,
-                };
-                foreach (var p in _profiles.Where(p => p.Id != "default"))
-                    profileBox.Items.Add(new ComboBoxItem { Content = p.Name, Tag = p.Id });
-                profileBox.SelectedItem = profileBox.Items
-                    .OfType<ComboBoxItem>()
-                    .FirstOrDefault(i => (string)i.Tag == cfg.ProfileId)
-                    ?? profileBox.Items.OfType<ComboBoxItem>().FirstOrDefault();
-
-                // ── ベース URL (#189) ──
-                // WebView2 の現在の表示 URL がベース URL と異なる（別ページを閲覧中）かつ
-                // X の URL のときだけ「現在のページをベース URL にする」を有効化する。
-                var currentSource = webView.CoreWebView2?.Source ?? cfg.Url;
-                string? stagedBaseUrl = null;  // ［適用］で確定する新しいベース URL
-
-                var baseUrlText = new TextBlock
-                {
-                    Text                   = SearchQueryHelper.DecodeSearchPath(cfg.Url),
-                    FontSize               = 12,
-                    Opacity                = 0.8,
-                    TextWrapping           = TextWrapping.Wrap,
-                    IsTextSelectionEnabled = true,
-                };
-
-                var setBaseUrlBtn = new Button
-                {
-                    Content             = R.Get("Timeline_SetBaseUrl"),
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    IsEnabled           = UrlHelper.IsXUrl(currentSource)
-                                       && !UrlHelper.IsOnBaseUrl(currentSource, cfg.Url),
-                };
-                setBaseUrlBtn.Click += (_, _) =>
-                {
-                    stagedBaseUrl        = currentSource;
-                    baseUrlText.Text     = SearchQueryHelper.DecodeSearchPath(stagedBaseUrl);
-                    setBaseUrlBtn.IsEnabled = false;
-                };
-
-                var panel = new StackPanel { Spacing = 8 };
-                panel.Children.Add(new TextBlock { Text = R.Get("Timeline_BaseUrl") });
-                panel.Children.Add(baseUrlText);
-                panel.Children.Add(setBaseUrlBtn);
-                panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 8, 0, 0) });
-                // ラベルは別立ての TextBlock ではなく各コントロールの Header に持たせる。
-                // コード生成でも UI Automation 上の関連付けが成立する（#344）。
-                panel.Children.Add(profileBox);
-                panel.Children.Add(widthBox);
-                panel.Children.Add(hideSidebarToggle);
-                panel.Children.Add(hideComposeToggle);
-                panel.Children.Add(hideListHeaderToggle);
-                panel.Children.Add(hardReloadToggle);
-                panel.Children.Add(hardReloadIntervalBox);
-                panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 8, 0, 0) });
-                panel.Children.Add(deleteBtn);
-
-                var dlg = new ContentDialog
-                {
-                    Title             = R.Get("Timeline_Settings_Title"),
-                    Content           = new ScrollViewer
-                    {
-                        Content = panel,
-                        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    },
-                    PrimaryButtonText = R.Get("Button_Apply"),
-                    CloseButtonText   = R.Get("Button_Cancel"),
-                    DefaultButton     = ContentDialogButton.Primary,
-                    XamlRoot          = Content.XamlRoot
-                };
-
-                bool shouldDelete = false;
-                deleteBtn.Click += (_, _) => { shouldDelete = true; dlg.Hide(); };
-
-                var result = await ShowDialogAsync(dlg);
-
-                if (shouldDelete)
-                {
-                    if (_enlargedPane == pane) RestorePaneSize();  // 拡大中のペイン削除に備える（#287）
-                    CleanupWebView(webView);
-                    if (_hardReloadUiUpdaters.Count == 0)
-                    {
-                        _hardReloadUiTimer?.Stop();
-                        _hardReloadUiTimer = null;
-                    }
-                    _configs.Remove(cfg);
-                    // ペイン単位の状態は TimelinePane の中にあるので、
-                    // コレクションから外せば一緒に消える（#345）。
-                    if (_focusedPane == pane)
-                    {
-                        _focusedPane = null;
-                        RefreshPaneThemes();
-                    }
-                    await SaveTimelinesAsync();
-
-                    TimelinePanel.Children.Remove(pane);
-                    RefreshTimelineNumbers();  // 削除後に番号を振り直す（#225）
-                    ViewModel.HasTimelines = TimelinePanel.Children.Count > 0;
-                }
-                else if (result == ContentDialogResult.Primary)
-                {
-                    // ベース URL の変更を反映 (#189)。プロファイル再生成より前に cfg.Url を
-                    // 更新しておき、再生成時は新しいベース URL へ遷移させる。
-                    bool baseUrlChanged = stagedBaseUrl is not null && stagedBaseUrl != cfg.Url;
-                    if (baseUrlChanged)
-                    {
-                        cfg.Url = stagedBaseUrl!;
-                        // 具体ページを明示的に固定したので、リスト一覧の自動追従は解除する (#211)
-                        cfg.IsListsIndex = false;
-                        pane.UpdateUrlHeader();
-                    }
-
-                    var prevProfileId = cfg.ProfileId;
-                    cfg.ProfileId = (profileBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "default";
-
-                    // リスト一覧（IsListsIndex）はプロファイル切り替え後、再生成したペインの
-                    // 読み込み時に EnsureListsUrlAsync がアクティブアカウントのハンドルで
-                    // ライブ解決するため、ここでは URL を組み立てない (#211)
-
-                    cfg.Width  = Math.Clamp(widthBox.Value, 100, 2000);
-                    pane.Width = cfg.Width;
-
-                    cfg.HideSidebar = hideSidebarToggle.IsOn;
-                    cfg.HideCompose = hideComposeToggle.IsOn;
-                    cfg.HideListHeader = hideListHeaderToggle.IsOn;
-                    cfg.HardReloadEnabled  = hardReloadToggle.IsOn;
-                    cfg.HardReloadInterval = (int)Math.Clamp(hardReloadIntervalBox.Value, 1, 60);
-
-                    if (prevProfileId != cfg.ProfileId)
-                    {
-                        CleanupWebView(webView);
-                        // 差し替え手順は TimelinePane 側に集めてある（行番号の手書きを残さない）
-                        webView = pane.ReplaceWebView();
-                        AttachWebViewHandlers(webView);  // 再購読しないとフォーカス表示とホバー制御が死ぬ（#361）
-
-                        ApplyProfileBadge(pane);
-
-                        Debug.WriteLine($"[Profile] WebView2 recreated for profile switch: {prevProfileId} -> {cfg.ProfileId}");
-                        _ = InitWebViewAsync(webView, cfg);
-                    }
-                    else
-                    {
-                        if (webView.CoreWebView2 is not null)
-                        {
-                            await ApplyHideSidebarAsync(webView, cfg.HideSidebar);
-                            await ApplyHideComposeAsync(webView, cfg.HideCompose);
-                            await ApplyHideListHeaderAsync(webView, cfg.HideListHeader);
-                        }
-
-                        // ベース URL を現在のページに合わせたので乖離状態を解消し、
-                        // 定期ハードリロードの一時停止を再評価する
-                        if (baseUrlChanged)
-                        {
-                            _urlDivergedWebViews.Remove(webView);
-                            EvaluateHardReloadPause(webView);
-                        }
-                    }
-
-                    StartHardReloadTimer(webView, cfg);
-                    await SaveTimelinesAsync();
-                }
+                _pointerOverWebViews.Remove(wv);
+                EvaluateHardReloadPause(wv);
             };
 
-            _ = InitWebViewAsync(webView, cfg);
+            _hardReloadUiUpdaters[wv] = () => UpdateHardReloadTooltip(wv, pane.HardReloadTooltip);
+            EnsureHardReloadUiTimer();
         }
+
+        /// <summary>
+        /// ペインの ⚙ 設定ダイアログ（#370）。
+        /// 以前は AddTimeline の中に約 235 行のラムダとして埋まっていた。
+        /// XAML 化はしていない。中身の大半は UI 構築ではなく適用・削除の
+        /// ロジックで、XAML へ移しても減らないため（判断の経緯は #370）。
+        /// </summary>
+        private async Task ShowPaneSettingsDialogAsync(TimelinePane pane)
+        {
+            var cfg = pane.Config;
+
+            var widthBox = new NumberBox
+            {
+                Header                  = R.Get("Timeline_Width"),
+                Value                   = cfg.Width,
+                Minimum                 = 100,
+                Maximum                 = 2000,
+                SmallChange             = 10,
+                LargeChange             = 50,
+                SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline,
+                Width                   = 160,
+                HorizontalAlignment     = HorizontalAlignment.Left,
+            };
+
+            var hideSidebarToggle = new ToggleSwitch
+            {
+                Header     = R.Get("Timeline_Sidebar"),
+                IsOn       = cfg.HideSidebar,
+                OnContent  = R.Get("Toggle_Hide"),
+                OffContent = R.Get("Toggle_Show")
+            };
+
+            var hideComposeToggle = new ToggleSwitch
+            {
+                Header     = R.Get("Timeline_Compose"),
+                IsOn       = cfg.HideCompose,
+                OnContent  = R.Get("Toggle_Hide"),
+                OffContent = R.Get("Toggle_Show")
+            };
+
+            var listHeaderApplicable = UrlHelper.IsListHeaderApplicable(cfg.Url);
+            var hideListHeaderToggle = new ToggleSwitch
+            {
+                Header     = R.Get("Timeline_ListHeader"),
+                IsOn       = cfg.HideListHeader,
+                IsEnabled  = listHeaderApplicable,
+                OnContent  = R.Get("Toggle_Hide"),
+                OffContent = R.Get("Toggle_Show")
+            };
+
+            var hardReloadToggle = new ToggleSwitch
+            {
+                Header     = R.Get("Timeline_ReloadInterval"),
+                IsOn       = cfg.HardReloadEnabled,
+                OnContent  = R.Get("Toggle_On"),
+                OffContent = R.Get("Toggle_Off"),
+            };
+            var hardReloadIntervalBox = new NumberBox
+            {
+                Value                   = cfg.HardReloadInterval,
+                Minimum                 = 1,
+                Maximum                 = 60,
+                SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline,
+                Width                   = 160,
+                HorizontalAlignment     = HorizontalAlignment.Left,
+                IsEnabled               = cfg.HardReloadEnabled,
+            };
+            hardReloadToggle.Toggled += (_, _) =>
+                hardReloadIntervalBox.IsEnabled = hardReloadToggle.IsOn;
+            // トグルと同じラベルのグループなので、見た目は変えず名前だけ UIA に与える（#344）
+            AutomationProperties.SetName(hardReloadIntervalBox, R.Get("Timeline_ReloadInterval"));
+
+            var deleteBtn = new Button
+            {
+                Content             = R.Get("Pane_Delete"),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Margin              = new Thickness(0, 16, 0, 0),
+                Foreground          = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"],
+            };
+
+            var profileBox = new ComboBox
+            {
+                Header              = R.Get("Timeline_Profile"),
+                MinWidth            = 200,
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+            foreach (var p in _profiles.Where(p => p.Id != "default"))
+                profileBox.Items.Add(new ComboBoxItem { Content = p.Name, Tag = p.Id });
+            profileBox.SelectedItem = profileBox.Items
+                .OfType<ComboBoxItem>()
+                .FirstOrDefault(i => (string)i.Tag == cfg.ProfileId)
+                ?? profileBox.Items.OfType<ComboBoxItem>().FirstOrDefault();
+
+            // ── ベース URL (#189) ──
+            // WebView2 の現在の表示 URL がベース URL と異なる（別ページを閲覧中）かつ
+            // X の URL のときだけ「現在のページをベース URL にする」を有効化する。
+            var currentSource = pane.WebView.CoreWebView2?.Source ?? cfg.Url;
+            string? stagedBaseUrl = null;  // ［適用］で確定する新しいベース URL
+
+            var baseUrlText = new TextBlock
+            {
+                Text                   = SearchQueryHelper.DecodeSearchPath(cfg.Url),
+                FontSize               = 12,
+                Opacity                = 0.8,
+                TextWrapping           = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true,
+            };
+
+            var setBaseUrlBtn = new Button
+            {
+                Content             = R.Get("Timeline_SetBaseUrl"),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                IsEnabled           = UrlHelper.IsXUrl(currentSource)
+                                   && !UrlHelper.IsOnBaseUrl(currentSource, cfg.Url),
+            };
+            setBaseUrlBtn.Click += (_, _) =>
+            {
+                stagedBaseUrl        = currentSource;
+                baseUrlText.Text     = SearchQueryHelper.DecodeSearchPath(stagedBaseUrl);
+                setBaseUrlBtn.IsEnabled = false;
+            };
+
+            var panel = new StackPanel { Spacing = 8 };
+            panel.Children.Add(new TextBlock { Text = R.Get("Timeline_BaseUrl") });
+            panel.Children.Add(baseUrlText);
+            panel.Children.Add(setBaseUrlBtn);
+            panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 8, 0, 0) });
+            // ラベルは別立ての TextBlock ではなく各コントロールの Header に持たせる。
+            // コード生成でも UI Automation 上の関連付けが成立する（#344）。
+            panel.Children.Add(profileBox);
+            panel.Children.Add(widthBox);
+            panel.Children.Add(hideSidebarToggle);
+            panel.Children.Add(hideComposeToggle);
+            panel.Children.Add(hideListHeaderToggle);
+            panel.Children.Add(hardReloadToggle);
+            panel.Children.Add(hardReloadIntervalBox);
+            panel.Children.Add(new NavigationViewItemSeparator { Margin = new Thickness(0, 8, 0, 0) });
+            panel.Children.Add(deleteBtn);
+
+            var dlg = new ContentDialog
+            {
+                Title             = R.Get("Timeline_Settings_Title"),
+                Content           = new ScrollViewer
+                {
+                    Content = panel,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                },
+                PrimaryButtonText = R.Get("Button_Apply"),
+                CloseButtonText   = R.Get("Button_Cancel"),
+                DefaultButton     = ContentDialogButton.Primary,
+                XamlRoot          = Content.XamlRoot
+            };
+
+            bool shouldDelete = false;
+            deleteBtn.Click += (_, _) => { shouldDelete = true; dlg.Hide(); };
+
+            var result = await ShowDialogAsync(dlg);
+
+            if (shouldDelete)
+            {
+                if (_enlargedPane == pane) RestorePaneSize();  // 拡大中のペイン削除に備える（#287）
+                CleanupWebView(pane.WebView);
+                if (_hardReloadUiUpdaters.Count == 0)
+                {
+                    _hardReloadUiTimer?.Stop();
+                    _hardReloadUiTimer = null;
+                }
+                _configs.Remove(cfg);
+                // ペイン単位の状態は TimelinePane の中にあるので、
+                // コレクションから外せば一緒に消える（#345）。
+                if (_focusedPane == pane)
+                {
+                    _focusedPane = null;
+                    RefreshPaneThemes();
+                }
+                await SaveTimelinesAsync();
+
+                TimelinePanel.Children.Remove(pane);
+                RefreshTimelineNumbers();  // 削除後に番号を振り直す（#225）
+                ViewModel.HasTimelines = TimelinePanel.Children.Count > 0;
+            }
+            else if (result == ContentDialogResult.Primary)
+            {
+                // ベース URL の変更を反映 (#189)。プロファイル再生成より前に cfg.Url を
+                // 更新しておき、再生成時は新しいベース URL へ遷移させる。
+                bool baseUrlChanged = stagedBaseUrl is not null && stagedBaseUrl != cfg.Url;
+                if (baseUrlChanged)
+                {
+                    cfg.Url = stagedBaseUrl!;
+                    // 具体ページを明示的に固定したので、リスト一覧の自動追従は解除する (#211)
+                    cfg.IsListsIndex = false;
+                    pane.UpdateUrlHeader();
+                }
+
+                var prevProfileId = cfg.ProfileId;
+                cfg.ProfileId = (profileBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "default";
+
+                // リスト一覧（IsListsIndex）はプロファイル切り替え後、再生成したペインの
+                // 読み込み時に EnsureListsUrlAsync がアクティブアカウントのハンドルで
+                // ライブ解決するため、ここでは URL を組み立てない (#211)
+
+                cfg.Width  = Math.Clamp(widthBox.Value, 100, 2000);
+                pane.Width = cfg.Width;
+
+                cfg.HideSidebar = hideSidebarToggle.IsOn;
+                cfg.HideCompose = hideComposeToggle.IsOn;
+                cfg.HideListHeader = hideListHeaderToggle.IsOn;
+                cfg.HardReloadEnabled  = hardReloadToggle.IsOn;
+                cfg.HardReloadInterval = (int)Math.Clamp(hardReloadIntervalBox.Value, 1, 60);
+
+                if (prevProfileId != cfg.ProfileId)
+                {
+                    CleanupWebView(pane.WebView);
+                    // 差し替え手順は TimelinePane 側に集めてある（行番号の手書きを残さない）
+                    pane.ReplaceWebView();
+                    AttachWebViewHandlers(pane, pane.WebView);  // 再購読しないとフォーカス表示とホバー制御が死ぬ（#361）
+
+                    ApplyProfileBadge(pane);
+
+                    Debug.WriteLine($"[Profile] WebView2 recreated for profile switch: {prevProfileId} -> {cfg.ProfileId}");
+                    _ = InitWebViewAsync(pane.WebView, cfg);
+                }
+                else
+                {
+                    if (pane.WebView.CoreWebView2 is not null)
+                    {
+                        await ApplyHideSidebarAsync(pane.WebView, cfg.HideSidebar);
+                        await ApplyHideComposeAsync(pane.WebView, cfg.HideCompose);
+                        await ApplyHideListHeaderAsync(pane.WebView, cfg.HideListHeader);
+                    }
+
+                    // ベース URL を現在のページに合わせたので乖離状態を解消し、
+                    // 定期ハードリロードの一時停止を再評価する
+                    if (baseUrlChanged)
+                    {
+                        _urlDivergedWebViews.Remove(pane.WebView);
+                        EvaluateHardReloadPause(pane.WebView);
+                    }
+                }
+
+                StartHardReloadTimer(pane.WebView, cfg);
+                await SaveTimelinesAsync();
+            }
+        }
+
     }
 }
