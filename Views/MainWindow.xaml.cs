@@ -25,6 +25,8 @@ using XTimelineViewer.Models;
 using XTimelineViewer.Services;
 using XTimelineViewer.ViewModels;
 
+using XTimelineViewer.Views.Controls;
+
 namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
@@ -97,12 +99,12 @@ namespace XTimelineViewer.Views
         private AppSettings _appSettings = new();
         private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
         private readonly List<TimelineConfig> _configs = [];
-        private Grid? _draggingPane;
+        private TimelinePane? _draggingPane;
         private Grid? _focusedHeaderGrid;
         // ペイン → ヘッダーの配色を再適用する処理。
         // 以前は List<Action> だったが、除去が参照一致になるため
         // デリゲート実体を持たない削除経路からは掃除できなかった（#362）。
-        private readonly Dictionary<Grid, Action> _headerRefreshers = [];
+        private readonly Dictionary<TimelinePane, Action> _headerRefreshers = [];
         private readonly List<WebView2> _webViews = [];
         private bool _extensionsLoaded = false;
         private readonly List<ExtensionInfo> _loadedExtensions = [];
@@ -111,8 +113,8 @@ namespace XTimelineViewer.Views
         // ときに同じ user data folder に対して CreateWithOptionsAsync が重複しうるため。
         private readonly Dictionary<string, Task<CoreWebView2Environment>> _profileEnvs = [];
         private List<ProfileConfig> _profiles = [];
-        private readonly Dictionary<WebView2, Grid>            _webViewToPane  = [];
-        private readonly Dictionary<Grid, Action>              _paneToSetFocus = [];
+        private readonly Dictionary<WebView2, TimelinePane>    _webViewToPane  = [];
+        private readonly Dictionary<TimelinePane, Action>      _paneToSetFocus = [];
         // cfg.Url の変更をヘッダー（URL ラベル・種別アイコン・ホーム判定）へ反映する更新子 (#211)
         private readonly Dictionary<TimelineConfig, Action>    _paneUrlUpdaters = [];
         private readonly Dictionary<WebView2, DispatcherTimer>  _hardReloadTimers    = [];
@@ -123,20 +125,20 @@ namespace XTimelineViewer.Views
         private DispatcherTimer?  _hardReloadUiTimer;
 
         // ホーム自動更新（#207）のヘッダーインジケーター（ペイン → アイコン/ツールチップ）
-        private readonly Dictionary<Grid, (FontIcon Icon, ToolTip Tip)> _autoLoadIndicators = [];
+
 
         // タイムライン番号バッジ（#225）。ペイン → 番号 TextBlock。表示順で 1..9 を振り直す。
-        private readonly Dictionary<Grid, TextBlock> _paneNumberLabels = [];
+
 
         // 編集中（リプライ/引用）の WebView 集合（#258）。いずれかが編集中ならホーム自動更新を止める。
         private readonly HashSet<WebView2> _composingWebViews = [];
 
         // headerGrid → pane の対応（#227）。アクティブな headerGrid からペインを引くのに使う。
-        private readonly Dictionary<Grid, Grid> _headerGridToPane = [];
+        private readonly Dictionary<Grid, TimelinePane> _headerGridToPane = [];
 
         // 画像表示中のペインの一時拡大（試験機能 #287）。ペイン → 元の TimelineConfig（幅の復元用）。
-        private readonly Dictionary<Grid, TimelineConfig> _paneToConfig = [];
-        private Grid? _enlargedPane;
+
+        private TimelinePane? _enlargedPane;
 
         // キーボードショートカット処理スクリプト（各 WebView2 に注入）
         private static readonly string KeyboardShortcutScript = """

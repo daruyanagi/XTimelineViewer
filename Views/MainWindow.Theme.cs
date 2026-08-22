@@ -5,6 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using Windows.UI.ViewManagement;
 
+using XTimelineViewer.Views.Controls;
+
 namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window

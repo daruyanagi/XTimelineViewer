@@ -8,6 +8,8 @@ using System.Linq;
 using XTimelineViewer.Models;
 using XTimelineViewer.Services;
 
+using XTimelineViewer.Views.Controls;
+
 namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
@@ -152,12 +154,13 @@ namespace XTimelineViewer.Views
                         _ = ApplyPriorRepostSearchAsync(wv);
 
                 // ホーム自動更新（#207）の ON/OFF・間隔を各ホームペインへ即時反映し、インジケーターも更新
-                foreach (var (homePane, _) in _autoLoadIndicators)
+                // 以前は _autoLoadIndicators を「ホームペイン集合」の代用にし、
+                // そこから型で WebView2 を探していた（#345）。
+                foreach (var pane in TimelinePanel.Children.OfType<TimelinePane>())
                 {
-                    if (homePane.Children.OfType<Microsoft.UI.Xaml.Controls.WebView2>()
-                            .FirstOrDefault() is { CoreWebView2: not null } hwv)
-                        _ = ApplyHomeAutoLoadAsync(hwv);
-                    UpdateAutoLoadIndicator(homePane, _appSettings.HomeAutoLoadEnabled ? "running" : "off");
+                    if (pane.WebView.CoreWebView2 is not null)
+                        _ = ApplyHomeAutoLoadAsync(pane.WebView);
+                    UpdateAutoLoadIndicator(pane, _appSettings.HomeAutoLoadEnabled ? "running" : "off");
                 }
 
                 // 言語変更の即時反映

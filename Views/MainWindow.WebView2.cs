@@ -19,6 +19,8 @@ using Windows.UI;
 using XTimelineViewer.Models;
 using XTimelineViewer.Services;
 
+using XTimelineViewer.Views.Controls;
+
 namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
@@ -560,9 +562,7 @@ namespace XTimelineViewer.Views
         }
 
         /// <summary>cfg がホームタイムラインかどうか。</summary>
-        private static bool IsHomeConfig(TimelineConfig cfg)
-            => Uri.TryCreate(cfg.Url, UriKind.Absolute, out var u)
-               && u.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase);
+        private static bool IsHomeConfig(TimelineConfig cfg) => UrlHelper.IsHomeUrl(cfg.Url);
 
         // ホームタイムライン自動更新（#207）。同梱拡張 TwitterTimelineLoader（TLLoader_main.js）の
         // ロジックをできるだけ忠実に移植。/home でページ先頭にいるとき一定間隔で

@@ -2,6 +2,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Linq;
 
+using XTimelineViewer.Views.Controls;
+
 namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
@@ -15,12 +17,12 @@ namespace XTimelineViewer.Views
         // 隠し、対象ペインの幅だけ表示領域いっぱいに広げる。
 
         /// <summary>対象ペインを一時拡大する。他のペインは一時的に非表示になる。</summary>
-        private void EnlargePane(Grid pane)
+        private void EnlargePane(TimelinePane pane)
         {
             if (_enlargedPane == pane) return;
 
             _enlargedPane = pane;
-            foreach (var p in TimelinePanel.Children.OfType<Grid>())
+            foreach (var p in TimelinePanel.Children.OfType<TimelinePane>())
                 p.Visibility = p == pane ? Visibility.Visible : Visibility.Collapsed;
 
             UpdateEnlargedPaneWidth();
@@ -34,11 +36,10 @@ namespace XTimelineViewer.Views
             var pane = _enlargedPane;
             _enlargedPane = null;
 
-            foreach (var p in TimelinePanel.Children.OfType<Grid>())
+            foreach (var p in TimelinePanel.Children.OfType<TimelinePane>())
                 p.Visibility = Visibility.Visible;
 
-            if (_paneToConfig.TryGetValue(pane, out var cfg))
-                pane.Width = cfg.Width;
+            pane.Width = pane.Config.Width;
         }
 
         /// <summary>拡大中のペイン幅を、表示領域（TimelineScroll のビューポート）いっぱいに合わせる。</summary>

@@ -9,29 +9,21 @@ using Windows.UI;
 
 using XTimelineViewer.Models;
 
+using XTimelineViewer.Views.Controls;
+
 namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
     {
         private void RefreshAllProfileBadges()
         {
-            for (int i = 0; i < _configs.Count && i < TimelinePanel.Children.Count; i++)
-            {
-                var pane = (Grid)TimelinePanel.Children[i];
-                var headerGrid = pane.Children.OfType<Grid>().FirstOrDefault();
-                if (headerGrid == null) continue;
-                // バッジは列 2（列構成: 0 番号 / 1 種別アイコン / 2 バッジ / 3 URL / 4 ボタン）。
-                // #337 で AddTimeline 側を 1 → 2 に直したときここを見落としており、
-                // 古いバッジを見つけられず重複していた（プロファイル変更時に発現）。
-                var oldBadge = headerGrid.Children.OfType<Border>()
-                    .FirstOrDefault(b => Grid.GetColumn(b) == 2);
-                if (oldBadge != null)
-                    headerGrid.Children.Remove(oldBadge);
-                var newBadge = CreateProfileBadge(_configs[i].ProfileId);
-                Grid.SetColumn(newBadge, 2);
-                headerGrid.Children.Add(newBadge);
-            }
+            // 以前は Border ごと作り直して列 2 へ入れ直していたため、
+            // 列番号が生成側とこちらの 2 か所に手書きされていた（#337 / #341）。
+            // 器は TimelinePane.xaml に固定され、ここは中身を更新するだけで済む。
+            foreach (var pane in TimelinePanel.Children.OfType<TimelinePane>())
+                ApplyProfileBadge(pane);
         }
+
 
         private void RemoveTimelinesForProfile(string profileId)
         {
@@ -44,27 +36,16 @@ namespace XTimelineViewer.Views
             {
                 var idx = indices[i];
                 if (idx >= TimelinePanel.Children.Count) continue;
-                var pane = (Grid)TimelinePanel.Children[idx];
+                var pane = (TimelinePane)TimelinePanel.Children[idx];
                 if (_enlargedPane == pane) RestorePaneSize();  // 拡大中のペイン削除に備える（#287）
-                var wv = pane.Children.OfType<WebView2>().FirstOrDefault();
-                if (wv != null)
-                {
-                    CleanupWebView(wv);
-                }
-                var headerGrid = pane.Children.OfType<Grid>().FirstOrDefault();
-                if (headerGrid != null)
-                {
-                    if (_focusedHeaderGrid == headerGrid)
-                        _focusedHeaderGrid = null;
-                    _headerGridToPane.Remove(headerGrid);
-                }
+                CleanupWebView(pane.WebView);
+                if (_focusedHeaderGrid == pane.Header)
+                    _focusedHeaderGrid = null;
                 // ⚙ ダイアログからの削除（MainWindow.Timeline.cs）と同じ後始末を行うこと。
-                // 以前は下 4 つが抜けており、消えたペインへの参照が残っていた（#362）。
+                // 以前は抜けているものがあり、消えたペインへの参照が残っていた（#362）。
+                _headerGridToPane.Remove(pane.Header);
                 _paneToSetFocus.Remove(pane);
                 _paneUrlUpdaters.Remove(_configs[idx]);
-                _paneToConfig.Remove(pane);
-                _autoLoadIndicators.Remove(pane);
-                _paneNumberLabels.Remove(pane);
                 _headerRefreshers.Remove(pane);
                 TimelinePanel.Children.RemoveAt(idx);
                 _configs.RemoveAt(idx);
@@ -122,11 +103,17 @@ namespace XTimelineViewer.Views
             return GetProfileColor(profileId);
         }
 
-        private Border CreateProfileBadge(string profileId)
+        /// <summary>
+        /// ペインのプロファイルバッジを現在の設定に合わせて更新する。
+        /// 以前は Border を新規作成して差し替えており、列番号の手書きが
+        /// 生成側と再生成側の 2 か所に分かれていた（#337）。
+        /// </summary>
+        private void ApplyProfileBadge(TimelinePane pane)
         {
+            var profileId = pane.Config.ProfileId;
             var showBadge = _profiles.Count > 1 && profileId != "default";
-            var profile = _profiles.FirstOrDefault(p => p.Id == profileId);
-            var name = profile?.Name ?? profileId;
+            var profile   = _profiles.FirstOrDefault(p => p.Id == profileId);
+            var name      = profile?.Name ?? profileId;
             var badgeText = profile?.BadgeText is { Length: > 0 } custom
                 ? custom
                 : (name.Length > 3 ? name[..3] : name);
@@ -141,25 +128,9 @@ namespace XTimelineViewer.Views
             var fg = hc ? (Brush)Application.Current.Resources["SystemColorWindowTextColorBrush"]
                         : new SolidColorBrush(Microsoft.UI.Colors.White);
 
-            return new Border
-            {
-                Background      = bg,
-                BorderBrush     = hc ? fg : null,
-                BorderThickness = new Thickness(hc ? 1 : 0),
-                CornerRadius  = new CornerRadius(4),
-                Padding       = new Thickness(4, 1, 4, 1),
-                Margin        = new Thickness(0, 0, 6, 0),
-                VerticalAlignment = VerticalAlignment.Center,
-                Visibility    = showBadge ? Visibility.Visible : Visibility.Collapsed,
-                Child = new TextBlock
-                {
-                    Text       = badgeText,
-                    FontSize   = 10,
-                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                    Foreground = fg,
-                }
-            };
+            pane.SetProfileBadge(badgeText, bg, fg, bordered: hc, visible: showBadge);
         }
+
 
         // メニューから新規プロファイル作成ウィンドウをモーダルで開く (#157)
         private void NewProfileMenuItem_Click(object sender, RoutedEventArgs e)

@@ -28,6 +28,15 @@ namespace XTimelineViewer.Services
                && Regex.IsMatch(u.AbsolutePath, @"^/[^/]+/lists$");
 
         /// <summary>
+        /// ホームタイムラインかどうか。ホーム自動更新（#207）の対象判定に使う。
+        /// 以前は MainWindow.IsHomeConfig / ヘッダー更新子 / アイコンの初期表示の
+        /// 3 か所に同じ式が書かれていた（#345）。
+        /// </summary>
+        internal static bool IsHomeUrl(string url)
+            => Uri.TryCreate(url, UriKind.Absolute, out var u)
+               && u.AbsolutePath.StartsWith("/home", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
         /// 個別ツイートの画像表示 URL（https://x.com/&lt;handle&gt;/status/&lt;id&gt;/photo/&lt;n&gt;）かどうか。
         /// クリックでライトボックスが開いた状態を検知し、ペインの一時拡大（#287）のトリガーに使う。
         /// </summary>

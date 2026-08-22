@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using Microsoft.Web.WebView2.Core;
 using XTimelineViewer.Services;
 
+using XTimelineViewer.Views.Controls;
+
 namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
