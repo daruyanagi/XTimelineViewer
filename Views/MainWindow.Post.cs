@@ -212,8 +212,8 @@ namespace XTimelineViewer.Views
 
             // WebView2 の Win32 HWND は XAML Popup より常に前面に描画されるため、
             // ダイアログ表示中はタイムライン WebView2 を非表示にして Z-order 問題を回避する
-            foreach (var wv in _webViews)
-                wv.Visibility = Visibility.Collapsed;
+            foreach (var p in Panes)
+                p.WebView.Visibility = Visibility.Collapsed;
             try
             {
                 await ShowDialogAsync(dlg);
@@ -227,8 +227,8 @@ namespace XTimelineViewer.Views
                 if (currentIsWarm) ReturnWarmToHost(webView, rootPanel, selectedProfileId);
                 else { try { rootPanel.Children.Remove(webView); webView.Close(); } catch { } }
 
-                foreach (var wv in _webViews)
-                    wv.Visibility = Visibility.Visible;
+                foreach (var p in Panes)
+                    p.WebView.Visibility = Visibility.Visible;
 
                 // 投稿アカウントの記憶。#285: 有効時は誤爆防止のため、次回はプライマリへ戻す。
                 var nextProfileId = selectedProfileId;
@@ -245,13 +245,8 @@ namespace XTimelineViewer.Views
                 }
 
                 // ダイアログを閉じた後、キーボードフォーカスを WebView2 に戻す
-                var target = senderWebView ?? _webViews.FirstOrDefault();
-                if (target is not null &&
-                    _webViewToPane.TryGetValue(target, out var pane) &&
-                    _paneToSetFocus.TryGetValue(pane, out var setFocus))
-                {
-                    setFocus();
-                }
+                var target = senderWebView is not null ? PaneOf(senderWebView) : Panes.FirstOrDefault();
+                target?.SetFocus();
 
                 // 次回に備えて再プリロード（設定 ON のとき。同プロファイルなら no-op）
                 _ = WarmUpComposeAsync();
@@ -541,7 +536,7 @@ namespace XTimelineViewer.Views
             if (message.StartsWith("homeAutoLoad:"))
             {
                 var status = message["homeAutoLoad:".Length..];
-                if (_webViewToPane.TryGetValue(senderWebView, out var hp))
+                if (PaneOf(senderWebView) is { } hp)
                     UpdateAutoLoadIndicator(hp, status);
                 return;
             }
@@ -669,9 +664,7 @@ namespace XTimelineViewer.Views
                     break;
                 case "activate":
                     // ホイール操作したペインをアクティブ化（キーフォーカス移動）#221
-                    if (_webViewToPane.TryGetValue(senderWebView, out var actPane) &&
-                        _paneToSetFocus.TryGetValue(actPane, out var actSetFocus))
-                        actSetFocus();
+                    PaneOf(senderWebView)?.SetFocus();
                     // webView.Focus() だけでは document に実フォーカスが移らず Home 等が効かない
                     // ことがあるため、document.hasFocus が立つまでリトライして確実にする（#251）
                     EnsureWebViewKeyboardFocus(senderWebView);
@@ -937,22 +930,19 @@ namespace XTimelineViewer.Views
         // 送信元のペインを隣と入れ替える（#344）
         private void MoveTimelinePane(WebView2 senderWebView, int direction)
         {
-            if (_webViewToPane.TryGetValue(senderWebView, out var pane))
+            if (PaneOf(senderWebView) is { } pane)
                 MovePaneAdjacent(pane, direction);
         }
 
         private void FocusAdjacentTimeline(WebView2 senderWebView, int direction)
         {
-            if (!_webViewToPane.TryGetValue(senderWebView, out var senderPane)) return;
+            if (PaneOf(senderWebView) is not { } senderPane) return;
             int idx  = TimelinePanel.Children.IndexOf(senderPane);
             int next = idx + direction;
             if (next < 0 || next >= TimelinePanel.Children.Count) return;
             var targetPane = (TimelinePane)TimelinePanel.Children[next];
-            if (_paneToSetFocus.TryGetValue(targetPane, out var setFocus))
-            {
-                setFocus();
-                targetPane.StartBringIntoView();
-            }
+            targetPane.SetFocus();
+            targetPane.StartBringIntoView();
         }
     }
 }

@@ -647,9 +647,9 @@ namespace XTimelineViewer.Views
         private void UpdateAnyComposing()
         {
             var any = _composingWebViews.Count > 0 ? "true" : "false";
-            foreach (var wv in _webViews)
-                if (wv.CoreWebView2 is not null)
-                    _ = wv.CoreWebView2.ExecuteScriptAsync($"window._xtvAnyComposing = {any};");
+            foreach (var pane in Panes)
+                if (pane.WebView.CoreWebView2 is not null)
+                    _ = pane.WebView.CoreWebView2.ExecuteScriptAsync($"window._xtvAnyComposing = {any};");
         }
 
         private static bool EffectiveHideCompose(TimelineConfig cfg, string currentUrl) =>
@@ -947,7 +947,7 @@ namespace XTimelineViewer.Views
             if (UrlHelper.IsOnBaseUrl(webView.CoreWebView2.Source, target)) return;  // 既に正しい
 
             cfg.Url = target;
-            if (_paneUrlUpdaters.TryGetValue(cfg, out var update)) update();
+            PaneOf(webView)?.UpdateUrlHeader();
             await SaveTimelinesAsync();
             webView.Source = new Uri(target);
             Debug.WriteLine($"[Lists] Resolved active lists URL: {target}");
@@ -974,7 +974,7 @@ namespace XTimelineViewer.Views
 
                     // 画像表示中はペインを一時拡大する（試験機能 #287）
                     if (_appSettings.MediaEnlargeEnabled &&
-                        _webViewToPane.TryGetValue(webView, out var pane))
+                        PaneOf(webView) is { } pane)
                     {
                         if (UrlHelper.IsMediaPhotoUrl(webView.CoreWebView2.Source))
                             EnlargePane(pane);
@@ -992,7 +992,7 @@ namespace XTimelineViewer.Views
                 webView.CoreWebView2.ContainsFullScreenElementChanged += (s, e) =>
                 {
                     if (!_appSettings.VideoEnlargeEnabled && !_appSettings.MediaOverlayButtonEnabled) return;
-                    if (!_webViewToPane.TryGetValue(webView, out var pane)) return;
+                    if (PaneOf(webView) is not { } pane) return;
                     if (webView.CoreWebView2.ContainsFullScreenElement)
                         EnlargePane(pane);
                     else if (_enlargedPane == pane)

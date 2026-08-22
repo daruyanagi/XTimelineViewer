@@ -138,20 +138,20 @@ namespace XTimelineViewer.Views
 
                 // WebView のタイムスタンプ設定を即時反映
                 var tsFlag = _appSettings.OpenTimestampInBrowser ? "true" : "false";
-                foreach (var wv in _webViews)
-                    if (wv.CoreWebView2 is not null)
-                        _ = wv.CoreWebView2.ExecuteScriptAsync(
+                foreach (var pane in Panes)
+                    if (pane.WebView.CoreWebView2 is not null)
+                        _ = pane.WebView.CoreWebView2.ExecuteScriptAsync(
                             $"window._xtvOpenTimestampInBrowser = {tsFlag};");
 
                 // メディア拡大ボタン（#293）の ON/OFF を各ペインへ即時反映
-                foreach (var wv in _webViews)
-                    if (wv.CoreWebView2 is not null)
-                        _ = ApplyMediaOverlayButtonAsync(wv);
+                foreach (var pane in Panes)
+                    if (pane.WebView.CoreWebView2 is not null)
+                        _ = ApplyMediaOverlayButtonAsync(pane.WebView);
 
                 // 「直前のリポストを検索」（#315）の ON/OFF を各ペインへ即時反映
-                foreach (var wv in _webViews)
-                    if (wv.CoreWebView2 is not null)
-                        _ = ApplyPriorRepostSearchAsync(wv);
+                foreach (var pane in Panes)
+                    if (pane.WebView.CoreWebView2 is not null)
+                        _ = ApplyPriorRepostSearchAsync(pane.WebView);
 
                 // ホーム自動更新（#207）の ON/OFF・間隔を各ホームペインへ即時反映し、インジケーターも更新
                 // 以前は _autoLoadIndicators を「ホームペイン集合」の代用にし、

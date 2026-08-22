@@ -61,9 +61,19 @@ namespace XTimelineViewer.Views
             _uiSettings.ColorValuesChanged += (_, _) =>
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    foreach (var r in _headerRefreshers.Values) r();
+                    RefreshPaneThemes();
                     RefreshAllProfileBadges();
                 });
+        }
+
+        /// <summary>1 ペインの配色を当て直す。フォーカス判定と HC 判定はこちらの責任。</summary>
+        private void ApplyPaneTheme(TimelinePane pane)
+            => pane.ApplyTheme(pane.ActualTheme, pane == _focusedPane, IsHighContrast());
+
+        /// <summary>全ペインの配色を当て直す。フォーカス移動やテーマ変更のときに呼ぶ。</summary>
+        private void RefreshPaneThemes()
+        {
+            foreach (var pane in Panes) ApplyPaneTheme(pane);
         }
 
         private void ApplySavedTheme()
@@ -105,9 +115,9 @@ namespace XTimelineViewer.Views
                 ElementTheme.Dark  => CoreWebView2PreferredColorScheme.Dark,
                 _                  => CoreWebView2PreferredColorScheme.Auto,
             };
-            foreach (var wv in _webViews)
-                if (wv.CoreWebView2 is not null)
-                    wv.CoreWebView2.Profile.PreferredColorScheme = scheme;
+            foreach (var pane in Panes)
+                if (pane.WebView.CoreWebView2 is not null)
+                    pane.WebView.CoreWebView2.Profile.PreferredColorScheme = scheme;
         }
     }
 }

@@ -99,13 +99,20 @@ namespace XTimelineViewer.Views
         private AppSettings _appSettings = new();
         private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
         private readonly List<TimelineConfig> _configs = [];
+        /// <summary>
+        /// 表示順のペイン一覧。以前は_webViews や _autoLoadIndicators を
+        /// 「全ペインの代用」にして列挙していた（#345）。
+        /// </summary>
+        private IEnumerable<TimelinePane> Panes => TimelinePanel.Children.OfType<TimelinePane>();
+
+        /// <summary>WebView2 からそのペインを引く。ペインは多くても数枚なので線形探索で十分。</summary>
+        private TimelinePane? PaneOf(WebView2 webView) => Panes.FirstOrDefault(p => p.WebView == webView);
+
         private TimelinePane? _draggingPane;
-        private Grid? _focusedHeaderGrid;
+        private TimelinePane? _focusedPane;
         // ペイン → ヘッダーの配色を再適用する処理。
         // 以前は List<Action> だったが、除去が参照一致になるため
         // デリゲート実体を持たない削除経路からは掃除できなかった（#362）。
-        private readonly Dictionary<TimelinePane, Action> _headerRefreshers = [];
-        private readonly List<WebView2> _webViews = [];
         private bool _extensionsLoaded = false;
         private readonly List<ExtensionInfo> _loadedExtensions = [];
         // 環境そのものではなく「生成中の Task」をキャッシュする（#339）。
@@ -113,10 +120,7 @@ namespace XTimelineViewer.Views
         // ときに同じ user data folder に対して CreateWithOptionsAsync が重複しうるため。
         private readonly Dictionary<string, Task<CoreWebView2Environment>> _profileEnvs = [];
         private List<ProfileConfig> _profiles = [];
-        private readonly Dictionary<WebView2, TimelinePane>    _webViewToPane  = [];
-        private readonly Dictionary<TimelinePane, Action>      _paneToSetFocus = [];
         // cfg.Url の変更をヘッダー（URL ラベル・種別アイコン・ホーム判定）へ反映する更新子 (#211)
-        private readonly Dictionary<TimelineConfig, Action>    _paneUrlUpdaters = [];
         private readonly Dictionary<WebView2, DispatcherTimer>  _hardReloadTimers    = [];
         private readonly Dictionary<WebView2, DateTimeOffset>   _hardReloadStartTimes = [];
         private readonly Dictionary<WebView2, Action>           _hardReloadUiUpdaters = [];
@@ -134,7 +138,6 @@ namespace XTimelineViewer.Views
         private readonly HashSet<WebView2> _composingWebViews = [];
 
         // headerGrid → pane の対応（#227）。アクティブな headerGrid からペインを引くのに使う。
-        private readonly Dictionary<Grid, TimelinePane> _headerGridToPane = [];
 
         // 画像表示中のペインの一時拡大（試験機能 #287）。ペイン → 元の TimelineConfig（幅の復元用）。
 
@@ -329,7 +332,7 @@ namespace XTimelineViewer.Views
             {
                 _hardReloadUiTimer?.Stop();
                 DisposeComposeWarm();  // 投稿プリロードの後始末（#244 案B）
-                foreach (var wv in _webViews.ToList())
+                foreach (var wv in Panes.Select(p => p.WebView).ToList())
                     CleanupWebView(wv);
             };
             ((FrameworkElement)Content).ActualThemeChanged += (s, e) => ApplyThemeToWebViews();

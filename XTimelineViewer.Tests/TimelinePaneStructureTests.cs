@@ -33,40 +33,27 @@ namespace XTimelineViewer.Tests
             throw new FileNotFoundException($"リポジトリ内で {relative} が見つかりません");
         }
 
+        private static readonly string MainWindowCs = File.ReadAllText(FindRepoFile("Views/MainWindow.xaml.cs"));
         // ⚙ ダイアログの［削除］がある側
         private static readonly string TimelineCs = File.ReadAllText(FindRepoFile("Views/MainWindow.Timeline.cs"));
         // プロファイル削除による一括削除がある側
         private static readonly string ProfilesCs = File.ReadAllText(FindRepoFile("Views/MainWindow.Profiles.cs"));
 
         /// <summary>
-        /// ペイン 1 つあたり MainWindow が持っている状態。ペインを消すときは
-        /// どちらの経路でも全部を掃除しなければならない。
-        /// 新しくペイン単位の辞書を足したら、ここにも足すこと。
+        /// ペイン単位の状態を MainWindow が辞書で手持ちしないこと。
+        /// 以前は 7 つの辞書を手で同期しており、削除経路が 2 つあるせいで
+        /// 後始末の抜けが実際にバグになっていた（#359 / #362）。
+        /// #345 で全部 TimelinePane のフィールドへ畳んだので、戻らないよう固定する。
         /// </summary>
-        public static TheoryData<string> PerPaneState() => new()
+        [Fact]
+        public void MainWindow_DoesNotHoldPerPaneDictionaries()
         {
-            "_paneToSetFocus",
-            "_paneUrlUpdaters",
-            "_headerGridToPane",
-            "_headerRefreshers",
-        };
-        // 段階 2A（#345）で _paneToConfig / _autoLoadIndicators / _paneNumberLabels は
-        // TimelinePane の中へ移って消えた。辞書が無ければ漏れも起きないので、
-        // この一覧からも外す。段階 2B で残り 4 つも消え、このテスト自体が不要になる。
-
-        [Theory]
-        [MemberData(nameof(PerPaneState))]
-        public void PaneState_IsCleanedUpInBothDeletePaths(string field)
-        {
-            var token = field + ".Remove(";
-
-            Assert.True(TimelineCs.Contains(token),
-                $"{field}: ⚙ ダイアログからの削除（MainWindow.Timeline.cs）に '{token}' が見つかりません。");
-
-            Assert.True(ProfilesCs.Contains(token),
-                $"{field}: プロファイル削除（MainWindow.Profiles.cs）に '{token}' が見つかりません。" +
-                "消えたペインへの参照が残ります（#362 と同じ不具合）。");
+            Assert.False(MainWindowCs.Contains("Dictionary<TimelinePane"),
+                "MainWindow がペインをキーにした辞書を持っています。" +
+                "削除経路が 2 つあるため、片方だけ掃除を忘れる事故が戻ります。" +
+                "ペイン単位の状態は TimelinePane のフィールドに置いてください。");
         }
+
 
         [Fact]
         public void TimelineNumbers_AreRefreshedInBothDeletePaths()
@@ -81,8 +68,7 @@ namespace XTimelineViewer.Tests
                 "番号バッジが表示順とずれます（#359 と同じ不具合）。");
         }
 
-        // ── 以下は #345 段階 2A（TimelinePane の導入）で達成した不変条件 ──
-        // 上の 2 つのテストは、辞書そのものが無くなる段階 2B で不要になる。
+        // ── 以下は #345 のリファクタで達成した不変条件 ──
 
         [Fact]
         public void Profiles_DoesNotSearchVisualTreeByType()
