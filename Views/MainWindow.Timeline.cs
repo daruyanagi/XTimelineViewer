@@ -352,11 +352,25 @@ namespace XTimelineViewer.Views
                 // 要素単位で RequestedTheme を設定している場合に正しい辞書が返らない。
                 // pane.ActualTheme（解決済み）を使い ThemeDictionaries を直接引く。
                 bool focused   = _focusedHeaderGrid == headerGrid;
-                var themeKey   = theme == ElementTheme.Light ? "Light" : "Default";
+                // コントラストテーマ中は Light/Dark ではなく HighContrast 辞書を引く（#341）。
+                // 自動解決に任せられない手引きの引き方なので、ここでも場合分けが要る。
+                var themeKey   = IsHighContrast() ? "HighContrast"
+                               : theme == ElementTheme.Light ? "Light" : "Default";
                 var themeDict  = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[themeKey];
-                pane.Background       = (Brush)themeDict["TimelinePaneBackgroundBrush"];
-                pane.BorderBrush      = (Brush)themeDict["TimelinePaneBorderBrush"];
-                headerGrid.Background = (Brush)themeDict[focused
+                bool hc = themeKey == "HighContrast";
+
+                pane.Background = (Brush)themeDict["TimelinePaneBackgroundBrush"];
+
+                // コントラストテーマではフォーカスを「塗り」ではなく「枠」で示す（#341）。
+                // ヘッダーを Highlight 色で塗ると、中の文字色までこちらで揃えない限り
+                // 地と衝突する。枠なら子要素の配色に一切干渉せずに済む。
+                bool outlineFocus = hc && focused;
+                pane.BorderBrush     = (Brush)themeDict[outlineFocus
+                    ? "TimelineHeaderFocusedBackgroundBrush"
+                    : "TimelinePaneBorderBrush"];
+                pane.BorderThickness = new Thickness(outlineFocus ? 2 : 1);
+
+                headerGrid.Background = (Brush)themeDict[focused && !hc
                     ? "TimelineHeaderFocusedBackgroundBrush"
                     : "TimelineHeaderBackgroundBrush"];
             }

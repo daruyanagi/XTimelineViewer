@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 using System;
 using System.Runtime.InteropServices;
+using Windows.UI.ViewManagement;
 
 namespace XTimelineViewer.Views
 {
@@ -21,6 +22,46 @@ namespace XTimelineViewer.Views
                      : theme == ElementTheme.Light ? 0
                      : (Application.Current.RequestedTheme == ApplicationTheme.Dark ? 1 : 0);
             DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref dark, sizeof(int));
+        }
+
+        // High Contrast の検出（#341）。
+        // AccessibilitySettings はデスクトップではウィンドウ初期化が要るため、
+        // 依存の少ない SystemParametersInfo を使う。
+        [StructLayout(LayoutKind.Sequential)]
+        private struct HIGHCONTRAST
+        {
+            public uint   cbSize;
+            public uint   dwFlags;
+            public IntPtr lpszDefaultScheme;
+        }
+        private const uint SPI_GETHIGHCONTRAST = 0x0042;
+        private const uint HCF_HIGHCONTRASTON  = 0x00000001;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SystemParametersInfo(
+            uint uiAction, uint uiParam, ref HIGHCONTRAST pvParam, uint fWinIni);
+
+        internal static bool IsHighContrast()
+        {
+            var hc = new HIGHCONTRAST { cbSize = (uint)Marshal.SizeOf<HIGHCONTRAST>() };
+            return SystemParametersInfo(SPI_GETHIGHCONTRAST, hc.cbSize, ref hc, 0)
+                && (hc.dwFlags & HCF_HIGHCONTRASTON) != 0;
+        }
+
+        // コントラストテーマの切り替えに追従する（#341）。
+        // ActualThemeChanged は Light/Dark の切り替えしか見ないため、
+        // システム色の変化を UISettings で拾う。別スレッドで発火するので
+        // DispatcherQueue で UI スレッドへ戻す。
+        private readonly UISettings _uiSettings = new();
+
+        private void HookContrastThemeChanges()
+        {
+            _uiSettings.ColorValuesChanged += (_, _) =>
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    foreach (var r in _headerRefreshers) r();
+                    RefreshAllProfileBadges();
+                });
         }
 
         private void ApplySavedTheme()

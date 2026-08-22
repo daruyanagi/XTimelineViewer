@@ -22,6 +22,16 @@
                     <SolidColorBrush x:Key="TimelineHeaderBackgroundBrush"        Color="#EBEBF0"/>
                     <SolidColorBrush x:Key="TimelineHeaderFocusedBackgroundBrush" Color="#0078D4"/>
                 </ResourceDictionary>
+                <!-- High Contrast (#341)
+                     自前の固定色を使わず、システムのコントラストテーマの色へ退避する。
+                     ペインの境界とフォーカスが判別できれば良いので、背景は Window、
+                     枠は WindowText、フォーカス中のヘッダーは Highlight を使う。 -->
+                <ResourceDictionary x:Key="HighContrast">
+                    <StaticResource x:Key="TimelinePaneBackgroundBrush"          ResourceKey="SystemColorWindowColorBrush"/>
+                    <StaticResource x:Key="TimelinePaneBorderBrush"              ResourceKey="SystemColorWindowTextColorBrush"/>
+                    <StaticResource x:Key="TimelineHeaderBackgroundBrush"        ResourceKey="SystemColorWindowColorBrush"/>
+                    <StaticResource x:Key="TimelineHeaderFocusedBackgroundBrush" ResourceKey="SystemColorHighlightColorBrush"/>
+                </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </Application.Resources>

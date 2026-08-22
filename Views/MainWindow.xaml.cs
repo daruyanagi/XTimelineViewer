@@ -298,6 +298,7 @@ namespace XTimelineViewer.Views
             if (File.Exists(iconPath)) AppWindow.SetIcon(iconPath);
             Title = "XTimelineViewer (xTV)";
             RefreshUIText();
+            HookContrastThemeChanges();  // コントラストテーマの切り替えに追従（#341）
             // 終了時の保存は Closing 側で行う（#338）。
             // Closed は async void 相当で、await の後を待たずにプロセスが終了しうるため、
             // 直前の変更（ペインの追加・並べ替えなど）が取りこぼされることがあった。
