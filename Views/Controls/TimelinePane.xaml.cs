@@ -30,6 +30,7 @@ namespace XTimelineViewer.Views.Controls
             InitializeComponent();
             Config = config;
             _webView = WebViewHost;
+            AttachFocusHandler(_webView);
 
             Width = config.Width;
             TypeIcon.Glyph = UrlHelper.GetTimelineGlyph(config.Url);
@@ -39,6 +40,62 @@ namespace XTimelineViewer.Views.Controls
             ToolTipService.SetToolTip(AutoLoadIcon, AutoLoadTooltip);
             RefreshLocalizedText();
             UpdateUrlHeader();
+
+            // ヘッダーをクリックしたら自分をアクティブにする。
+            // 以前は MainWindow が headerGrid に直接購読していた。
+            HeaderGrid.Tapped += (_, _) => SetFocus();
+            HeaderGrid.DoubleTapped += (_, _) =>
+            {
+                SetFocus();
+                _webView.Source = new Uri(Config.Url);
+            };
+        }
+
+        // ── フォーカス ───────────────────────────────────────
+
+        /// <summary>
+        /// このペインがアクティブになった。MainWindow が現在のペインを
+        /// 覚え直し、全ペインのヘッダー配色を当て直す。
+        /// </summary>
+        internal event Action<TimelinePane>? FocusRequested;
+
+        /// <summary>このペインをアクティブにし、WebView2 へキーボードフォーカスを移す。</summary>
+        internal void SetFocus()
+        {
+            FocusRequested?.Invoke(this);
+            _webView.Focus(FocusState.Programmatic);
+        }
+
+        // ── テーマ ──────────────────────────────────────────
+
+        /// <summary>
+        /// ペインの配色を適用する。
+        ///
+        /// Application.Current.Resources はアプリレベルのテーマを参照するため、
+        /// 要素単位で RequestedTheme を設定していると正しい辞書が返らない。
+        /// 解決済みの ActualTheme を使って ThemeDictionaries を直接引く。
+        /// コントラストテーマの判定は MainWindow 側の責任（引数で受け取る）。
+        /// </summary>
+        internal void ApplyTheme(ElementTheme theme, bool focused, bool highContrast)
+        {
+            var themeKey  = highContrast ? "HighContrast"
+                          : theme == ElementTheme.Light ? "Light" : "Default";
+            var themeDict = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[themeKey];
+
+            PaneRoot.Background = (Brush)themeDict["TimelinePaneBackgroundBrush"];
+
+            // コントラストテーマではフォーカスを「塗り」ではなく「枠」で示す（#341）。
+            // ヘッダーを Highlight 色で塗ると、中の文字色までこちらで揃えない限り
+            // 地と衝突する。枠なら子要素の配色に一切干渉せずに済む。
+            bool outlineFocus = highContrast && focused;
+            PaneRoot.BorderBrush = (Brush)themeDict[outlineFocus
+                ? "TimelineHeaderFocusedBackgroundBrush"
+                : "TimelinePaneBorderBrush"];
+            PaneRoot.BorderThickness = new Thickness(outlineFocus ? 2 : 1);
+
+            HeaderGrid.Background = (Brush)themeDict[focused && !highContrast
+                ? "TimelineHeaderFocusedBackgroundBrush"
+                : "TimelineHeaderBackgroundBrush"];
         }
 
         // ── 外から触る要素 ────────────────────────────────────────────────────
@@ -73,6 +130,7 @@ namespace XTimelineViewer.Views.Controls
             Grid.SetRow(_webView, 1);
             PaneRoot.Children.Add(_webView);
             AutomationProperties.SetName(_webView, UrlLabel.Text);
+            AttachFocusHandler(_webView);
             return _webView;
         }
         public TextBlock NumberLabel => NumberLabelText;
@@ -88,6 +146,13 @@ namespace XTimelineViewer.Views.Controls
 
         /// <summary>ホームタイムラインかどうか。自動更新（#207）の対象判定に使う。</summary>
         public bool IsHome => UrlHelper.IsHomeUrl(Config.Url);
+
+        // WebView2 内をクリックしたときもアクティブにする。
+        // 以前は MainWindow が購読しており、プロファイル切替で作り直すと
+        // 再購読を忘れてフォーカス表示が死んでいた（#361）。
+        // 差し替えを行う側で購読すれば、原理的に漏れない。
+        private void AttachFocusHandler(WebView2 wv)
+            => wv.GotFocus += (_, _) => FocusRequested?.Invoke(this);
 
         // ── 表示の更新 ────────────────────────────────────────────────────────
 

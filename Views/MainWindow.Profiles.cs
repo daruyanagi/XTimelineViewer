@@ -39,14 +39,10 @@ namespace XTimelineViewer.Views
                 var pane = (TimelinePane)TimelinePanel.Children[idx];
                 if (_enlargedPane == pane) RestorePaneSize();  // 拡大中のペイン削除に備える（#287）
                 CleanupWebView(pane.WebView);
-                if (_focusedHeaderGrid == pane.Header)
-                    _focusedHeaderGrid = null;
+                if (_focusedPane == pane)
+                    _focusedPane = null;
                 // ⚙ ダイアログからの削除（MainWindow.Timeline.cs）と同じ後始末を行うこと。
                 // 以前は抜けているものがあり、消えたペインへの参照が残っていた（#362）。
-                _headerGridToPane.Remove(pane.Header);
-                _paneToSetFocus.Remove(pane);
-                _paneUrlUpdaters.Remove(_configs[idx]);
-                _headerRefreshers.Remove(pane);
                 TimelinePanel.Children.RemoveAt(idx);
                 _configs.RemoveAt(idx);
             }
@@ -56,8 +52,8 @@ namespace XTimelineViewer.Views
                 _hardReloadUiTimer?.Stop();
                 _hardReloadUiTimer = null;
             }
-            if (_focusedHeaderGrid == null)
-                foreach (var r in _headerRefreshers.Values) r();
+            if (_focusedPane == null)
+                RefreshPaneThemes();
 
             // 番号バッジは表示順に依存するので、削除後は振り直す（#359）。
             // ⚙ ダイアログからの削除では呼んでいたが、こちらの経路では抜けており、

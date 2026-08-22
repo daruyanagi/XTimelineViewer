@@ -61,8 +61,6 @@ namespace XTimelineViewer.Views
             _hardReloadUiUpdaters.Remove(wv);
             _pointerOverWebViews.Remove(wv);
             _urlDivergedWebViews.Remove(wv);
-            _webViews.Remove(wv);
-            _webViewToPane.Remove(wv);
             if (_composingWebViews.Remove(wv)) UpdateAnyComposing();  // #258: 編集中ペインが消えたら反映
             try
             {

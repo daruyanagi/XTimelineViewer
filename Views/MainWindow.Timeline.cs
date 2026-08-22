@@ -217,9 +217,8 @@ namespace XTimelineViewer.Views
             var panes = TimelinePanel.Children.OfType<TimelinePane>().ToList();
             int i = oneBased - 1;
             if (i < 0 || i >= panes.Count) return;
-            if (_paneToSetFocus.TryGetValue(panes[i], out var setFocus))
             {
-                setFocus();
+                panes[i].SetFocus();
                 panes[i].StartBringIntoView();  // 視界外なら横スクロールして表示（#231）
             }
         }
@@ -231,18 +230,12 @@ namespace XTimelineViewer.Views
             var panes = TimelinePanel.Children.OfType<TimelinePane>().ToList();
             if (panes.Count == 0) return;
 
-            int cur = -1;
-            if (_focusedHeaderGrid is not null &&
-                _headerGridToPane.TryGetValue(_focusedHeaderGrid, out var curPane))
-                cur = panes.IndexOf(curPane);
+            int cur = _focusedPane is null ? -1 : panes.IndexOf(_focusedPane);
 
             int next = cur < 0 ? (direction > 0 ? 0 : panes.Count - 1) : cur + direction;
             if (next < 0 || next >= panes.Count) return;
-            if (_paneToSetFocus.TryGetValue(panes[next], out var setFocus))
-            {
-                setFocus();
-                panes[next].StartBringIntoView();
-            }
+            panes[next].SetFocus();
+            panes[next].StartBringIntoView();
         }
 
         // ── ペインの並べ替え（ドラッグ / キーボード #344）─────────────────
@@ -280,16 +273,15 @@ namespace XTimelineViewer.Views
 
             MovePaneTo(pane, to);
 
-            if (_paneToSetFocus.TryGetValue(pane, out var setFocus)) setFocus();
+            pane.SetFocus();
             pane.StartBringIntoView();  // 視界外なら横スクロールして表示（#231）
         }
 
         // Ctrl+Shift+←/→（WebView2 非フォーカス時）。アクティブなペインを動かす。
         private void MovePaneFromActive(int direction)
         {
-            if (_focusedHeaderGrid is null) return;
-            if (!_headerGridToPane.TryGetValue(_focusedHeaderGrid, out var pane)) return;
-            MovePaneAdjacent(pane, direction);
+            if (_focusedPane is null) return;
+            MovePaneAdjacent(_focusedPane, direction);
         }
 
         // ── AddTimeline ───────────────────────────────────────────────────────
@@ -310,7 +302,7 @@ namespace XTimelineViewer.Views
 
             // Pane
             // 以前はここでペインの視覚ツリーをコードで組み立てていた（約 150 行）。
-            // 列番号などの定数が複数箱所に手書きされ、片方だけ直す事故が
+            // 列番号などの定数が複数箇所に手書きされ、片方だけ直す事故が
             // 繰り返し起きていたので TimelinePane.xaml へ移した（#345）。
             var pane       = new TimelinePane(cfg);
             var headerGrid = pane.Header;
@@ -318,77 +310,28 @@ namespace XTimelineViewer.Views
             ApplyProfileBadge(pane);
 
             // Theme
-            void ApplyPaneTheme(ElementTheme theme)
+            // 配色の適用は TimelinePane 側へ移した。ここは「いつ呼ぶか」だけを決める。
+            pane.ActualThemeChanged += (s, _) => ApplyPaneTheme(pane);
+
+            // ヘッダークリックや WebView2 の GotFocus は TimelinePane が拾い、ここへ上がってくる。
+            pane.FocusRequested += p =>
             {
-                // Application.Current.Resources はアプリレベルのテーマを参照するため、
-                // 要素単位で RequestedTheme を設定している場合に正しい辞書が返らない。
-                // pane.ActualTheme（解決済み）を使い ThemeDictionaries を直接引く。
-                bool focused   = _focusedHeaderGrid == headerGrid;
-                // コントラストテーマ中は Light/Dark ではなく HighContrast 辞書を引く（#341）。
-                // 自動解決に任せられない手引きの引き方なので、ここでも場合分けが要る。
-                var themeKey   = IsHighContrast() ? "HighContrast"
-                               : theme == ElementTheme.Light ? "Light" : "Default";
-                var themeDict  = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[themeKey];
-                bool hc = themeKey == "HighContrast";
-
-                pane.Root.Background = (Brush)themeDict["TimelinePaneBackgroundBrush"];
-
-                // コントラストテーマではフォーカスを「塗り」ではなく「枠」で示す（#341）。
-                // ヘッダーを Highlight 色で塗ると、中の文字色までこちらで揃えない限り
-                // 地と衝突する。枠なら子要素の配色に一切干渉せずに済む。
-                bool outlineFocus = hc && focused;
-                pane.Root.BorderBrush     = (Brush)themeDict[outlineFocus
-                    ? "TimelineHeaderFocusedBackgroundBrush"
-                    : "TimelinePaneBorderBrush"];
-                pane.Root.BorderThickness = new Thickness(outlineFocus ? 2 : 1);
-
-                headerGrid.Background = (Brush)themeDict[focused && !hc
-                    ? "TimelineHeaderFocusedBackgroundBrush"
-                    : "TimelineHeaderBackgroundBrush"];
-            }
-            ApplyPaneTheme(((FrameworkElement)Content).ActualTheme);
-            pane.ActualThemeChanged += (s, _) => ApplyPaneTheme(pane.ActualTheme);
+                _focusedPane = p;
+                RefreshPaneThemes();
+            };
 
             TimelinePanel.Children.Add(pane);
-            _webViews.Add(webView);
-            _webViewToPane[webView] = pane;
-            _headerGridToPane[headerGrid] = pane;  // アクティブ判定用（#227）
+            ApplyPaneTheme(pane);
             RefreshTimelineNumbers();  // 番号バッジを振り直す（#225）
             UpdateAutoLoadIndicator(pane, _appSettings.HomeAutoLoadEnabled ? "running" : "off");
 
-            // cfg.Url の変更をヘッダーへ反映する更新子（ベース URL 変更・リスト URL ライブ解決で再利用）
-            _paneUrlUpdaters[cfg] = pane.UpdateUrlHeader;
 
-            // ── Focus ─────────────────────────────────────────────────────────
-
-            Action refreshHeader = () => ApplyPaneTheme(pane.ActualTheme);
-            _headerRefreshers[pane] = refreshHeader;
-
-            void SetFocus()
-            {
-                _focusedHeaderGrid = headerGrid;
-                foreach (var r in _headerRefreshers.Values) r();
-                webView.Focus(FocusState.Programmatic);
-            }
-            _paneToSetFocus[pane] = SetFocus;
-
-            headerGrid.Tapped        += (s, e) => SetFocus();
-            headerGrid.DoubleTapped  += (s, e) =>
-            {
-                SetFocus();
-                webView.Source = new Uri(cfg.Url);
-            };
             // ⚙ でプロファイルを切り替えると WebView2 を作り直すので、
             // 購読をここに集めて両方から呼ぶ（#361）。
-            // クロージャではなく引数 wv を使うのが重要。変数 webView は
-            // 切り替えで再代入されるため、ハンドラーが自分の購読先とずれる。
+            // フォーカス（GotFocus）は TimelinePane が自分で拾うのでここには無い。
+            // 残るのは MainWindow の状態（ハードリロード）に依存するものだけ。
             void AttachWebViewHandlers(WebView2 wv)
             {
-                wv.GotFocus += (s, e) =>
-                {
-                    _focusedHeaderGrid = headerGrid;
-                    foreach (var r in _headerRefreshers.Values) r();
-                };
                 wv.PointerEntered += (s, e) => { _pointerOverWebViews.Add(wv);    EvaluateHardReloadPause(wv); };
                 wv.PointerExited  += (s, e) =>
                 {
@@ -595,14 +538,12 @@ namespace XTimelineViewer.Views
                         _hardReloadUiTimer = null;
                     }
                     _configs.Remove(cfg);
-                    _paneToSetFocus.Remove(pane);
-                    _paneUrlUpdaters.Remove(cfg);
-                    _headerGridToPane.Remove(headerGrid);
-                    _headerRefreshers.Remove(pane);
-                    if (_focusedHeaderGrid == headerGrid)
+                    // ペイン単位の状態は TimelinePane の中にあるので、
+                    // コレクションから外せば一緒に消える（#345）。
+                    if (_focusedPane == pane)
                     {
-                        _focusedHeaderGrid = null;
-                        foreach (var r in _headerRefreshers.Values) r();
+                        _focusedPane = null;
+                        RefreshPaneThemes();
                     }
                     await SaveTimelinesAsync();
 
@@ -620,7 +561,7 @@ namespace XTimelineViewer.Views
                         cfg.Url = stagedBaseUrl!;
                         // 具体ページを明示的に固定したので、リスト一覧の自動追従は解除する (#211)
                         cfg.IsListsIndex = false;
-                        _paneUrlUpdaters[cfg]();
+                        pane.UpdateUrlHeader();
                     }
 
                     var prevProfileId = cfg.ProfileId;
@@ -644,8 +585,6 @@ namespace XTimelineViewer.Views
                         CleanupWebView(webView);
                         // 差し替え手順は TimelinePane 側に集めてある（行番号の手書きを残さない）
                         webView = pane.ReplaceWebView();
-                        _webViews.Add(webView);
-                        _webViewToPane[webView] = pane;
                         AttachWebViewHandlers(webView);  // 再購読しないとフォーカス表示とホバー制御が死ぬ（#361）
 
                         ApplyProfileBadge(pane);

@@ -104,8 +104,8 @@ namespace XTimelineViewer.Views
             await InitSearchWebView(webView, profileId);
             webView.Source = new Uri(initialUrl);
 
-            foreach (var wv in _webViews)
-                wv.Visibility = Visibility.Collapsed;
+            foreach (var p in Panes)
+                p.WebView.Visibility = Visibility.Collapsed;
             try
             {
                 var result = await ShowDialogAsync(dlg);
@@ -124,8 +124,8 @@ namespace XTimelineViewer.Views
             finally
             {
                 _activeSearchDialog = null;
-                foreach (var wv in _webViews)
-                    wv.Visibility = Visibility.Visible;
+                foreach (var p in Panes)
+                    p.WebView.Visibility = Visibility.Visible;
 
                 try { webView.Close(); } catch { }
             }
