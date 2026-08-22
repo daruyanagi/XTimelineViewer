@@ -100,7 +100,7 @@ namespace XTimelineViewer.Views.Controls
         /// <summary>WebView2 を明示的に閉じて環境を解放する。</summary>
         public void CloseWebView()
         {
-            try { LoginWebView.Close(); } catch { }
+            try { LoginWebView.Close(); } catch { /* 後始末。既に外れている・閉じていても構わない */ }
         }
 
         /// <summary>入力された名前で ProfileConfig を生成する。名前が空なら null を返す。</summary>

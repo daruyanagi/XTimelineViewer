@@ -127,7 +127,7 @@ namespace XTimelineViewer.Views
                 foreach (var p in Panes)
                     p.WebView.Visibility = Visibility.Visible;
 
-                try { webView.Close(); } catch { }
+                try { webView.Close(); } catch { /* 後始末。既に外れている・閉じていても構わない */ }
             }
 
             SearchBox.Text = "";

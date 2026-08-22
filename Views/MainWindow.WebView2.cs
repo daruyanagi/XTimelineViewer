@@ -477,7 +477,7 @@ namespace XTimelineViewer.Views
                 await webView.CoreWebView2.ExecuteScriptAsync(BuildMediaOverlayButtonConfigJs());
                 await webView.CoreWebView2.ExecuteScriptAsync("window._xtvMediaBtnRescan && window._xtvMediaBtnRescan();");
             }
-            catch { }
+            catch { /* ページ遷移中や破棄済みだと落ちる。常態なので記録するとノイズになる */ }
         }
 
         // ポストのタイムスタンプ隣に「直前のポスト・リポストを検索」ボタン（🔎）を添える（試験機能 #315/#319）。
@@ -558,7 +558,7 @@ namespace XTimelineViewer.Views
                 await webView.CoreWebView2.ExecuteScriptAsync(BuildPriorRepostConfigJs());
                 await webView.CoreWebView2.ExecuteScriptAsync("window._xtvPriorScan && window._xtvPriorScan();");
             }
-            catch { }
+            catch { /* ページ遷移中や破棄済みだと落ちる。常態なので記録するとノイズになる */ }
         }
 
         /// <summary>cfg がホームタイムラインかどうか。</summary>
@@ -640,7 +640,7 @@ namespace XTimelineViewer.Views
         private async Task ApplyHomeAutoLoadAsync(WebView2 webView)
         {
             try { await webView.CoreWebView2.ExecuteScriptAsync(BuildHomeAutoLoadConfigJs()); }
-            catch { }
+            catch { /* ページ遷移中や破棄済みだと落ちる。常態なので記録するとノイズになる */ }
         }
 
         /// <summary>いずれかのペインが編集中かを全ペインの JS（window._xtvAnyComposing）へ反映する（#258）。</summary>

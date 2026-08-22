@@ -84,7 +84,7 @@ namespace XTimelineViewer.Services
                     }
                 }
             }
-            catch { }
+            catch { /* 走査自体の失敗は無視。掃除できなくても動作に支障は無い */ }
         }
     }
 }
