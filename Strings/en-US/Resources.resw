@@ -190,6 +190,23 @@
   <data name="ExtSettings_OpenSettings" xml:space="preserve"><value>Open Settings</value></data>
   <data name="Extensions_InfoBar_Empty" xml:space="preserve"><value>No extensions are installed. Place an unpacked extension in the extensions folder to load it at startup.</value></data>
   <data name="Extensions_InfoBar_Installed" xml:space="preserve"><value>Place an unpacked extension in the extensions folder to load it at startup.</value></data>
+  <data name="Extensions_InstallFromGitHub" xml:space="preserve"><value>Install from GitHub</value></data>
+  <data name="Extensions_InstallFromGitHub_Desc" xml:space="preserve"><value>Enter a repository URL to add an extension from the latest release ZIP / CRX</value></data>
+  <data name="Extensions_Install" xml:space="preserve"><value>Install</value></data>
+  <data name="Extensions_Install_PickTitle" xml:space="preserve"><value>Which one do you want?</value></data>
+  <data name="Extensions_Install_ConfirmTitle" xml:space="preserve"><value>Add this extension?</value></data>
+  <data name="Extensions_Install_From" xml:space="preserve"><value>Source: {0}</value></data>
+  <data name="Extensions_Install_Permissions" xml:space="preserve"><value>This extension requests the following permissions.</value></data>
+  <data name="Extensions_Install_NoPermissions" xml:space="preserve"><value>This extension requests no special permissions.</value></data>
+  <data name="Extensions_Install_Warning" xml:space="preserve"><value>Extensions can run code on X pages and access page content and your signed-in session. Make sure you trust the source before adding it.</value></data>
+  <data name="Extensions_Install_Done" xml:space="preserve"><value>"{0}" has been added.</value></data>
+  <data name="Extensions_Install_BadUrl" xml:space="preserve"><value>That is not a GitHub repository URL. Please use the form https://github.com/owner/repo.</value></data>
+  <data name="Extensions_Install_NoRelease" xml:space="preserve"><value>Could not fetch a release. Check that the URL is correct and that a public release exists.</value></data>
+  <data name="Extensions_Install_NoAsset" xml:space="preserve"><value>The latest release has no ZIP or CRX asset.</value></data>
+  <data name="Extensions_Install_NotAnExtension" xml:space="preserve"><value>This does not look like an extension (no manifest.json).</value></data>
+  <data name="Extensions_Install_Already" xml:space="preserve"><value>An extension with the same name is already installed.</value></data>
+  <data name="Extensions_Install_Canceled" xml:space="preserve"><value>Canceled.</value></data>
+  <data name="Extensions_Install_Failed" xml:space="preserve"><value>Could not add the extension.</value></data>
   <data name="Extensions_DefaultForNewProfiles" xml:space="preserve"><value>Default for new profiles</value></data>
   <data name="Extensions_DefaultForNewProfiles_Desc" xml:space="preserve"><value>Whether this extension is enabled when a profile is added later</value></data>
   <data name="Extensions_Uninstall" xml:space="preserve"><value>Uninstall</value></data>

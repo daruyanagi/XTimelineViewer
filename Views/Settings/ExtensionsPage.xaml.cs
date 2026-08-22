@@ -39,10 +39,217 @@ namespace XTimelineViewer.Views.Settings
                 : R.Get("Extensions_InfoBar_Installed");
             OpenExtensionsFolderBtn.Content = R.Get("Extensions_OpenFolder");
 
+            AddInstallCard();
+
             foreach (var ext in extensions)
             {
                 AddExtensionCard(ext);
             }
+        }
+
+        /// <summary>
+        /// GitHub のリリースから入れる（#399）。
+        ///
+        /// Chrome Web ストアは扱わない。WebView2 にストアからインストールする API が無く、
+        /// .crx の配信エンドポイントは非公開で、利用規約もプログラムからの取得を制限している。
+        /// GitHub はリリース API が公開されているので正攻法で実装できる。
+        /// </summary>
+        private void AddInstallCard()
+        {
+            var urlBox = new TextBox
+            {
+                PlaceholderText = "https://github.com/owner/repo",
+                MinWidth        = 280,
+            };
+            AutomationProperties.SetName(urlBox, R.Get("Extensions_InstallFromGitHub"));
+            AutomationProperties.SetAutomationId(urlBox, "ExtInstallUrl");
+
+            var installBtn = new Button { Content = R.Get("Extensions_Install") };
+            AutomationProperties.SetAutomationId(installBtn, "ExtInstallBtn");
+            installBtn.Click += async (_, _) => await InstallFromGitHubAsync(urlBox.Text, installBtn);
+
+            var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            panel.Children.Add(urlBox);
+            panel.Children.Add(installBtn);
+
+            RootPanel.Children.Add(new CommunityToolkit.WinUI.Controls.SettingsCard
+            {
+                Header      = R.Get("Extensions_InstallFromGitHub"),
+                Description = R.Get("Extensions_InstallFromGitHub_Desc"),
+                HeaderIcon  = new FontIcon
+                {
+                    Glyph      = "\uE896",
+                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons"),
+                },
+                Content = panel,
+            });
+        }
+
+        private async Task InstallFromGitHubAsync(string url, Button trigger)
+        {
+            if (_parent?.FindExtensionCandidatesAsync is null ||
+                _parent.PrepareExtensionAsync is null ||
+                _parent.CommitExtensionAsync is null ||
+                XamlRoot is null) return;
+
+            trigger.IsEnabled = false;
+            try
+            {
+                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(5));
+
+                var (status, candidates) = await _parent.FindExtensionCandidatesAsync(url, cts.Token);
+                if (status != Services.ExtensionInstallRunner.Status.Ok)
+                {
+                    await ShowInstallMessageAsync(MessageFor(status));
+                    return;
+                }
+
+                // 複数あるときは選ばせる。どれが本体かは相手の付け方次第で決められない。
+                var candidate = candidates.Count == 1
+                    ? candidates[0]
+                    : await PickCandidateAsync(candidates);
+                if (candidate is null) return;
+
+                var prepared = await _parent.PrepareExtensionAsync(candidate, null, cts.Token);
+                if (prepared.Status != Services.ExtensionInstallRunner.Status.Ok)
+                {
+                    await ShowInstallMessageAsync(MessageFor(prepared.Status));
+                    return;
+                }
+
+                if (!await ConfirmInstallAsync(prepared))
+                {
+                    // 取りやめたら一時ファイルを残さない
+                    Services.ExtensionInstallRunner.Discard(prepared);
+                    return;
+                }
+
+                if (await _parent.CommitExtensionAsync(prepared))
+                {
+                    await ShowInstallMessageAsync(string.Format(R.Get("Extensions_Install_Done"), prepared.Name));
+                    RootPanel.Children.Clear();
+                    PopulateUI();
+                }
+                else
+                {
+                    await ShowInstallMessageAsync(MessageFor(Services.ExtensionInstallRunner.Status.Failed));
+                }
+            }
+            finally
+            {
+                trigger.IsEnabled = true;
+            }
+        }
+
+        private static string MessageFor(Services.ExtensionInstallRunner.Status status) => status switch
+        {
+            Services.ExtensionInstallRunner.Status.BadUrl           => R.Get("Extensions_Install_BadUrl"),
+            Services.ExtensionInstallRunner.Status.NoRelease        => R.Get("Extensions_Install_NoRelease"),
+            Services.ExtensionInstallRunner.Status.NoAsset          => R.Get("Extensions_Install_NoAsset"),
+            Services.ExtensionInstallRunner.Status.NotAnExtension   => R.Get("Extensions_Install_NotAnExtension"),
+            Services.ExtensionInstallRunner.Status.AlreadyInstalled => R.Get("Extensions_Install_Already"),
+            Services.ExtensionInstallRunner.Status.Canceled         => R.Get("Extensions_Install_Canceled"),
+            _                                                      => R.Get("Extensions_Install_Failed"),
+        };
+
+        private async Task<Services.ExtensionInstaller.Candidate?> PickCandidateAsync(
+            IReadOnlyList<Services.ExtensionInstaller.Candidate> candidates)
+        {
+            var list = new ListBox { SelectionMode = SelectionMode.Single };
+            foreach (var c in candidates) list.Items.Add(c.Name);
+            list.SelectedIndex = 0;
+
+            var dlg = new ContentDialog
+            {
+                Title             = R.Get("Extensions_Install_PickTitle"),
+                Content           = list,
+                PrimaryButtonText = R.Get("Extensions_Install"),
+                CloseButtonText   = R.Get("Button_Cancel"),
+                XamlRoot          = XamlRoot,
+            };
+
+            if (await dlg.ShowAsync() != ContentDialogResult.Primary) return null;
+            return list.SelectedIndex >= 0 ? candidates[list.SelectedIndex] : null;
+        }
+
+        /// <summary>
+        /// 何を許すことになるのかを見せてから入れる（#399）。
+        ///
+        /// 拡張機能は X のページ上で任意のコードを実行でき、Cookie や DOM に触れる。
+        /// 取得元と manifest.json の権限を並べて、利用者に判断してもらう。
+        /// </summary>
+        private async Task<bool> ConfirmInstallAsync(Services.ExtensionInstallRunner.Prepared prepared)
+        {
+            var body = new StackPanel { Spacing = 8 };
+            body.Children.Add(new TextBlock
+            {
+                Text         = $"{prepared.Name}  {prepared.Version}",
+                FontWeight   = Microsoft.UI.Text.FontWeights.SemiBold,
+                TextWrapping = TextWrapping.Wrap,
+            });
+            body.Children.Add(new TextBlock
+            {
+                Text         = string.Format(R.Get("Extensions_Install_From"), prepared.SourceUrl),
+                FontSize     = 12,
+                Opacity      = 0.8,
+                TextWrapping = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true,
+            });
+
+            body.Children.Add(new TextBlock
+            {
+                Text         = prepared.Permissions.Count == 0
+                                 ? R.Get("Extensions_Install_NoPermissions")
+                                 : R.Get("Extensions_Install_Permissions"),
+                TextWrapping = TextWrapping.Wrap,
+                Margin       = new Thickness(0, 8, 0, 0),
+            });
+
+            if (prepared.Permissions.Count > 0)
+            {
+                body.Children.Add(new ScrollViewer
+                {
+                    MaxHeight = 160,
+                    Content   = new TextBlock
+                    {
+                        Text         = string.Join(Environment.NewLine, prepared.Permissions),
+                        FontFamily   = new Microsoft.UI.Xaml.Media.FontFamily("Cascadia Mono, Consolas"),
+                        FontSize     = 12,
+                        TextWrapping = TextWrapping.Wrap,
+                        IsTextSelectionEnabled = true,
+                    },
+                });
+            }
+
+            body.Children.Add(new TextBlock
+            {
+                Text         = R.Get("Extensions_Install_Warning"),
+                TextWrapping = TextWrapping.Wrap,
+                Margin       = new Thickness(0, 8, 0, 0),
+            });
+
+            var dlg = new ContentDialog
+            {
+                Title             = R.Get("Extensions_Install_ConfirmTitle"),
+                Content           = new ScrollViewer { MaxHeight = 380, Content = body },
+                PrimaryButtonText = R.Get("Extensions_Install"),
+                CloseButtonText   = R.Get("Button_Cancel"),
+                XamlRoot          = XamlRoot,
+            };
+
+            return await dlg.ShowAsync() == ContentDialogResult.Primary;
+        }
+
+        private async Task ShowInstallMessageAsync(string message)
+        {
+            var dlg = new ContentDialog
+            {
+                Title           = R.Get("Extensions_InstallFromGitHub"),
+                Content         = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+                CloseButtonText = R.Get("Button_Close"),
+                XamlRoot        = XamlRoot,
+            };
+            await dlg.ShowAsync();
         }
 
         // extensions フォルダーを開く（#241）。無ければ作成してから開く。

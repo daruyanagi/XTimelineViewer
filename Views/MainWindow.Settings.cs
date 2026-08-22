@@ -126,6 +126,15 @@ namespace XTimelineViewer.Views
             settingsWin.IsExtensionEnabledByDefault = key =>
                 _appSettings.ExtensionStates.TryGetValue(key, out var st) ? st.EnabledByDefault : true;
 
+            // GitHub からのインストール（#399）
+            settingsWin.FindExtensionCandidatesAsync = async (url, ct) =>
+            {
+                var (status, list) = await FindExtensionCandidatesAsync(url, ct);
+                return (status, list);
+            };
+            settingsWin.PrepareExtensionAsync = PrepareExtensionAsync;
+            settingsWin.CommitExtensionAsync  = CommitExtensionAsync;
+
             settingsWin.ExitAndRunWingetUpdate = () =>
             {
                 Process.Start(new ProcessStartInfo

@@ -96,6 +96,19 @@ namespace XTimelineViewer.Views
         /// <summary>拡張機能の「新しいプロファイルでの既定」（#398）。</summary>
         internal Func<string, bool>? IsExtensionEnabledByDefault { get; set; }
 
+        /// <summary>GitHub のリリースから候補を探す（#399）。</summary>
+        internal Func<string, System.Threading.CancellationToken,
+                      Task<(Services.ExtensionInstallRunner.Status, IReadOnlyList<Services.ExtensionInstaller.Candidate>)>>?
+            FindExtensionCandidatesAsync { get; set; }
+
+        /// <summary>取ってきて中身を確かめる（まだ入れない）（#399）。</summary>
+        internal Func<Services.ExtensionInstaller.Candidate, IProgress<double>?, System.Threading.CancellationToken,
+                      Task<Services.ExtensionInstallRunner.Prepared>>?
+            PrepareExtensionAsync { get; set; }
+
+        /// <summary>確認が取れたものを入れる（#399）。</summary>
+        internal Func<Services.ExtensionInstallRunner.Prepared, Task<bool>>? CommitExtensionAsync { get; set; }
+
         /// <summary>設定のみ保存する（テーマ適用等はしない）コールバック。</summary>
         internal Action? SaveSettingsOnly { get; set; }
 
