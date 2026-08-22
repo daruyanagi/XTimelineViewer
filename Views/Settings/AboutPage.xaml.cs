@@ -240,9 +240,9 @@ namespace XTimelineViewer.Views.Settings
             };
 
             // InfoBar の内容領域は SettingsCard より右端に寄っている。
-            // そのままだと右のボタンが上の「更新を確認」より 25px 外側に出て
-            // 見た目が揃わない（実測値）。余白で合わせる。
-            var infoGrid = new Grid { ColumnSpacing = 12, Margin = new Thickness(0, 0, 24, 0) };
+            // そのままだと右のボタンが上の「更新を確認」より外側に出て揃わない。
+            // 16px 寄せると右端が一致する（UI 自動化で矩形を取って確認済み）。
+            var infoGrid = new Grid { ColumnSpacing = 12, Margin = new Thickness(0, 0, 16, 0) };
             infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
