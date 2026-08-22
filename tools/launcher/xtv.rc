@@ -1,5 +1,54 @@
-// xtv.exe のアイコンリソース（#270）
+// xtv.exe のリソース
+
+// アイコン（#270）
 // 本体アプリと同じアイコン（リポジトリの Assets\AppIcon.ico）を埋め込む。
 // ID 1（最小の数値 ID）にすることで、エクスプローラー等がこれをアプリアイコンとして表示する。
 // パスは .rc からの相対（tools\launcher → リポジトリルート）。
 1 ICON "../../Assets/AppIcon.ico"
+
+// バージョン情報（#383）
+//
+// これが空だと、Defender の ML ヒューリスティックに
+// Trojan:Win32/Wacatac.B!ml として拾われた。無署名・発行元不明・CRT 静的リンクの
+// 小さなネイティブ exe が別プロセスを起こす、というドロッパーと同じ見た目になるため。
+// 中身の説明を埋めても署名の代わりにはならない（本命の対策は #336）が、
+// 「誰が何のために配っているか」が exe 自身から読めるようにしておく。
+//
+// バージョンは本体アプリ（XTimelineViewer.csproj の <Version>）に合わせて手で更新する。
+// ランチャーは滅多に作り直さないので、リリースのたびに追従はしない。
+
+#include <winver.h>
+
+#define XTV_VERSION      2,0,2,0
+#define XTV_VERSION_STR  "2.0.2.0"
+
+VS_VERSION_INFO VERSIONINFO
+  FILEVERSION    XTV_VERSION
+  PRODUCTVERSION XTV_VERSION
+  FILEFLAGSMASK  VS_FFI_FILEFLAGSMASK
+  FILEFLAGS      0x0L
+  FILEOS         VOS_NT_WINDOWS32
+  FILETYPE       VFT_APP
+  FILESUBTYPE    VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        // 0x0409 = en-US, 0x04B0 = Unicode
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName",      "daruyanagi"
+            VALUE "FileDescription",  "XTimelineViewer command-line launcher"
+            VALUE "FileVersion",      XTV_VERSION_STR
+            VALUE "InternalName",     "xtv"
+            VALUE "LegalCopyright",   "Copyright (C) 2026 daruyanagi"
+            VALUE "OriginalFilename", "xtv.exe"
+            VALUE "ProductName",      "XTimelineViewer (xTV)"
+            VALUE "ProductVersion",   XTV_VERSION_STR
+            VALUE "Comments",         "Starts XTimelineViewer.exe located next to this file. Source: https://github.com/daruyanagi/XTimelineViewer"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 0x04B0
+    END
+END

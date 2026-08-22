@@ -31,12 +31,31 @@ rc /nologo /fo xtv.res xtv.rc
 cl /nologo /utf-8 /O1 /MT /EHsc /DUNICODE /D_UNICODE xtv.cpp xtv.res /Fe:xtv.exe /link /SUBSYSTEM:WINDOWS Shell32.lib
 ```
 
-- `rc`：`xtv.rc`（`../../Assets/AppIcon.ico` を参照）からアイコンリソース `xtv.res` を生成し、exe に埋め込む（#270）。エクスプローラー／タスクバーで本体と同じアイコンが出る。
+- `rc`：`xtv.rc` からリソース `xtv.res` を生成し、exe に埋め込む。
+  - **アイコン**（#270）… `../../Assets/AppIcon.ico`。エクスプローラー／タスクバーで本体と同じアイコンが出る。
+  - **バージョン情報**（#383）… 発行元・製品名・説明・バージョン。
+    これが空だった頃、Defender に `Trojan:Win32/Wacatac.B!ml` として検疫された。
+    無署名・発行元不明・別プロセスを起こす、というドロッパーと見分けの付かない見た目になるため。
+    **`xtv.rc` の `XTV_VERSION` は本体の版に合わせて手で更新する**（ランチャーは滅多に作り直さないので、リリースのたびには追従しない）。
 - `/MT`：CRT を静的リンク＝VC ランタイム DLL に非依存。
 - `/SUBSYSTEM:WINDOWS`：コンソール窓を出さない。
 - `/utf-8`：日本語コメントを含むソースを正しく読ませる。
 - 依存は `SHELL32.dll` / `KERNEL32.dll`（いずれも OS 標準）のみ。
 - 中間生成物 `xtv.res` / `xtv.obj` はコミットしない（成果物は `xtv.exe` のみ）。
+
+### 再ビルド後の確認
+
+ツールセットの世代でサイズは変わる。変わっては困るのは中身の方なので、ここを見る。
+
+```powershell
+# 依存は SHELL32.dll / KERNEL32.dll の 2 つだけか
+dumpbin /nologo /dependents xtv.exe
+
+# バージョン情報が埋まっているか
+[System.Diagnostics.FileVersionInfo]::GetVersionInfo((Resolve-Path xtv.exe))
+```
+
+さらに、`XTimelineViewer.exe` の隣に置いて実際に起動することを確かめる。
 
 ## アーキテクチャ
 
