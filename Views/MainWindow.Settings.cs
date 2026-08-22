@@ -131,7 +131,7 @@ namespace XTimelineViewer.Views
                 SaveSettings();
                 ApplySavedTheme();
                 UpdateThemeRadioState();
-                _ = WarmUpComposeAsync();  // 投稿プリロードの ON/OFF を即時反映（#244 案B）
+                WarmUpComposeAsync().FireAndForget(nameof(WarmUpComposeAsync));  // 投稿プリロードの ON/OFF を即時反映（#244 案B）
                 // 画像(#287)・動画(#289)拡大トグルが両方 OFF になったら即座に復元する
                 if (!_appSettings.MediaEnlargeEnabled && !_appSettings.VideoEnlargeEnabled)
                     RestorePaneSize();
@@ -140,18 +140,18 @@ namespace XTimelineViewer.Views
                 var tsFlag = _appSettings.OpenTimestampInBrowser ? "true" : "false";
                 foreach (var pane in Panes)
                     if (pane.WebView.CoreWebView2 is not null)
-                        _ = pane.WebView.CoreWebView2.ExecuteScriptAsync(
-                            $"window._xtvOpenTimestampInBrowser = {tsFlag};");
+                        pane.WebView.CoreWebView2.ExecuteScriptAsync(
+                            $"window._xtvOpenTimestampInBrowser = {tsFlag};").AsTask().FireAndForget("ExecuteScript");
 
                 // メディア拡大ボタン（#293）の ON/OFF を各ペインへ即時反映
                 foreach (var pane in Panes)
                     if (pane.WebView.CoreWebView2 is not null)
-                        _ = ApplyMediaOverlayButtonAsync(pane.WebView);
+                        ApplyMediaOverlayButtonAsync(pane.WebView).FireAndForget(nameof(ApplyMediaOverlayButtonAsync));
 
                 // 「直前のリポストを検索」（#315）の ON/OFF を各ペインへ即時反映
                 foreach (var pane in Panes)
                     if (pane.WebView.CoreWebView2 is not null)
-                        _ = ApplyPriorRepostSearchAsync(pane.WebView);
+                        ApplyPriorRepostSearchAsync(pane.WebView).FireAndForget(nameof(ApplyPriorRepostSearchAsync));
 
                 // ホーム自動更新（#207）の ON/OFF・間隔を各ホームペインへ即時反映し、インジケーターも更新
                 // 以前は _autoLoadIndicators を「ホームペイン集合」の代用にし、
@@ -159,7 +159,7 @@ namespace XTimelineViewer.Views
                 foreach (var pane in TimelinePanel.Children.OfType<TimelinePane>())
                 {
                     if (pane.WebView.CoreWebView2 is not null)
-                        _ = ApplyHomeAutoLoadAsync(pane.WebView);
+                        ApplyHomeAutoLoadAsync(pane.WebView).FireAndForget(nameof(ApplyHomeAutoLoadAsync));
                     UpdateAutoLoadIndicator(pane, _appSettings.HomeAutoLoadEnabled ? "running" : "off");
                 }
 

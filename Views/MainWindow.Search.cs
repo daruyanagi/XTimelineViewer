@@ -46,12 +46,12 @@ namespace XTimelineViewer.Views
         {
             if (args.ChosenSuggestion is string chosen)
             {
-                _ = OpenSearchDialogAsync(chosen);
+                OpenSearchDialogAsync(chosen).FireAndForget(nameof(OpenSearchDialogAsync));
                 return;
             }
             var query = (args.QueryText ?? sender.Text)?.Trim();
             if (string.IsNullOrEmpty(query)) return;
-            _ = OpenSearchDialogAsync(query);
+            OpenSearchDialogAsync(query).FireAndForget(nameof(OpenSearchDialogAsync));
         }
 
         private void SearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)

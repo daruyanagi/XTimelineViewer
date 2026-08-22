@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 
 using XTimelineViewer.Models;
 
+using XTimelineViewer.Services;
+
 namespace XTimelineViewer.Views
 {
     public sealed partial class MainWindow : Window
@@ -18,7 +20,7 @@ namespace XTimelineViewer.Views
             UpdateHasNamedProfiles();
 
             // 投稿ウィンドウのプリロード（#244 案B）。設定 OFF のときは内部で何もしない。
-            _ = WarmUpComposeAsync();
+            WarmUpComposeAsync().FireAndForget(nameof(WarmUpComposeAsync));
 
             if (!HasNamedProfiles())
             {

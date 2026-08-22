@@ -232,7 +232,7 @@ namespace XTimelineViewer.Views
             _configs.Insert(to, cfg);
 
             RefreshTimelineNumbers();  // 並び替え後に番号を振り直す（#225）
-            _ = SaveTimelinesAsync();
+            SaveTimelinesAsync().FireAndForget(nameof(SaveTimelinesAsync));
 
             // 視覚ツリーへの再挿入後、WebView2 の Win32 HWND を再アンカーさせる
             pane.Visibility = Visibility.Collapsed;
@@ -274,7 +274,7 @@ namespace XTimelineViewer.Views
             }
 
             _configs.Add(cfg);
-            _ = SaveTimelinesAsync();
+            SaveTimelinesAsync().FireAndForget(nameof(SaveTimelinesAsync));
 
             ViewModel.HasTimelines = true;
 
@@ -342,7 +342,7 @@ namespace XTimelineViewer.Views
 
             pane.SettingsButton.Click += async (s, e2) => await ShowPaneSettingsDialogAsync(pane);
 
-            _ = InitWebViewAsync(pane.WebView, cfg);
+            InitWebViewAsync(pane.WebView, cfg).FireAndForget(nameof(InitWebViewAsync));
         }
 
         // ⚙ でプロファイルを切り替えると WebView2 を作り直すので、
@@ -581,7 +581,7 @@ namespace XTimelineViewer.Views
                     ApplyProfileBadge(pane);
 
                     Debug.WriteLine($"[Profile] WebView2 recreated for profile switch: {prevProfileId} -> {cfg.ProfileId}");
-                    _ = InitWebViewAsync(pane.WebView, cfg);
+                    InitWebViewAsync(pane.WebView, cfg).FireAndForget(nameof(InitWebViewAsync));
                 }
                 else
                 {

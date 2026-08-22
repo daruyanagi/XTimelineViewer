@@ -649,7 +649,7 @@ namespace XTimelineViewer.Views
             var any = _composingWebViews.Count > 0 ? "true" : "false";
             foreach (var pane in Panes)
                 if (pane.WebView.CoreWebView2 is not null)
-                    _ = pane.WebView.CoreWebView2.ExecuteScriptAsync($"window._xtvAnyComposing = {any};");
+                    pane.WebView.CoreWebView2.ExecuteScriptAsync($"window._xtvAnyComposing = {any};").AsTask().FireAndForget("ExecuteScript");
         }
 
         private static bool EffectiveHideCompose(TimelineConfig cfg, string currentUrl) =>
@@ -988,7 +988,7 @@ namespace XTimelineViewer.Views
                 {
                     if (!_appSettings.VideoFrameSaveEnabled) return;
                     if (args.Request.Uri.IndexOf("/graphql/", StringComparison.OrdinalIgnoreCase) < 0) return;
-                    _ = CaptureVideoVariantsAsync(args);
+                    CaptureVideoVariantsAsync(args).FireAndForget(nameof(CaptureVideoVariantsAsync));
                 };
 
                 await LoadExtensionsAsync(webView);
