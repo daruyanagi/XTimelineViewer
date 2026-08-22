@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Windowing;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -287,6 +288,12 @@ namespace XTimelineViewer.Views
         {
             this.InitializeComponent();
             AppWindow.Resize(new SizeInt32(1400, 900));
+            // ツールバーが重なるほど狭くできないよう下限を引く（#342）
+            if (AppWindow.Presenter is OverlappedPresenter presenter)
+            {
+                presenter.PreferredMinimumWidth  = 480;
+                presenter.PreferredMinimumHeight = 400;
+            }
             var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
             if (File.Exists(iconPath)) AppWindow.SetIcon(iconPath);
             Title = "XTimelineViewer (xTV)";

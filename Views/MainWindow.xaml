@@ -41,7 +41,15 @@
               BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
               BorderThickness="0,0,0,1"
               Padding="8,4">
+            <!-- 重なり防止のため 3 列に分ける（#342）。以前は 1 セルに
+                 左寄せ・中央・右寄せを重ねており、狭めると互いに重なっていた。 -->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
             <Button x:Name="PostBtn"
+                    Grid.Column="0"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
                     Height="32"
@@ -59,9 +67,11 @@
                 </StackPanel>
             </Button>
             <AutoSuggestBox x:Name="SearchBox"
-                            HorizontalAlignment="Center"
+                            Grid.Column="1"
+                            HorizontalAlignment="Stretch"
                             VerticalAlignment="Center"
-                            Width="300"
+                            MaxWidth="300"
+                            Margin="8,0"
                             QueryIcon="Find"
                             IsEnabled="{x:Bind ViewModel.HasNamedProfiles, Mode=OneWay}"
                             QuerySubmitted="SearchBox_QuerySubmitted"
@@ -77,6 +87,7 @@
                 </AutoSuggestBox.ItemTemplate>
             </AutoSuggestBox>
             <StackPanel x:Name="RightToolbar"
+                        Grid.Column="2"
                         Orientation="Horizontal"
                         Spacing="4"
                         HorizontalAlignment="Right"
