@@ -171,7 +171,7 @@ namespace XTimelineViewer.Views.Settings
             };
 
             // 「最新の状態です」のときでも変更履歴を見に行けるようにしておく。
-            var releaseLink = new HyperlinkButton { Content = R.Get("CheckUpdate_ReleasePage") };
+            var releaseLink = new HyperlinkButton { Content = R.Get("CheckUpdate_Download_Zip") };
             releaseLink.Click += (_, _) => OpenUri(new Uri(releaseUrl));
 
             var updateBtn = new Button
@@ -324,8 +324,10 @@ namespace XTimelineViewer.Views.Settings
         private static void SetLastCheckedDescription(
             CommunityToolkit.WinUI.Controls.SettingsCard card, DateTimeOffset? lastCheck)
         {
+            // Description は object なので null を入れると警告になる。
+            // 空文字を入れれば SettingsCard 側が行を出さない。
             card.Description = lastCheck is null
-                ? null
+                ? string.Empty
                 : string.Format(R.Get("CheckUpdate_LastChecked"), lastCheck.Value.LocalDateTime);
         }
 
