@@ -99,7 +99,10 @@ namespace XTimelineViewer.Views
         private readonly List<TimelineConfig> _configs = [];
         private Grid? _draggingPane;
         private Grid? _focusedHeaderGrid;
-        private readonly List<Action> _headerRefreshers = [];
+        // ペイン → ヘッダーの配色を再適用する処理。
+        // 以前は List<Action> だったが、除去が参照一致になるため
+        // デリゲート実体を持たない削除経路からは掃除できなかった（#362）。
+        private readonly Dictionary<Grid, Action> _headerRefreshers = [];
         private readonly List<WebView2> _webViews = [];
         private bool _extensionsLoaded = false;
         private readonly List<ExtensionInfo> _loadedExtensions = [];

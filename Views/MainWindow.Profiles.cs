@@ -56,10 +56,16 @@ namespace XTimelineViewer.Views
                 {
                     if (_focusedHeaderGrid == headerGrid)
                         _focusedHeaderGrid = null;
+                    _headerGridToPane.Remove(headerGrid);
                 }
+                // ⚙ ダイアログからの削除（MainWindow.Timeline.cs）と同じ後始末を行うこと。
+                // 以前は下 4 つが抜けており、消えたペインへの参照が残っていた（#362）。
                 _paneToSetFocus.Remove(pane);
                 _paneUrlUpdaters.Remove(_configs[idx]);
                 _paneToConfig.Remove(pane);
+                _autoLoadIndicators.Remove(pane);
+                _paneNumberLabels.Remove(pane);
+                _headerRefreshers.Remove(pane);
                 TimelinePanel.Children.RemoveAt(idx);
                 _configs.RemoveAt(idx);
             }
@@ -70,7 +76,7 @@ namespace XTimelineViewer.Views
                 _hardReloadUiTimer = null;
             }
             if (_focusedHeaderGrid == null)
-                foreach (var r in _headerRefreshers) r();
+                foreach (var r in _headerRefreshers.Values) r();
 
             // 番号バッジは表示順に依存するので、削除後は振り直す（#359）。
             // ⚙ ダイアログからの削除では呼んでいたが、こちらの経路では抜けており、
