@@ -32,6 +32,11 @@
     <None Remove="XTimelineViewer.Tests\**" />
   </ItemGroup>
 
+  <!-- WebView2 へ注入する JS。埋め込みにして ZIP 配布での欠落を防ぐ（#345） -->
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts/*.js" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
