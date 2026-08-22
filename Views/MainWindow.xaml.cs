@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Windowing;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -68,32 +68,30 @@ namespace XTimelineViewer.Views
             return newPath;
         }
 
+        /// <summary>
+        /// 拡張機能の置き場（#396）。
+        ///
+        /// 以前はインストール先の中を直接使っていたが、更新はインストール先ごと
+        /// 置き換えるため<b>利用者が入れた拡張機能が消えていた</b>。設定やプロファイルと
+        /// 同じく、アプリ本体と独立した場所に置く。
+        ///
+        /// 旧い場所に残っているものは初回に移す。パッケージ版の WindowsApps 配下は
+        /// 書き込めないので、そちらは複製にとどめる。
+        /// </summary>
         internal static string GetExtensionsDir()
         {
-            var sourceDir = Path.Combine(AppContext.BaseDirectory, "extensions");
-            if (!PackageContext.IsPackaged) return sourceDir;
+            var newDir = PackageContext.IsPackaged
+                ? Path.Combine(Windows.Storage.ApplicationData.Current.LocalFolder.Path, "extensions")
+                : Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "XTimelineViewer", "extensions");
 
-            var localDir = Path.Combine(
-                Windows.Storage.ApplicationData.Current.LocalFolder.Path, "extensions");
-            if (Directory.Exists(sourceDir))
-            {
-                // 新しい拡張機能があれば上書きコピー
-                foreach (var src in Directory.GetDirectories(sourceDir))
-                {
-                    var dst = Path.Combine(localDir, Path.GetFileName(src));
-                    CopyDirectory(src, dst);
-                }
-            }
-            return localDir;
-        }
+            var oldDir = Path.Combine(AppContext.BaseDirectory, "extensions");
+            var moved  = ExtensionStore.Migrate(oldDir, newDir, copyOnly: PackageContext.IsPackaged);
+            if (moved > 0) AppLog.Debug($"GetExtensionsDir: {moved} 件を {newDir} へ移行した");
 
-        private static void CopyDirectory(string src, string dst)
-        {
-            Directory.CreateDirectory(dst);
-            foreach (var file in Directory.GetFiles(src))
-                File.Copy(file, Path.Combine(dst, Path.GetFileName(file)), overwrite: true);
-            foreach (var dir in Directory.GetDirectories(src))
-                CopyDirectory(dir, Path.Combine(dst, Path.GetFileName(dir)));
+            Directory.CreateDirectory(newDir);
+            return newDir;
         }
 
         private AppSettings _appSettings = new();

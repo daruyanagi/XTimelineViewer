@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -244,7 +244,9 @@ namespace XTimelineViewer.Views
 
             var errors = new System.Text.StringBuilder();
 
-            foreach (var extDir in Directory.GetDirectories(extensionsDir))
+            // manifest.json を持たないフォルダーは WebView2 が受け付けない。
+            // 展開しそこなった残骸などを拾って、毎回エラーを出さないようにする。
+            foreach (var extDir in ExtensionStore.EnumerateExtensionDirs(extensionsDir))
             {
                 try
                 {

@@ -35,6 +35,7 @@
     <Compile Include="..\Services\ZipUpdater.cs" Link="Services\ZipUpdater.cs" />
     <Compile Include="..\Services\UpdateSwap.cs" Link="Services\UpdateSwap.cs" />
     <Compile Include="..\Services\ZipUpdateRunner.cs" Link="Services\ZipUpdateRunner.cs" />
+    <Compile Include="..\Services\ExtensionStore.cs" Link="Services\ExtensionStore.cs" />
     <Compile Include="..\Services\AppUrls.cs" Link="Services\AppUrls.cs" />
     <Compile Include="..\PackageContext.cs" Link="PackageContext.cs" />
     <Compile Include="..\Services\EdgeService.cs"    Link="Services\EdgeService.cs" />
