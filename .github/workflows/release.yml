@@ -51,6 +51,21 @@ jobs:
           Compress-Archive -Path publish/x64/*   -DestinationPath "XTimelineViewer-$tag-win-x64.zip"
           Compress-Archive -Path publish/arm64/* -DestinationPath "XTimelineViewer-$tag-win-arm64.zip"
 
+      # ZIP 版の自動更新（#328）で、落としてきた ZIP を展開する前に検証するために使う。
+      # 検証できないものを展開して起動するわけにはいかない。
+      # 手動で入れる人が改ざんを確かめる手段にもなる。
+      - name: Publish checksums
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          foreach ($arch in 'x64', 'arm64') {
+            $zip = "XTimelineViewer-$tag-win-$arch.zip"
+            $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+            # sha256sum と同じ書式にしておく（`sha256sum -c` でそのまま検証できる）
+            "$hash  $zip" | Set-Content "$zip.sha256" -NoNewline -Encoding ascii
+            Write-Host "$zip.sha256 : $hash"
+          }
+
       - name: Create or update GitHub Release
         shell: bash
         env:
@@ -61,11 +76,15 @@ jobs:
             gh release upload "$tag" \
               "XTimelineViewer-${tag}-win-x64.zip" \
               "XTimelineViewer-${tag}-win-arm64.zip" \
+              "XTimelineViewer-${tag}-win-x64.zip.sha256" \
+              "XTimelineViewer-${tag}-win-arm64.zip.sha256" \
               --clobber
           else
             gh release create "$tag" \
               "XTimelineViewer-${tag}-win-x64.zip" \
               "XTimelineViewer-${tag}-win-arm64.zip" \
+              "XTimelineViewer-${tag}-win-x64.zip.sha256" \
+              "XTimelineViewer-${tag}-win-arm64.zip.sha256" \
               --title "$tag" \
               --generate-notes
           fi
