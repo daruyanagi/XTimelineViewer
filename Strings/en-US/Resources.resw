@@ -201,6 +201,12 @@
   <data name="CheckUpdate_Download_Zip" xml:space="preserve"><value>Open the release page</value></data>
   <data name="CheckUpdate_NotChecked" xml:space="preserve"><value>Not checked for updates yet</value></data>
   <data name="CheckUpdate_LastChecked" xml:space="preserve"><value>Last checked: {0:yyyy/MM/dd HH:mm}</value></data>
+  <data name="CheckUpdate_RestartAndUpdate" xml:space="preserve"><value>Restart and Update</value></data>
+  <data name="CheckUpdate_Downloading" xml:space="preserve"><value>Downloading...</value></data>
+  <data name="CheckUpdate_RestartTitle" xml:space="preserve"><value>Update and Restart</value></data>
+  <data name="CheckUpdate_RestartBody" xml:space="preserve"><value>The new version will be downloaded and installed, then the app will restart. Your open timelines will be restored.</value></data>
+  <data name="CheckUpdate_RestartConfirm" xml:space="preserve"><value>Download and Restart</value></data>
+  <data name="CheckUpdate_SelfUpdateUnavailable" xml:space="preserve"><value>{0} is available, but this release does not support automatic updates. Please update from the release page.</value></data>
   <data name="CheckUpdate_Error" xml:space="preserve"><value>Update check failed</value></data>
   <data name="CheckUpdate_WingetTitle" xml:space="preserve"><value>Update via winget</value></data>
   <data name="CheckUpdate_WingetBody" xml:space="preserve"><value>The app will close and update via winget. Please restart the app manually after the update completes.</value></data>

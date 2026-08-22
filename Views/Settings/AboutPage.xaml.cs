@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using XTimelineViewer.Services;
 
@@ -158,9 +159,17 @@ namespace XTimelineViewer.Views.Settings
             // ZIP 版は winget を持たないことがあるが、GitHub Releases で確認できるので表示する (#328)。
             if (PackageContext.IsPackaged) return;
 
-            // winget 版なら winget upgrade に委譲でき、それ以外はリリースページへ誘導する。
-            // ZIP 版の「再起動して更新」は自己置き換えが要るので #328 段階2 待ち。
+            // winget 版なら winget upgrade に委譲する。
             bool useWinget = PackageContext.Channel == InstallChannel.Winget && _parent.HasWinget;
+
+            // ZIP 版で、インストール先に書き込めるなら自前で入れ替えられる（#328）。
+            // 書き込めない場所（Program Files 配下など）ではリリースページへ誘導する。
+            var eligibility = ZipUpdateRunner.CheckEligibility(
+                PackageContext.Channel, PackageContext.IsPackaged,
+                AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
+            bool canSelfUpdate = !useWinget
+                              && eligibility == ZipUpdateRunner.Eligibility.Ok
+                              && _parent.RunZipUpdateAsync is not null;
 
             var settings = _parent.Settings;
 
@@ -176,8 +185,9 @@ namespace XTimelineViewer.Views.Settings
 
             var updateBtn = new Button
             {
-                Content = useWinget ? R.Get("CheckUpdate_Download_Winget")
-                                    : R.Get("CheckUpdate_Download_Zip"),
+                Content = useWinget      ? R.Get("CheckUpdate_Download_Winget")
+                        : canSelfUpdate  ? R.Get("CheckUpdate_RestartAndUpdate")
+                                         : R.Get("CheckUpdate_Download_Zip"),
             };
 
             var checkBtn = new Button { Content = R.Get("CheckUpdate_Btn") };
@@ -193,8 +203,29 @@ namespace XTimelineViewer.Views.Settings
                 Content = checkBtn,
             };
 
+            // ダウンロード中の表示。90 MB あるので、黙って待たせない。
+            var progressBar = new ProgressBar { Minimum = 0, Maximum = 1, Width = 220 };
+            var cancelBtn   = new Button { Content = R.Get("Button_Cancel") };
+            System.Threading.CancellationTokenSource? cts = null;
+            cancelBtn.Click += (_, _) => cts?.Cancel();
+
+            void ShowDownloading(double value)
+            {
+                infoBar.Severity     = InfoBarSeverity.Informational;
+                infoBar.Message      = R.Get("CheckUpdate_Downloading");
+                infoBar.Content      = progressBar;
+                infoBar.ActionButton = cancelBtn;
+                progressBar.Value    = value;
+            }
+
+            void ClearProgress()
+            {
+                infoBar.Content = null;
+            }
+
             void ShowChecking()
             {
+                ClearProgress();
                 infoBar.Severity     = InfoBarSeverity.Informational;
                 infoBar.Message      = R.Get("CheckUpdate_Checking");
                 infoBar.ActionButton = null;
@@ -202,6 +233,7 @@ namespace XTimelineViewer.Views.Settings
 
             void ShowAvailable(string tag)
             {
+                ClearProgress();
                 infoBar.Severity     = InfoBarSeverity.Warning;
                 infoBar.Message      = string.Format(R.Get("CheckUpdate_Available"), tag);
                 infoBar.ActionButton = updateBtn;
@@ -209,6 +241,7 @@ namespace XTimelineViewer.Views.Settings
 
             void ShowUpToDate()
             {
+                ClearProgress();
                 infoBar.Severity     = InfoBarSeverity.Success;
                 infoBar.Message      = R.Get("CheckUpdate_Latest");
                 infoBar.ActionButton = releaseLink;
@@ -216,6 +249,7 @@ namespace XTimelineViewer.Views.Settings
 
             void ShowError()
             {
+                ClearProgress();
                 infoBar.Severity     = InfoBarSeverity.Error;
                 infoBar.Message      = R.Get("CheckUpdate_Error");
                 infoBar.ActionButton = releaseLink;
@@ -289,10 +323,17 @@ namespace XTimelineViewer.Views.Settings
 
             updateBtn.Click += async (_, _) =>
             {
-                // ZIP 版は自己置き換えを行わず、リリースページへ誘導する (#328)
+                // ZIP 版で自前更新できるなら、落として展開して再起動する（#328）
+                if (canSelfUpdate)
+                {
+                    await RunSelfUpdateAsync();
+                    return;
+                }
+
+                // 自前更新できない ZIP 版はリリースページへ誘導する
                 if (!useWinget)
                 {
-                    AppLog.Debug("UpdateCheck: リリースページを開く");
+                    AppLog.Debug($"UpdateCheck: リリースページを開く（自前更新は不可: {eligibility}）");
                     OpenUri(new Uri(releaseUrl));
                     return;
                 }
@@ -315,6 +356,69 @@ namespace XTimelineViewer.Views.Settings
                 AppLog.Debug("UpdateCheck: winget upgrade を起動してアプリを終了する");
                 _parent.ExitAndRunWingetUpdate?.Invoke();
             };
+
+            async Task RunSelfUpdateAsync()
+            {
+                var confirm = new ContentDialog
+                {
+                    Title             = R.Get("CheckUpdate_RestartTitle"),
+                    Content           = new TextBlock
+                    {
+                        Text         = R.Get("CheckUpdate_RestartBody"),
+                        TextWrapping = TextWrapping.Wrap,
+                    },
+                    PrimaryButtonText = R.Get("CheckUpdate_RestartConfirm"),
+                    CloseButtonText   = R.Get("Button_Cancel"),
+                    XamlRoot          = XamlRoot,
+                    RequestedTheme    = ((FrameworkElement)_parent!.Content).ActualTheme,
+                };
+                if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+
+                checkBtn.IsEnabled = false;
+                cts = new System.Threading.CancellationTokenSource();
+                ShowDownloading(0);
+
+                try
+                {
+                    var result = await _parent.RunZipUpdateAsync!(
+                        new Progress<double>(v => ShowDownloading(v)), cts.Token);
+
+                    switch (result)
+                    {
+                        case ZipUpdateRunner.RunResult.ReadyToRestart:
+                            // ここから先は仕上げ役（新しいバージョン）の仕事。
+                            // こちらが終わらないと、差し替えるファイルを掴んだままになる。
+                            _parent.ExitApp?.Invoke();
+                            return;
+
+                        case ZipUpdateRunner.RunResult.NotSupported:
+                            // .sha256 の無い古いリリース。検証できないので手動へ回す。
+                            // 失敗ではなく案内なので赤にしない。また、どの版が来ているのかを
+                            // 消してしまうと、リリースページで何を選べばよいか分からなくなる。
+                            ClearProgress();
+                            infoBar.Severity     = InfoBarSeverity.Warning;
+                            infoBar.Message      = string.Format(
+                                R.Get("CheckUpdate_SelfUpdateUnavailable"),
+                                settings.CachedLatestVersion ?? string.Empty);
+                            infoBar.ActionButton = releaseLink;
+                            return;
+
+                        case ZipUpdateRunner.RunResult.Canceled:
+                            ShowAvailable(settings.CachedLatestVersion ?? string.Empty);
+                            return;
+
+                        default:
+                            ShowError();
+                            return;
+                    }
+                }
+                finally
+                {
+                    cts?.Dispose();
+                    cts = null;
+                    checkBtn.IsEnabled = true;
+                }
+            }
 
             RootPanel.Children.Add(updateCard);
             RootPanel.Children.Add(infoBar);

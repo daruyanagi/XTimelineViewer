@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
@@ -68,6 +68,16 @@ namespace XTimelineViewer.Views
 
         /// <summary>最新バージョンを取得するコールバック（winget 版は winget、それ以外は GitHub Releases）。</summary>
         internal Func<Task<Version?>>? FetchLatestVersionAsync { get; set; }
+
+        /// <summary>
+        /// ZIP 版の自前更新を実行するコールバック（#328）。MainWindow が提供する。
+        /// 展開まで済んだら true を返し、呼び出し元がアプリを終了する。
+        /// </summary>
+        internal Func<IProgress<double>, System.Threading.CancellationToken,
+                      Task<Services.ZipUpdateRunner.RunResult>>? RunZipUpdateAsync { get; set; }
+
+        /// <summary>アプリを終了するコールバック（更新の仕上げに使う）。</summary>
+        internal Action? ExitApp { get; set; }
 
         /// <summary>設定のみ保存する（テーマ適用等はしない）コールバック。</summary>
         internal Action? SaveSettingsOnly { get; set; }

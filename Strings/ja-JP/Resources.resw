@@ -201,6 +201,12 @@
   <data name="CheckUpdate_Download_Zip" xml:space="preserve"><value>リリースページを開く</value></data>
   <data name="CheckUpdate_NotChecked" xml:space="preserve"><value>まだ更新を確認していません</value></data>
   <data name="CheckUpdate_LastChecked" xml:space="preserve"><value>最終確認: {0:yyyy/MM/dd HH:mm}</value></data>
+  <data name="CheckUpdate_RestartAndUpdate" xml:space="preserve"><value>再起動して更新</value></data>
+  <data name="CheckUpdate_Downloading" xml:space="preserve"><value>ダウンロードしています...</value></data>
+  <data name="CheckUpdate_RestartTitle" xml:space="preserve"><value>更新して再起動</value></data>
+  <data name="CheckUpdate_RestartBody" xml:space="preserve"><value>新しいバージョンをダウンロードして入れ替え、アプリを再起動します。開いているタイムラインは復元されます。</value></data>
+  <data name="CheckUpdate_RestartConfirm" xml:space="preserve"><value>ダウンロードして再起動</value></data>
+  <data name="CheckUpdate_SelfUpdateUnavailable" xml:space="preserve"><value>{0} が利用可能ですが、このバージョンは自動更新に対応していません。リリースページから入れ替えてください。</value></data>
   <data name="CheckUpdate_Error" xml:space="preserve"><value>確認に失敗しました</value></data>
   <data name="CheckUpdate_WingetTitle" xml:space="preserve"><value>winget でアップデート</value></data>
   <data name="CheckUpdate_WingetBody" xml:space="preserve"><value>アプリを終了して winget でアップデートします。完了後、アプリを手動で再起動してください。</value></data>
