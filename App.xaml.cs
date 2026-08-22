@@ -1,7 +1,9 @@
 using Microsoft.UI.Xaml;
+using Microsoft.Web.WebView2.Core;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using XTimelineViewer.Services;
@@ -36,6 +38,7 @@ namespace XTimelineViewer
             // ログの初期化は例外ハンドラーを張る前に。
             // ここで肥大化した error.log を 1 世代退避する（#374）。
             AppLog.Initialize();
+            AppLog.SetSessionHeader(BuildSessionHeader());
 
             // UI スレッドの未処理例外でプロセスが即死するのを防ぐ。
             // winget バリデーション VM など特殊環境でのサイレントクラッシュを診断しやすくする。
@@ -48,6 +51,50 @@ namespace XTimelineViewer
         }
 
         // 以前はここでパスを手書きで組み直していた。Services/AppLog.cs へ集約（#374）。
+
+        /// <summary>
+        /// ログの先頭に出すセッション情報（#340）。
+        ///
+        /// 未処理例外は現状 <c>e.Handled = true</c> で握りつぶしている。
+        /// どの例外を致命的とみなすかの判断材料が無いためだが、
+        /// ログに例外だけが並んでいても、どの版・どの基盤で起きたのか
+        /// 分からないと切り分けられない。
+        ///
+        /// ここで集めるものは、実際に障害の切り分けに使ったものだけ。
+        /// WebView2 版は X の描画崩れ、arm64/x64 は #267 のような混入事故の容疑者になる。
+        /// </summary>
+        private static string BuildSessionHeader()
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?";
+            var channel = PackageContext.Channel switch
+            {
+                InstallChannel.Winget   => "winget",
+                InstallChannel.Packaged => "packaged",
+                _                       => "zip",
+            };
+
+            return $"=== XTimelineViewer v{version} ({channel}) "
+                 + $"WinAppSDK={SafeProbe(WinAppSdkVersion)} WebView2={SafeProbe(WebView2Version)} "
+                 + $"{RuntimeInformation.ProcessArchitecture} {Environment.OSVersion.VersionString} "
+                 + $"=== {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+        }
+
+        /// <summary>
+        /// 見出しの組み立てで落ちないこと。
+        /// ここは例外ハンドラーを張る前の起動経路なので、
+        /// ログを見やすくするための処理で起動を壊しては本末転倒。
+        /// </summary>
+        private static string SafeProbe(Func<string> probe)
+        {
+            try { return probe(); } catch { return "?"; }
+        }
+
+        private static string WebView2Version()
+            => CoreWebView2Environment.GetAvailableBrowserVersionString();
+
+        private static string WinAppSdkVersion()
+            => FileVersionInfo.GetVersionInfo(typeof(Microsoft.UI.Xaml.Application).Assembly.Location).FileVersion
+               ?? "?";
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {

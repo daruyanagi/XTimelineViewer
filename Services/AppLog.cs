@@ -26,6 +26,11 @@ namespace XTimelineViewer.Services
         private static long   _maxBytes = DefaultMaxBytes;
         private static int    _writesSinceCheck;
 
+        // セッションの見出し（バージョン・配布経路など）。
+        // 何も起きない起動で行を増やさないよう、最初の書き込み直前に一度だけ出す。
+        private static string? _sessionHeader;
+        private static bool    _headerWritten;
+
         internal static string FilePath => _filePath;
 
         /// <summary>
@@ -46,8 +51,23 @@ namespace XTimelineViewer.Services
                 _filePath = filePath ?? DefaultFilePath();
                 _maxBytes = maxBytes;
                 _writesSinceCheck = 0;
+                _headerWritten = false;
             }
             RotateIfNeeded(_filePath, _maxBytes);
+        }
+
+        /// <summary>
+        /// ログの先頭に添えるセッション情報を登録する（#340）。
+        /// アプリのバージョンや配布経路が分からないと、ログを見ても
+        /// 切り分けができない。組み立ては呼び出し側の責任（ここは UI 非依存に保つ）。
+        /// </summary>
+        internal static void SetSessionHeader(string? header)
+        {
+            lock (Gate)
+            {
+                _sessionHeader = header;
+                _headerWritten = false;
+            }
         }
 
         /// <summary>例外を記録する。</summary>
@@ -71,11 +91,28 @@ namespace XTimelineViewer.Services
                 if (check) _writesSinceCheck = 0;
             }
 
-            if (check) RotateIfNeeded(path, max);
+            // 退避したら見出しを出し直す。さもないと、長く起動したときに
+            // 手元に残る error.log がちょうど「見出しの無い方」になる。
+            if (check && RotateIfNeeded(path, max))
+            {
+                lock (Gate) _headerWritten = false;
+            }
+
+            // セッション見出しは各ファイルの先頭に 1 回だけ。
+            string? header = null;
+            lock (Gate)
+            {
+                if (!_headerWritten && _sessionHeader is not null)
+                {
+                    header = _sessionHeader + Environment.NewLine;
+                    _headerWritten = true;
+                }
+            }
 
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                if (header is not null) File.AppendAllText(path, header);
                 File.AppendAllText(path, text);
             }
             catch { /* ログ書き込みの失敗は無視する。ここで投げると本題が隠れる */ }
@@ -88,15 +125,18 @@ namespace XTimelineViewer.Services
         /// 世代を増やさないのは、これが調査用の一時ログで、
         /// 長期保存する必要が無いため。
         /// </summary>
-        internal static void RotateIfNeeded(string filePath, long maxBytes)
+        /// <returns>実際に退避したら true。見出しを出し直す判断に使う。</returns>
+        internal static bool RotateIfNeeded(string filePath, long maxBytes)
         {
             try
             {
                 var info = new FileInfo(filePath);
-                if (!info.Exists || info.Length < maxBytes) return;
+                if (!info.Exists || info.Length < maxBytes) return false;
                 File.Move(filePath, filePath + ".1", overwrite: true);
+                return true;
             }
             catch { /* 退避できなくても追記は続ける */ }
+            return false;
         }
     }
 }
