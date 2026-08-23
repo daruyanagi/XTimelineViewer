@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using XTimelineViewer.Models;
+using XTimelineViewer.Services;
 
 namespace XTimelineViewer.Views.Settings
 {
@@ -110,7 +111,7 @@ namespace XTimelineViewer.Views.Settings
                     : await PickCandidateAsync(candidates);
                 if (candidate is null) return;
 
-                var prepared = await _parent.PrepareExtensionAsync(candidate, null, cts.Token);
+                var prepared = await _parent.PrepareExtensionAsync(candidate, null, cts.Token, url);
                 if (prepared.Status != Services.ExtensionInstallRunner.Status.Ok)
                 {
                     await ShowInstallMessageAsync(MessageFor(prepared.Status));
@@ -326,6 +327,26 @@ namespace XTimelineViewer.Views.Settings
             if (_parent is null) return;
 
             var key = Path.GetFileName(ext.DirectoryPath);
+
+            // 入手先（#404）。GitHub から入れたものは記録した URL、手で置いたものは
+            // manifest.json の homepage_url。どちらも無ければ行そのものを出さない。
+            var source = _parent.SourceUrlFor?.Invoke(key, ext.HomepageUrl);
+            if (!string.IsNullOrWhiteSpace(source))
+            {
+                var link = new HyperlinkButton { Content = source };
+                AutomationProperties.SetAutomationId(link, $"ExtSource_{key}");
+                link.Click += (_, _) =>
+                {
+                    if (_parent.LaunchUriAsync is not null && Uri.TryCreate(source, UriKind.Absolute, out var uri))
+                        _parent.LaunchUriAsync(uri).FireAndForget("ExtensionSourceLink");
+                };
+
+                card.Items.Add(new CommunityToolkit.WinUI.Controls.SettingsCard
+                {
+                    Header  = R.Get("Extensions_Source"),
+                    Content = link,
+                });
+            }
 
             foreach (var profile in _parent.Profiles)
             {

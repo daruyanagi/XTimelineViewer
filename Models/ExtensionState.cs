@@ -27,5 +27,16 @@ namespace XTimelineViewer.Models
         /// <see cref="EnabledByDefault"/> に従う</b>（明示的に切り替えたものだけ記録する）。
         /// </summary>
         public Dictionary<string, bool> PerProfile { get; set; } = [];
+
+        /// <summary>
+        /// 入手先のリポジトリ URL（#404）。手で置いたものは null。
+        ///
+        /// 一覧に出すためと、<b>更新があるかを調べるため</b>に持つ。
+        /// どこから来たかを知らなければ、新しい版が出ているかを調べようがない。
+        /// </summary>
+        public string? SourceRepoUrl { get; set; }
+
+        /// <summary>実際に落とした資産の URL（#404）。どの成果物を入れたのかの記録。</summary>
+        public string? SourceAssetUrl { get; set; }
     }
 }

@@ -209,6 +209,7 @@
   <data name="Extensions_Install_Failed" xml:space="preserve"><value>Could not add the extension.</value></data>
   <data name="Extensions_DefaultForNewProfiles" xml:space="preserve"><value>Default for new profiles</value></data>
   <data name="Extensions_DefaultForNewProfiles_Desc" xml:space="preserve"><value>Whether this extension is enabled when a profile is added later</value></data>
+  <data name="Extensions_Source" xml:space="preserve"><value>Source</value></data>
   <data name="Extensions_Uninstall" xml:space="preserve"><value>Uninstall</value></data>
   <data name="Extensions_Uninstall_Desc" xml:space="preserve"><value>Unregisters it from every profile and deletes the folder</value></data>
   <data name="Extensions_Uninstall_Confirm" xml:space="preserve"><value>"{0}" will be uninstalled. It will be unregistered from every profile and its folder will be deleted.</value></data>

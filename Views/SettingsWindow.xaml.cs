@@ -103,8 +103,11 @@ namespace XTimelineViewer.Views
 
         /// <summary>取ってきて中身を確かめる（まだ入れない）（#399）。</summary>
         internal Func<Services.ExtensionInstaller.Candidate, IProgress<double>?, System.Threading.CancellationToken,
-                      Task<Services.ExtensionInstallRunner.Prepared>>?
+                      string?, Task<Services.ExtensionInstallRunner.Prepared>>?
             PrepareExtensionAsync { get; set; }
+
+        /// <summary>一覧に出す入手先 URL（#404）。無ければ null。</summary>
+        internal Func<string, string?, string?>? SourceUrlFor { get; set; }
 
         /// <summary>確認が取れたものを入れる（#399）。</summary>
         internal Func<Services.ExtensionInstallRunner.Prepared, Task<bool>>? CommitExtensionAsync { get; set; }

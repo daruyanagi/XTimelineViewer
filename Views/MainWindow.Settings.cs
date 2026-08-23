@@ -133,6 +133,8 @@ namespace XTimelineViewer.Views
                 return (status, list);
             };
             settingsWin.PrepareExtensionAsync = PrepareExtensionAsync;
+            settingsWin.SourceUrlFor = (key, homepage) =>
+                ExtensionStateStore.SourceUrlFor(_appSettings.ExtensionStates, key, homepage);
             settingsWin.CommitExtensionAsync  = CommitExtensionAsync;
 
             settingsWin.ExitAndRunWingetUpdate = () =>

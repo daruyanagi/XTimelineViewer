@@ -436,9 +436,10 @@ namespace XTimelineViewer.Views
             => new ExtensionInstallRunner(_downloadHttp).FindCandidatesAsync(repoUrl, ct);
 
         internal Task<ExtensionInstallRunner.Prepared> PrepareExtensionAsync(
-            ExtensionInstaller.Candidate candidate, IProgress<double>? progress, CancellationToken ct)
+            ExtensionInstaller.Candidate candidate, IProgress<double>? progress, CancellationToken ct,
+            string? repoUrl = null)
             => new ExtensionInstallRunner(_downloadHttp)
-                   .PrepareAsync(candidate, GetExtensionsDir(), progress, ct);
+                   .PrepareAsync(candidate, GetExtensionsDir(), progress, ct, repoUrl: repoUrl);
 
         /// <summary>
         /// 確認が取れた拡張機能を置き、いま開いているプロファイルへ読み込む（#399）。
@@ -451,6 +452,12 @@ namespace XTimelineViewer.Views
             // 置いただけでは効かない。読み込み済みのプロファイルへ入れて回る。
             var extDir = Path.Combine(dir, prepared.FolderName!);
             var key    = ExtensionStateStore.KeyOf(extDir);
+
+            // どこから入れたかを残す（#404）。後から一覧に出すためと、
+            // 更新があるかを調べるため。ここでしか分からない情報。
+            ExtensionStateStore.SetSource(_appSettings.ExtensionStates, key,
+                                          prepared.RepoUrl, prepared.SourceUrl);
+            SaveSettings();
 
             foreach (var profileId in _extensionsLoadedProfiles.ToList())
             {
