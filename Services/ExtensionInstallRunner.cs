@@ -87,9 +87,16 @@ namespace XTimelineViewer.Services
             IProgress<double>? progress = null,
             CancellationToken ct = default,
             string? workRoot = null,
-            string? repoUrl = null)
+            string? repoUrl = null,
+            string? folderNameOverride = null)
         {
-            var folderName = ExtensionInstaller.FolderNameFor(candidate.Name);
+            // リポジトリが分かるならそちらから作る（#406）。更新しても名前が変わらない。
+            // 更新のときは呼び出し側が一時の名前を指定する（既存を上書きせずに取り切るため）。
+            var parsed = repoUrl is null ? null : ExtensionInstaller.ParseRepoUrl(repoUrl);
+            var folderName = folderNameOverride
+                             ?? (parsed is not null
+                                 ? ExtensionInstaller.FolderNameFor(parsed.Value.Owner, parsed.Value.Repo)
+                                 : ExtensionInstaller.FolderNameForAsset(candidate.Name));
 
             if (Directory.Exists(Path.Combine(extensionsDir, folderName)))
                 return Fail(Status.AlreadyInstalled, candidate.DownloadUrl);

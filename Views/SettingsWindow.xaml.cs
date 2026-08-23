@@ -109,6 +109,13 @@ namespace XTimelineViewer.Views
         /// <summary>一覧に出す入手先 URL（#404）。無ければ null。</summary>
         internal Func<string, string?, string?>? SourceUrlFor { get; set; }
 
+        /// <summary>拡張機能に新しい版があるかを調べる（#406）。</summary>
+        internal Func<string, System.Threading.CancellationToken, Task<(bool HasUpdate, string? Tag)>>?
+            CheckExtensionUpdateAsync { get; set; }
+
+        /// <summary>拡張機能を更新する（#406）。</summary>
+        internal Func<string, System.Threading.CancellationToken, Task<bool>>? UpdateExtensionAsync { get; set; }
+
         /// <summary>確認が取れたものを入れる（#399）。</summary>
         internal Func<Services.ExtensionInstallRunner.Prepared, Task<bool>>? CommitExtensionAsync { get; set; }
 

@@ -135,6 +135,8 @@ namespace XTimelineViewer.Views
             settingsWin.PrepareExtensionAsync = PrepareExtensionAsync;
             settingsWin.SourceUrlFor = (key, homepage) =>
                 ExtensionStateStore.SourceUrlFor(_appSettings.ExtensionStates, key, homepage);
+            settingsWin.CheckExtensionUpdateAsync = CheckExtensionUpdateAsync;
+            settingsWin.UpdateExtensionAsync      = UpdateExtensionAsync;
             settingsWin.CommitExtensionAsync  = CommitExtensionAsync;
 
             settingsWin.ExitAndRunWingetUpdate = () =>
