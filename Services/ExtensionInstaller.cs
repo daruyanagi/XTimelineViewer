@@ -185,12 +185,35 @@ namespace XTimelineViewer.Services
         }
 
         /// <summary>
-        /// 入れ先のフォルダー名。資産名から拡張子を落としたもの。
+        /// 入れ先のフォルダー名（#406）。<b>リポジトリ名から作り、版数を含めない。</b>
+        ///
+        /// 以前は資産名をそのまま使っていた（<c>uBlock0_1.73.0.chromium.zip</c> →
+        /// <c>uBlock0_1.73.0.chromium</c>）。しかしそれだと更新のたびにフォルダー名が
+        /// 変わり、<b>3 つ同時に壊れる</b>。
+        ///
+        /// <list type="bullet">
+        /// <item>有効・無効の記録（#398）はフォルダー名が鍵なので引き継げない</item>
+        /// <item><b>拡張機能 ID はパスから導出される</b>ので変わる。プロファイルから見ると
+        ///       別の拡張機能になる（同じ中身を別名で置くと別 ID になることを実測で確認）</item>
+        /// <item>旧いフォルダーの登録がプロファイルに残り続ける</item>
+        /// </list>
+        ///
+        /// リポジトリ名から作れば更新しても変わらず、3 つとも起きない。
         /// パス区切りなどが混ざらないよう、使えない文字は落とす。
         /// </summary>
-        internal static string FolderNameFor(string assetName)
+        internal static string FolderNameFor(string owner, string repo)
+            => Sanitize($"{owner}-{repo}");
+
+        /// <summary>
+        /// 入れ先のフォルダー名（リポジトリが分からない場合）。
+        /// 資産名から作るので版数が混ざりうる。GitHub 経由なら
+        /// <see cref="FolderNameFor(string, string)"/> を使うこと。
+        /// </summary>
+        internal static string FolderNameForAsset(string assetName)
+            => Sanitize(Path.GetFileNameWithoutExtension(assetName));
+
+        private static string Sanitize(string name)
         {
-            var name = Path.GetFileNameWithoutExtension(assetName);
             var invalid = Path.GetInvalidFileNameChars();
             var cleaned = new string(name.Where(c => !invalid.Contains(c)).ToArray()).Trim();
             return cleaned.Length > 0 ? cleaned : "extension";

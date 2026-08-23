@@ -194,7 +194,7 @@
   <data name="Extensions_Add_GitHub" xml:space="preserve"><value>GitHub リポジトリから入れる</value></data>
   <data name="Extensions_RepoUrl" xml:space="preserve"><value>リポジトリの URL</value></data>
   <data name="Extensions_InstallFromGitHub" xml:space="preserve"><value>GitHub からインストール</value></data>
-  <data name="Extensions_InstallFromGitHub_Desc" xml:space="preserve"><value>リポジトリの URL を入れると、最新リリースの ZIP / CRX から拡張機能を追加します</value></data>
+  <data name="Extensions_InstallFromGitHub_Desc" xml:space="preserve"><value>リポジトリの URL を入れると、最新リリースの ZIP / CRX から拡張機能を追加します。あとから更新もできます</value></data>
   <data name="Extensions_Install" xml:space="preserve"><value>インストール</value></data>
   <data name="Extensions_Install_PickTitle" xml:space="preserve"><value>どれを入れますか</value></data>
   <data name="Extensions_Install_ConfirmTitle" xml:space="preserve"><value>拡張機能を追加しますか</value></data>
@@ -213,6 +213,15 @@
   <data name="Extensions_DefaultForNewProfiles" xml:space="preserve"><value>新しいプロファイルでの既定</value></data>
   <data name="Extensions_DefaultForNewProfiles_Desc" xml:space="preserve"><value>あとからプロファイルを追加したときに、この拡張機能を有効にするかどうか</value></data>
   <data name="Extensions_Source" xml:space="preserve"><value>入手先</value></data>
+  <data name="Extensions_Update" xml:space="preserve"><value>更新</value></data>
+  <data name="Extensions_Update_Desc" xml:space="preserve"><value>入手先の最新リリースを見て、新しい版があれば入れ替えます</value></data>
+  <data name="Extensions_Update_Check" xml:space="preserve"><value>更新を確認</value></data>
+  <data name="Extensions_Update_Checking" xml:space="preserve"><value>確認中...</value></data>
+  <data name="Extensions_Update_UpToDate" xml:space="preserve"><value>最新です</value></data>
+  <data name="Extensions_Update_Available" xml:space="preserve"><value>{0} があります</value></data>
+  <data name="Extensions_Update_Running" xml:space="preserve"><value>更新しています...</value></data>
+  <data name="Extensions_Update_Done" xml:space="preserve"><value>「{0}」を更新しました。</value></data>
+  <data name="Extensions_Update_Failed" xml:space="preserve"><value>更新できませんでした</value></data>
   <data name="Extensions_Uninstall" xml:space="preserve"><value>アンインストール</value></data>
   <data name="Extensions_Uninstall_Desc" xml:space="preserve"><value>すべてのプロファイルから登録を外し、フォルダーを削除します</value></data>
   <data name="Extensions_Uninstall_Confirm" xml:space="preserve"><value>「{0}」をアンインストールします。すべてのプロファイルから登録が外れ、フォルダーが削除されます。</value></data>

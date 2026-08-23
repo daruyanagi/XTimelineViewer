@@ -429,6 +429,13 @@ namespace XTimelineViewer.Views.Settings
                 Content     = defaultToggle,
             });
 
+            // 更新（#406）。入手先を記録しているものだけ。
+            if (_parent.CheckExtensionUpdateAsync is not null && _parent.UpdateExtensionAsync is not null
+                && !string.IsNullOrWhiteSpace(source))
+            {
+                AddUpdateRow(card, key, ext.Name);
+            }
+
             // アンインストール
             var uninstallBtn = new Button { Content = R.Get("Extensions_Uninstall") };
             AutomationProperties.SetAutomationId(uninstallBtn, $"ExtUninstall_{key}");
@@ -439,6 +446,89 @@ namespace XTimelineViewer.Views.Settings
                 Header      = R.Get("Extensions_Uninstall"),
                 Description = R.Get("Extensions_Uninstall_Desc"),
                 Content     = uninstallBtn,
+            });
+        }
+
+        /// <summary>
+        /// 更新の確認と実行（#406）。
+        ///
+        /// 開くたびに自動で調べには行かない。拡張機能の数だけ GitHub を叩くことになり、
+        /// レート制限にも当たる。押されたときだけ調べる。
+        /// </summary>
+        private void AddUpdateRow(
+            CommunityToolkit.WinUI.Controls.SettingsExpander card, string key, string name)
+        {
+            var status = new TextBlock
+            {
+                VerticalAlignment = VerticalAlignment.Center,
+                TextWrapping      = TextWrapping.Wrap,
+            };
+
+            var checkBtn = new Button { Content = R.Get("Extensions_Update_Check") };
+            AutomationProperties.SetAutomationId(checkBtn, $"ExtUpdateCheck_{key}");
+
+            var updateBtn = new Button
+            {
+                Content    = R.Get("Extensions_Update"),
+                Visibility = Visibility.Collapsed,
+            };
+            AutomationProperties.SetAutomationId(updateBtn, $"ExtUpdate_{key}");
+
+            var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            panel.Children.Add(status);
+            panel.Children.Add(updateBtn);
+            panel.Children.Add(checkBtn);
+
+            checkBtn.Click += async (_, _) =>
+            {
+                checkBtn.IsEnabled = false;
+                status.Text = R.Get("Extensions_Update_Checking");
+                try
+                {
+                    using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(30));
+                    var (hasUpdate, tag) = await _parent!.CheckExtensionUpdateAsync!(key, cts.Token);
+
+                    status.Text = hasUpdate
+                        ? string.Format(R.Get("Extensions_Update_Available"), tag)
+                        : R.Get("Extensions_Update_UpToDate");
+                    updateBtn.Visibility = hasUpdate ? Visibility.Visible : Visibility.Collapsed;
+                }
+                finally
+                {
+                    checkBtn.IsEnabled = true;
+                }
+            };
+
+            updateBtn.Click += async (_, _) =>
+            {
+                updateBtn.IsEnabled = false;
+                checkBtn.IsEnabled  = false;
+                status.Text = R.Get("Extensions_Update_Running");
+                try
+                {
+                    using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(5));
+                    if (await _parent!.UpdateExtensionAsync!(key, cts.Token))
+                    {
+                        await ShowInstallMessageAsync(string.Format(R.Get("Extensions_Update_Done"), name));
+                        RootPanel.Children.Clear();
+                        PopulateUI();
+                        return;
+                    }
+
+                    status.Text = R.Get("Extensions_Update_Failed");
+                }
+                finally
+                {
+                    updateBtn.IsEnabled = true;
+                    checkBtn.IsEnabled  = true;
+                }
+            };
+
+            card.Items.Add(new CommunityToolkit.WinUI.Controls.SettingsCard
+            {
+                Header      = R.Get("Extensions_Update"),
+                Description = R.Get("Extensions_Update_Desc"),
+                Content     = panel,
             });
         }
 

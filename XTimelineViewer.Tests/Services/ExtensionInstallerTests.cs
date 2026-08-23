@@ -236,23 +236,55 @@ namespace XTimelineViewer.Tests.Services
 
         // ── 入れ先の名前 ─────────────────────────────────────────────────
 
+        [Fact]
+        public void FolderName_ComesFromTheRepository_NotTheAsset()
+        {
+            // 資産名から作ると版数が混ざり、更新のたびにフォルダー名が変わる。
+            // フォルダー名が変わると、有効・無効の記録（鍵がフォルダー名）も
+            // 拡張機能 ID（パスから導出される）も引き継げない。
+            Assert.Equal("gorhill-uBlock", ExtensionInstaller.FolderNameFor("gorhill", "uBlock"));
+        }
+
+        [Fact]
+        public void FolderName_IsStableAcrossVersions()
+        {
+            // 同じリポジトリなら、リリースが上がっても同じ名前になること
+            var v1 = ExtensionInstaller.FolderNameFor("daruyanagi", "Kataomoi");
+            var v2 = ExtensionInstaller.FolderNameFor("daruyanagi", "Kataomoi");
+            Assert.Equal(v1, v2);
+            Assert.DoesNotContain("1.", v1);
+        }
+
+        [Fact]
+        public void FolderName_DifferentRepos_DoNotCollide()
+        {
+            Assert.NotEqual(ExtensionInstaller.FolderNameFor("a", "ext"),
+                            ExtensionInstaller.FolderNameFor("b", "ext"));
+        }
+
         [Theory]
         [InlineData("uBlock0_1.2.3.chromium.zip", "uBlock0_1.2.3.chromium")]
         [InlineData("ext.crx",                    "ext")]
-        public void FolderName_DropsTheExtension(string asset, string expected)
-            => Assert.Equal(expected, ExtensionInstaller.FolderNameFor(asset));
+        public void FolderNameForAsset_DropsTheExtension(string asset, string expected)
+            => Assert.Equal(expected, ExtensionInstaller.FolderNameForAsset(asset));
 
         [Fact]
         public void FolderName_StripsPathSeparators()
         {
-            // 資産名は相手が決める。パスを飛び出させない。
-            var name = ExtensionInstaller.FolderNameFor("..\\..\\evil.zip");
-            Assert.DoesNotContain('\\', name);
-            Assert.DoesNotContain('/', name);
+            // 資産名もリポジトリ名も相手が決める。パスを飛び出させない。
+            foreach (var name in new[]
+                     {
+                         ExtensionInstaller.FolderNameForAsset("..\\..\\evil.zip"),
+                         ExtensionInstaller.FolderNameFor("..", "..\\evil"),
+                     })
+            {
+                Assert.DoesNotContain('\\', name);
+                Assert.DoesNotContain('/', name);
+            }
         }
 
         [Fact]
         public void FolderName_Emptyish_FallsBack()
-            => Assert.False(string.IsNullOrWhiteSpace(ExtensionInstaller.FolderNameFor(".zip")));
+            => Assert.False(string.IsNullOrWhiteSpace(ExtensionInstaller.FolderNameForAsset(".zip")));
     }
 }

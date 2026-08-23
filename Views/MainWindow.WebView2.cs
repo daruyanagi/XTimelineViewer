@@ -480,6 +480,152 @@ namespace XTimelineViewer.Views
             return true;
         }
 
+        /// <summary>
+        /// 拡張機能に新しい版があるかを調べる（#406）。
+        /// 入手先（#404）を記録していないもの（手で直置きしたもの）は対象外。
+        /// </summary>
+        internal async Task<(bool HasUpdate, string? Tag)> CheckExtensionUpdateAsync(
+            string key, CancellationToken ct)
+        {
+            if (!_appSettings.ExtensionStates.TryGetValue(key, out var st) ||
+                string.IsNullOrWhiteSpace(st.SourceRepoUrl))
+                return (false, null);
+
+            var parsed = ExtensionInstaller.ParseRepoUrl(st.SourceRepoUrl);
+            if (parsed is null) return (false, null);
+
+            try
+            {
+                using var req = new System.Net.Http.HttpRequestMessage(
+                    System.Net.Http.HttpMethod.Get,
+                    ExtensionInstaller.LatestReleaseApiFor(parsed.Value.Owner, parsed.Value.Repo));
+                req.Headers.TryAddWithoutValidation("User-Agent", "XTimelineViewer");
+                req.Headers.TryAddWithoutValidation("Accept", "application/vnd.github+json");
+
+                using var resp = await _downloadHttp.SendAsync(req, ct);
+                if (!resp.IsSuccessStatusCode) return (false, null);
+
+                var json = await resp.Content.ReadAsStringAsync(ct);
+                var tag  = ExtensionUpdater.TagOf(json);
+                var installed = ExtensionUpdater.InstalledVersion(Path.Combine(GetExtensionsDir(), key));
+
+                return (ExtensionUpdater.IsNewer(installed, tag), tag);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Debug($"CheckExtensionUpdate({key}): {ex.Message}");
+                return (false, null);
+            }
+        }
+
+        /// <summary>
+        /// 拡張機能を更新する（#406）。
+        ///
+        /// フォルダー名はリポジトリ名から作るので<b>更新しても変わらない</b>。
+        /// 拡張機能 ID もパスから導出されるため変わらず、有効・無効の記録も引き継がれる。
+        ///
+        /// 「更新できなかった」はやり直せるが「更新に失敗して壊れた」は戻せないので、
+        /// <b>新しいものを取り切ってから</b>既存を置き換える。
+        /// </summary>
+        internal async Task<bool> UpdateExtensionAsync(string key, CancellationToken ct)
+        {
+            if (!_appSettings.ExtensionStates.TryGetValue(key, out var st) ||
+                string.IsNullOrWhiteSpace(st.SourceRepoUrl))
+                return false;
+
+            var runner = new ExtensionInstallRunner(_downloadHttp);
+
+            var (status, candidates) = await runner.FindCandidatesAsync(st.SourceRepoUrl, ct);
+            if (status != ExtensionInstallRunner.Status.Ok || candidates.Count == 0) return false;
+
+            // 前回入れたものと同じ資産を選ぶ。名前が変わっていたら先頭に落とす。
+            var candidate = candidates.FirstOrDefault(
+                                c => string.Equals(c.DownloadUrl, st.SourceAssetUrl, StringComparison.Ordinal))
+                            ?? candidates[0];
+
+            var dir = GetExtensionsDir();
+            var extDir = Path.Combine(dir, key);
+
+            // 既に入っている＝Prepare は AlreadyInstalled で止まるので、
+            // 一時の場所へ展開させてから自分で入れ替える。
+            var staging = Path.Combine(dir, key + ".new");
+            ExtensionStateStore.DeleteFolder(staging);
+
+            var prepared = await runner.PrepareAsync(candidate, dir, null, ct, repoUrl: st.SourceRepoUrl,
+                                                     folderNameOverride: key + ".new");
+            if (prepared.Status != ExtensionInstallRunner.Status.Ok)
+            {
+                AppLog.Debug($"UpdateExtension({key}): 取得に失敗 {prepared.Status}");
+                return false;
+            }
+
+            // ここまでで既存には触れていない。取り切れたので入れ替える。
+            try
+            {
+                foreach (var (id, ext) in _liveExtensions
+                                          .Where(kv => string.Equals(kv.Key.Key, key, StringComparison.OrdinalIgnoreCase))
+                                          .ToList())
+                {
+                    try { await ext.RemoveAsync(); } catch (Exception ex) { AppLog.Debug($"UpdateExtension: 登録解除に失敗 {ex.Message}"); }
+                    _liveExtensions.Remove(id);
+                }
+
+                var backup = extDir + ".old";
+                ExtensionStateStore.DeleteFolder(backup);
+                if (Directory.Exists(extDir)) Directory.Move(extDir, backup);
+
+                try
+                {
+                    ExtensionStore.CopyDirectory(prepared.StagedRoot!, extDir);
+                }
+                catch
+                {
+                    // 置き換えに失敗したら旧版へ戻す。動いていたものを壊さない。
+                    if (Directory.Exists(extDir)) ExtensionStateStore.DeleteFolder(extDir);
+                    if (Directory.Exists(backup)) Directory.Move(backup, extDir);
+                    throw;
+                }
+
+                ExtensionStateStore.DeleteFolder(backup);
+                ExtensionStateStore.SetSource(_appSettings.ExtensionStates, key,
+                                              st.SourceRepoUrl, candidate.DownloadUrl);
+                SaveSettings();
+
+                // 読み込み済みのプロファイルへ入れ直す
+                foreach (var profileId in _extensionsLoadedProfiles.ToList())
+                {
+                    var webView = Panes.FirstOrDefault(pane => pane.Config.ProfileId == profileId)?.WebView;
+                    if (webView?.CoreWebView2 is null) continue;
+
+                    try
+                    {
+                        var added = await webView.CoreWebView2.Profile.AddBrowserExtensionAsync(extDir);
+                        _liveExtensions[(profileId, key)] = added;
+
+                        var enabled = ExtensionStateStore.IsEnabled(_appSettings.ExtensionStates, key, profileId);
+                        if (!enabled) await added.EnableAsync(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLog.Error($"UpdateExtension(reload {key}, {profileId})", ex);
+                    }
+                }
+
+                AppLog.Debug($"ExtensionUpdate: {key} を更新した（{candidate.DownloadUrl}）");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                AppLog.Error($"UpdateExtension({key})", ex);
+                return false;
+            }
+            finally
+            {
+                ExtensionInstallRunner.Discard(prepared);
+                ExtensionStateStore.DeleteFolder(staging);
+            }
+        }
+
         /// <summary>新しく追加されたプロファイルでの既定を変える（#398）。</summary>
         internal void SetExtensionDefault(string key, bool enabled)
         {

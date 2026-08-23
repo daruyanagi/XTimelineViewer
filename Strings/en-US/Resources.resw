@@ -194,7 +194,7 @@
   <data name="Extensions_Add_GitHub" xml:space="preserve"><value>Install from a GitHub repository</value></data>
   <data name="Extensions_RepoUrl" xml:space="preserve"><value>Repository URL</value></data>
   <data name="Extensions_InstallFromGitHub" xml:space="preserve"><value>Install from GitHub</value></data>
-  <data name="Extensions_InstallFromGitHub_Desc" xml:space="preserve"><value>Enter a repository URL to add an extension from the latest release ZIP / CRX</value></data>
+  <data name="Extensions_InstallFromGitHub_Desc" xml:space="preserve"><value>Enter a repository URL to add an extension from the latest release ZIP / CRX. It can be updated later, too</value></data>
   <data name="Extensions_Install" xml:space="preserve"><value>Install</value></data>
   <data name="Extensions_Install_PickTitle" xml:space="preserve"><value>Which one do you want?</value></data>
   <data name="Extensions_Install_ConfirmTitle" xml:space="preserve"><value>Add this extension?</value></data>
@@ -213,6 +213,15 @@
   <data name="Extensions_DefaultForNewProfiles" xml:space="preserve"><value>Default for new profiles</value></data>
   <data name="Extensions_DefaultForNewProfiles_Desc" xml:space="preserve"><value>Whether this extension is enabled when a profile is added later</value></data>
   <data name="Extensions_Source" xml:space="preserve"><value>Source</value></data>
+  <data name="Extensions_Update" xml:space="preserve"><value>Update</value></data>
+  <data name="Extensions_Update_Desc" xml:space="preserve"><value>Checks the latest release at the source and replaces it if newer</value></data>
+  <data name="Extensions_Update_Check" xml:space="preserve"><value>Check for updates</value></data>
+  <data name="Extensions_Update_Checking" xml:space="preserve"><value>Checking...</value></data>
+  <data name="Extensions_Update_UpToDate" xml:space="preserve"><value>Up to date</value></data>
+  <data name="Extensions_Update_Available" xml:space="preserve"><value>{0} is available</value></data>
+  <data name="Extensions_Update_Running" xml:space="preserve"><value>Updating...</value></data>
+  <data name="Extensions_Update_Done" xml:space="preserve"><value>"{0}" has been updated.</value></data>
+  <data name="Extensions_Update_Failed" xml:space="preserve"><value>Could not update</value></data>
   <data name="Extensions_Uninstall" xml:space="preserve"><value>Uninstall</value></data>
   <data name="Extensions_Uninstall_Desc" xml:space="preserve"><value>Unregisters it from every profile and deletes the folder</value></data>
   <data name="Extensions_Uninstall_Confirm" xml:space="preserve"><value>"{0}" will be uninstalled. It will be unregistered from every profile and its folder will be deleted.</value></data>
