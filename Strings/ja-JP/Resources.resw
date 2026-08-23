@@ -190,7 +190,9 @@
   <data name="ExtSettings_OpenSettings" xml:space="preserve"><value>設定を開く</value></data>
   <data name="Extensions_InfoBar_Empty" xml:space="preserve"><value>拡張機能はインストールされていません。extensions フォルダーに展開済みの拡張機能を置くと、起動時に読み込まれます。</value></data>
   <data name="Extensions_InfoBar_Installed" xml:space="preserve"><value>extensions フォルダーに展開済みの拡張機能を置くと、起動時に読み込まれます。</value></data>
-  <data name="Extensions_InstallFromGitHub" xml:space="preserve"><value>GitHub から入れる</value></data>
+  <data name="Extensions_Add" xml:space="preserve"><value>拡張機能を追加</value></data>
+  <data name="Extensions_RepoUrl" xml:space="preserve"><value>リポジトリの URL</value></data>
+  <data name="Extensions_InstallFromGitHub" xml:space="preserve"><value>GitHub からインストール</value></data>
   <data name="Extensions_InstallFromGitHub_Desc" xml:space="preserve"><value>リポジトリの URL を入れると、最新リリースの ZIP / CRX から拡張機能を追加します</value></data>
   <data name="Extensions_Install" xml:space="preserve"><value>インストール</value></data>
   <data name="Extensions_Install_PickTitle" xml:space="preserve"><value>どれを入れますか</value></data>

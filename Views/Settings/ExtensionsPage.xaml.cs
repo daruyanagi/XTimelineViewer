@@ -34,13 +34,7 @@ namespace XTimelineViewer.Views.Settings
 
             var extensions = _parent?.Extensions ?? [];
 
-            // 状態 InfoBar（#241）。拡張の有無にかかわらず常時表示し、フォルダーを開くボタンを添える。
-            ExtensionsInfoBar.Message = extensions.Count == 0
-                ? R.Get("Extensions_InfoBar_Empty")
-                : R.Get("Extensions_InfoBar_Installed");
-            OpenExtensionsFolderBtn.Content = R.Get("Extensions_OpenFolder");
-
-            AddInstallCard();
+            AddActionsCard(extensions.Count == 0);
 
             foreach (var ext in extensions)
             {
@@ -49,49 +43,82 @@ namespace XTimelineViewer.Views.Settings
         }
 
         /// <summary>
-        /// GitHub のリリースから入れる（#399）。
+        /// 追加手段を 1 行に並べる（#405）。
         ///
-        /// Chrome Web ストアは扱わない。WebView2 にストアからインストールする API が無く、
-        /// .crx の配信エンドポイントは非公開で、利用規約もプログラムからの取得を制限している。
-        /// GitHub はリリース API が公開されているので正攻法で実装できる。
+        /// 以前は「フォルダーを開く」が InfoBar の中、「GitHub から入れる」が別のカードで
+        /// URL 入力欄を常時出していた。手段が並列に並んでおらず、使わないときも場所を取る。
         /// </summary>
-        private void AddInstallCard()
+        private void AddActionsCard(bool empty)
         {
-            var urlBox = new TextBox
-            {
-                PlaceholderText = "https://github.com/owner/repo",
-                MinWidth        = 280,
-            };
-            AutomationProperties.SetName(urlBox, R.Get("Extensions_InstallFromGitHub"));
-            AutomationProperties.SetAutomationId(urlBox, "ExtInstallUrl");
+            var openFolderBtn = new Button { Content = R.Get("Extensions_OpenFolder") };
+            AutomationProperties.SetAutomationId(openFolderBtn, "ExtOpenFolderBtn");
+            openFolderBtn.Click += OpenExtensionsFolder_Click;
 
-            var installBtn = new Button { Content = R.Get("Extensions_Install") };
+            var installBtn = new Button { Content = R.Get("Extensions_InstallFromGitHub") };
             AutomationProperties.SetAutomationId(installBtn, "ExtInstallBtn");
-            installBtn.Click += async (_, _) => await InstallFromGitHubAsync(urlBox.Text, installBtn);
+            installBtn.Click += async (_, _) => await InstallFromGitHubAsync(installBtn);
 
             var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-            panel.Children.Add(urlBox);
+            panel.Children.Add(openFolderBtn);
             panel.Children.Add(installBtn);
 
             RootPanel.Children.Add(new CommunityToolkit.WinUI.Controls.SettingsCard
             {
-                Header      = R.Get("Extensions_InstallFromGitHub"),
-                Description = R.Get("Extensions_InstallFromGitHub_Desc"),
+                Header      = R.Get("Extensions_Add"),
+                Description = empty ? R.Get("Extensions_InfoBar_Empty") : R.Get("Extensions_InfoBar_Installed"),
                 HeaderIcon  = new FontIcon
                 {
-                    Glyph      = "\uE896",
+                    Glyph      = "\uE710",
                     FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons"),
                 },
                 Content = panel,
             });
         }
 
-        private async Task InstallFromGitHubAsync(string url, Button trigger)
+        /// <summary>
+        /// リポジトリ URL をダイアログで受け取る（#405）。
+        /// 入力欄を常時出しておくほどの頻度ではない。
+        /// </summary>
+        private async Task<string?> AskRepoUrlAsync()
+        {
+            var box = new TextBox
+            {
+                PlaceholderText = "https://github.com/owner/repo",
+                MinWidth        = 360,
+            };
+            AutomationProperties.SetName(box, R.Get("Extensions_RepoUrl"));
+            AutomationProperties.SetAutomationId(box, "ExtInstallUrl");
+
+            var body = new StackPanel { Spacing = 8 };
+            body.Children.Add(new TextBlock
+            {
+                Text         = R.Get("Extensions_InstallFromGitHub_Desc"),
+                TextWrapping = TextWrapping.Wrap,
+            });
+            body.Children.Add(box);
+
+            var dlg = new ContentDialog
+            {
+                Title             = R.Get("Extensions_InstallFromGitHub"),
+                Content           = body,
+                PrimaryButtonText = R.Get("Extensions_Install"),
+                CloseButtonText   = R.Get("Button_Cancel"),
+                XamlRoot          = XamlRoot,
+            };
+
+            if (await dlg.ShowAsync() != ContentDialogResult.Primary) return null;
+            return string.IsNullOrWhiteSpace(box.Text) ? null : box.Text.Trim();
+        }
+
+        private async Task InstallFromGitHubAsync(Button trigger)
         {
             if (_parent?.FindExtensionCandidatesAsync is null ||
                 _parent.PrepareExtensionAsync is null ||
                 _parent.CommitExtensionAsync is null ||
                 XamlRoot is null) return;
+
+            var url = await AskRepoUrlAsync();
+            if (url is null) return;
 
             trigger.IsEnabled = false;
             try

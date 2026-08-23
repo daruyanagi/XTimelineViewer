@@ -190,6 +190,8 @@
   <data name="ExtSettings_OpenSettings" xml:space="preserve"><value>Open Settings</value></data>
   <data name="Extensions_InfoBar_Empty" xml:space="preserve"><value>No extensions are installed. Place an unpacked extension in the extensions folder to load it at startup.</value></data>
   <data name="Extensions_InfoBar_Installed" xml:space="preserve"><value>Place an unpacked extension in the extensions folder to load it at startup.</value></data>
+  <data name="Extensions_Add" xml:space="preserve"><value>Add an extension</value></data>
+  <data name="Extensions_RepoUrl" xml:space="preserve"><value>Repository URL</value></data>
   <data name="Extensions_InstallFromGitHub" xml:space="preserve"><value>Install from GitHub</value></data>
   <data name="Extensions_InstallFromGitHub_Desc" xml:space="preserve"><value>Enter a repository URL to add an extension from the latest release ZIP / CRX</value></data>
   <data name="Extensions_Install" xml:space="preserve"><value>Install</value></data>
