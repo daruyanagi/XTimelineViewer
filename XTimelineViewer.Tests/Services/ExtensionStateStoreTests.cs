@@ -110,6 +110,91 @@ namespace XTimelineViewer.Tests.Services
         public void KeyOf_UsesTheFolderName(string dir, string expected)
             => Assert.Equal(expected, ExtensionStateStore.KeyOf(dir));
 
+        // ── 入手先（#404） ───────────────────────────────────────────────
+
+        [Fact]
+        public void Source_IsRemembered()
+        {
+            ExtensionStateStore.SetSource(_states, "uBlock",
+                "https://github.com/gorhill/uBlock",
+                "https://github.com/gorhill/uBlock/releases/download/1.73.0/x.zip");
+
+            Assert.Equal("https://github.com/gorhill/uBlock",
+                         ExtensionStateStore.SourceUrlFor(_states, "uBlock", homepageUrl: null));
+        }
+
+        [Fact]
+        public void Source_PrefersTheRecordedRepoOverTheManifestHomepage()
+        {
+            // homepage_url は配布元とは限らない。実際に入れた場所のほうが手がかりになる。
+            ExtensionStateStore.SetSource(_states, "uBlock", "https://github.com/gorhill/uBlock", null);
+
+            Assert.Equal("https://github.com/gorhill/uBlock",
+                         ExtensionStateStore.SourceUrlFor(_states, "uBlock", "https://ublockorigin.com"));
+        }
+
+        [Fact]
+        public void Source_FallsBackToTheManifestHomepage()
+        {
+            // 手で置いたものは記録が無い。manifest.json だけが手がかり。
+            Assert.Equal("https://example.com/ext",
+                         ExtensionStateStore.SourceUrlFor(_states, "手で置いた", "https://example.com/ext"));
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public void Source_NothingToShow_IsNull(string? homepage)
+            => Assert.Null(ExtensionStateStore.SourceUrlFor(_states, "手で置いた", homepage));
+
+        [Fact]
+        public void Source_EmptyRecord_FallsBackToTheHomepage()
+        {
+            // ON/OFF だけ触られて入手先が空の記録があっても、homepage を潰さない
+            ExtensionStateStore.SetEnabled(_states, "uBlock", "profile-a", false);
+
+            Assert.Equal("https://example.com/ext",
+                         ExtensionStateStore.SourceUrlFor(_states, "uBlock", "https://example.com/ext"));
+        }
+
+        [Fact]
+        public void Source_SurvivesToggling()
+        {
+            // 有効・無効を切り替えても入手先が消えない（同じ記録に同居している）
+            ExtensionStateStore.SetSource(_states, "uBlock", "https://github.com/gorhill/uBlock", null);
+            ExtensionStateStore.SetEnabled(_states, "uBlock", "profile-a", false);
+            ExtensionStateStore.SetEnabledByDefault(_states, "uBlock", false);
+
+            Assert.Equal("https://github.com/gorhill/uBlock",
+                         ExtensionStateStore.SourceUrlFor(_states, "uBlock", null));
+        }
+
+        [Fact]
+        public void Source_RecordedAgain_DoesNotWipeTheToggles()
+        {
+            // 更新（#406）では、切り替え済みの拡張機能に入手先を記録し直すことになる。
+            // ここで PerProfile を捨てると、利用者が切った設定が黙って戻る。
+            //
+            // 既定（有効）と切り替え値（無効）を<b>食い違わせる</b>こと。両方を無効にすると、
+            // PerProfile を捨てても既定に落ちて同じ答えになり、テストが意味を成さない。
+            ExtensionStateStore.SetEnabledByDefault(_states, "uBlock", true);
+            ExtensionStateStore.SetEnabled(_states, "uBlock", "profile-a", false);
+
+            ExtensionStateStore.SetSource(_states, "uBlock", "https://github.com/gorhill/uBlock", null);
+
+            Assert.False(ExtensionStateStore.IsEnabled(_states, "uBlock", "profile-a"));
+        }
+
+        [Fact]
+        public void Source_IsDroppedOnUninstall()
+        {
+            ExtensionStateStore.SetSource(_states, "uBlock", "https://github.com/gorhill/uBlock", null);
+            ExtensionStateStore.Forget(_states, "uBlock");
+
+            Assert.Null(ExtensionStateStore.SourceUrlFor(_states, "uBlock", null));
+        }
+
         // ── 後始末 ───────────────────────────────────────────────────────
 
         [Fact]

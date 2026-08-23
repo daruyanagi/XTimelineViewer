@@ -61,6 +61,33 @@ namespace XTimelineViewer.Services
             state.EnabledByDefault = enabled;
         }
 
+        /// <summary>入手先を記録する（#404）。</summary>
+        internal static void SetSource(
+            Dictionary<string, ExtensionState> states, string key, string? repoUrl, string? assetUrl)
+        {
+            if (!states.TryGetValue(key, out var state))
+            {
+                state = new ExtensionState();
+                states[key] = state;
+            }
+            state.SourceRepoUrl  = repoUrl;
+            state.SourceAssetUrl = assetUrl;
+        }
+
+        /// <summary>
+        /// 一覧に出す入手先（#404）。記録があればそれを、無ければ
+        /// <c>manifest.json</c> の <c>homepage_url</c> を使う。
+        /// 手で置いたものは記録が無いので、後者だけが手がかりになる。
+        /// </summary>
+        internal static string? SourceUrlFor(
+            IReadOnlyDictionary<string, ExtensionState> states, string key, string? homepageUrl)
+        {
+            if (states.TryGetValue(key, out var state) && !string.IsNullOrWhiteSpace(state.SourceRepoUrl))
+                return state.SourceRepoUrl;
+
+            return string.IsNullOrWhiteSpace(homepageUrl) ? null : homepageUrl;
+        }
+
         /// <summary>アンインストールしたときに記録を捨てる。</summary>
         internal static void Forget(Dictionary<string, ExtensionState> states, string key)
             => states.Remove(key);

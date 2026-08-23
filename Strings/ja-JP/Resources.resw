@@ -209,6 +209,7 @@
   <data name="Extensions_Install_Failed" xml:space="preserve"><value>追加できませんでした。</value></data>
   <data name="Extensions_DefaultForNewProfiles" xml:space="preserve"><value>新しいプロファイルでの既定</value></data>
   <data name="Extensions_DefaultForNewProfiles_Desc" xml:space="preserve"><value>あとからプロファイルを追加したときに、この拡張機能を有効にするかどうか</value></data>
+  <data name="Extensions_Source" xml:space="preserve"><value>入手先</value></data>
   <data name="Extensions_Uninstall" xml:space="preserve"><value>アンインストール</value></data>
   <data name="Extensions_Uninstall_Desc" xml:space="preserve"><value>すべてのプロファイルから登録を外し、フォルダーを削除します</value></data>
   <data name="Extensions_Uninstall_Confirm" xml:space="preserve"><value>「{0}」をアンインストールします。すべてのプロファイルから登録が外れ、フォルダーが削除されます。</value></data>

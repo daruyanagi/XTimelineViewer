@@ -47,7 +47,8 @@ namespace XTimelineViewer.Services
             string Version,
             IReadOnlyList<string> Permissions,
             string SourceUrl,
-            string? WorkDir = null);
+            string? WorkDir = null,
+            string? RepoUrl = null);
 
         /// <summary>候補を挙げる。複数あれば呼び出し側で選ばせる。</summary>
         internal async Task<(Status Status, IReadOnlyList<ExtensionInstaller.Candidate> Candidates)>
@@ -85,7 +86,8 @@ namespace XTimelineViewer.Services
             string extensionsDir,
             IProgress<double>? progress = null,
             CancellationToken ct = default,
-            string? workRoot = null)
+            string? workRoot = null,
+            string? repoUrl = null)
         {
             var folderName = ExtensionInstaller.FolderNameFor(candidate.Name);
 
@@ -119,7 +121,7 @@ namespace XTimelineViewer.Services
 
                 return new Prepared(Status.Ok, extensionRoot, folderName,
                                     info.Value.Name, info.Value.Version, info.Value.Permissions,
-                                    candidate.DownloadUrl, work);
+                                    candidate.DownloadUrl, work, repoUrl);
             }
             catch (OperationCanceledException)
             {
