@@ -9,7 +9,7 @@
   <Identity
     Name="4275.XTimelineViewer"
     Publisher="CN=B73FDB0C-06E5-4824-9E7F-3AF969921DF4"
-    Version="2.0.3.0"
+    Version="2.0.4.0"
     ProcessorArchitecture="neutral" />
 
   <Properties>
