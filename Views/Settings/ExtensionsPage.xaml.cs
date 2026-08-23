@@ -34,7 +34,7 @@ namespace XTimelineViewer.Views.Settings
 
             var extensions = _parent?.Extensions ?? [];
 
-            AddActionsCard(extensions.Count == 0);
+            AddActionsCards(extensions.Count == 0);
 
             foreach (var ext in extensions)
             {
@@ -43,35 +43,48 @@ namespace XTimelineViewer.Views.Settings
         }
 
         /// <summary>
-        /// 追加手段を 1 行に並べる（#405）。
+        /// 追加手段を段ごとに分けて並べる（#405）。
         ///
         /// 以前は「フォルダーを開く」が InfoBar の中、「GitHub から入れる」が別のカードで
         /// URL 入力欄を常時出していた。手段が並列に並んでおらず、使わないときも場所を取る。
+        ///
+        /// 手段ごとに 1 段とし、<b>その段の説明とボタンを対にする</b>。1 段にボタンを
+        /// 2 つ並べると、どちらの説明なのかが読み取れない。
         /// </summary>
-        private void AddActionsCard(bool empty)
+        private void AddActionsCards(bool empty)
         {
+            // 直置き
             var openFolderBtn = new Button { Content = R.Get("Extensions_OpenFolder") };
             AutomationProperties.SetAutomationId(openFolderBtn, "ExtOpenFolderBtn");
             openFolderBtn.Click += OpenExtensionsFolder_Click;
 
+            RootPanel.Children.Add(new CommunityToolkit.WinUI.Controls.SettingsCard
+            {
+                Header      = R.Get("Extensions_Add_Folder"),
+                Description = empty ? R.Get("Extensions_InfoBar_Empty") : R.Get("Extensions_InfoBar_Installed"),
+                HeaderIcon  = new FontIcon
+                {
+                    Glyph      = "\uE8B7",
+                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons"),
+                },
+                Content = openFolderBtn,
+            });
+
+            // GitHub から
             var installBtn = new Button { Content = R.Get("Extensions_InstallFromGitHub") };
             AutomationProperties.SetAutomationId(installBtn, "ExtInstallBtn");
             installBtn.Click += async (_, _) => await InstallFromGitHubAsync(installBtn);
 
-            var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-            panel.Children.Add(openFolderBtn);
-            panel.Children.Add(installBtn);
-
             RootPanel.Children.Add(new CommunityToolkit.WinUI.Controls.SettingsCard
             {
-                Header      = R.Get("Extensions_Add"),
-                Description = empty ? R.Get("Extensions_InfoBar_Empty") : R.Get("Extensions_InfoBar_Installed"),
+                Header      = R.Get("Extensions_Add_GitHub"),
+                Description = R.Get("Extensions_InstallFromGitHub_Desc"),
                 HeaderIcon  = new FontIcon
                 {
-                    Glyph      = "\uE710",
+                    Glyph      = "\uE896",
                     FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons"),
                 },
-                Content = panel,
+                Content = installBtn,
             });
         }
 
