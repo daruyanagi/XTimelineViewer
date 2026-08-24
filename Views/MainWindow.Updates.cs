@@ -16,6 +16,11 @@ namespace XTimelineViewer.Views
         /// <summary>
         /// winget show --versions の出力から最新バージョンを取得する。
         /// 失敗時は null を返す（winget 未インストール、ネットワーク不通、パース失敗など）。
+        ///
+        /// 出力のテキストを読むので、winget の書式が変われば壊れる。公式の API
+        /// （COM 相互運用）に替える手はあるが重すぎるので、<b>壊れたら null に倒れて
+        /// 「確認できなかった」になる</b>ことを前提に、この方式のままにしている。
+        /// null を GitHub で埋めないのはそのため（#412）。
         /// </summary>
         private static async Task<Version?> FetchWingetLatestVersionAsync()
         {
@@ -117,19 +122,21 @@ namespace XTimelineViewer.Views
         }
 
         /// <summary>
-        /// 最新バージョンを取得する。winget 版は winget を、それ以外（ZIP 版）は
-        /// GitHub Releases を参照する。ZIP 版は winget を持たないことがあり、従来は
-        /// 更新に気づけなかった (#328)。
+        /// 最新バージョンを取得する。どこに聞くかは <see cref="UpdateSource"/>。
+        /// 取れなければ null（＝「確認できなかった」）。
+        ///
+        /// winget 版で winget に聞けなかったとき、以前は GitHub Releases に
+        /// 訊き直していた。GitHub には出ているが winget にはまだ無い、という状態
+        /// （v2.0.3 / v2.0.4 がまさにそれ）で「更新があります」と言ってしまい、
+        /// ［終了して更新］を押しても winget は何もせず終わる空振りになる（#412）。
         /// </summary>
         internal static async Task<Version?> FetchLatestVersionAsync()
-        {
-            if (PackageContext.Channel == InstallChannel.Winget && FindWinget() is not null)
+            => UpdateSource.For(PackageContext.Channel, FindWinget() is not null) switch
             {
-                var viaWinget = await FetchWingetLatestVersionAsync();
-                if (viaWinget is not null) return viaWinget;
-            }
-            return await FetchGitHubLatestVersionAsync();
-        }
+                UpdateSource.Kind.Winget => await FetchWingetLatestVersionAsync(),
+                UpdateSource.Kind.GitHub => await FetchGitHubLatestVersionAsync(),
+                _                        => null,
+            };
 
         /// <summary>
         /// GitHub Releases の最新タグ（v2.0.0 形式）からバージョンを取得する。

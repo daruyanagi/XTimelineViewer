@@ -124,5 +124,54 @@ namespace XTimelineViewer.Tests.Services
                 ZipUpdateRunner.CheckEligibility(
                     InstallChannel.Zip, isPackaged: false, Path.Combine(_dir, "no-such-dir")));
         }
+
+        // ── 置き場（親）まで見る（#412） ─────────────────────────────────
+
+        [Fact]
+        public void Zip_UnwritableParent_IsNotEligible()
+        {
+            // インストール先には書けるが、その親にフォルダーを作れない構成。
+            // ステージング（.update）もバックアップ（.old）も親に作るので、
+            // ここで止めないと 90 MB 落とし終えてから転ぶ。
+            var install = Path.Combine(_dir, "app");
+            Directory.CreateDirectory(install);
+
+            Assert.Equal(ZipUpdateRunner.Eligibility.NotWritable,
+                ZipUpdateRunner.CheckEligibility(
+                    InstallChannel.Zip, isPackaged: false, install,
+                    canCreateDirIn: _ => false));
+
+            // 親に作れるなら、同じ場所で通ること（上の false が効いている証拠）
+            Assert.Equal(ZipUpdateRunner.Eligibility.Ok,
+                ZipUpdateRunner.CheckEligibility(
+                    InstallChannel.Zip, isPackaged: false, install,
+                    canCreateDirIn: _ => true));
+        }
+
+        [Fact]
+        public void Zip_ParentIsCheckedNotTheInstallDir()
+        {
+            // 探る相手を間違えていないこと。インストール先を渡してしまうと、
+            // 「親には作れない」構成をすり抜ける。
+            var install = Path.Combine(_dir, "app");
+            Directory.CreateDirectory(install);
+
+            string? probed = null;
+            ZipUpdateRunner.CheckEligibility(
+                InstallChannel.Zip, isPackaged: false, install,
+                canCreateDirIn: d => { probed = d; return true; });
+
+            Assert.Equal(_dir, probed);
+        }
+
+        [Fact]
+        public void Zip_DriveRoot_IsNotEligible()
+        {
+            // ドライブ直下に展開している場合、.update も .old も作る先が無い。
+            Assert.Equal(ZipUpdateRunner.Eligibility.NotWritable,
+                ZipUpdateRunner.CheckEligibility(
+                    InstallChannel.Zip, isPackaged: false, Path.GetPathRoot(_dir)!,
+                    canCreateDirIn: _ => true));
+        }
     }
 }

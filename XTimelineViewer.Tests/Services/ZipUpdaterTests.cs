@@ -172,6 +172,39 @@ namespace XTimelineViewer.Tests.Services
             Assert.Empty(Directory.GetFiles(_dir, ".xtv-write-probe-*"));
         }
 
+        // ステージング（.update）とバックアップ（.old）は親に作られるので、
+        // 「ファイルを置けるか」ではなく「フォルダーを作れるか」で見る（#412）。
+        [Fact]
+        public void CanCreateDirIn_TempDir_IsTrue() => Assert.True(ZipUpdater.CanCreateDirIn(_dir));
+
+        [Fact]
+        public void CanCreateDirIn_MissingDir_IsFalse_AndCreatesNothing()
+        {
+            // Directory.CreateDirectory は途中のフォルダーごと作ってしまう。
+            // 探りのつもりが本当に作ってしまっては、判定も後始末も狂う。
+            var missing = Path.Combine(_dir, "no", "such", "place");
+
+            Assert.False(ZipUpdater.CanCreateDirIn(missing));
+            Assert.False(Directory.Exists(Path.Combine(_dir, "no")));
+        }
+
+        [Fact]
+        public void CanCreateDirIn_LeavesNoProbeDirBehind()
+        {
+            ZipUpdater.CanCreateDirIn(_dir);
+            Assert.Empty(Directory.GetDirectories(_dir, ".xtv-dir-probe-*"));
+        }
+
+        [Fact]
+        public void StagingAndBackup_BothLiveInTheParent()
+        {
+            // 自前更新の可否がこの前提に乗っている（#412）。置き場を
+            // 動かすなら ZipUpdateRunner.CheckEligibility も見直すこと。
+            var install = Path.Combine(_dir, "app");
+            Assert.Equal(_dir, Path.GetDirectoryName(ZipUpdater.StagingDirFor(install)));
+            Assert.Equal(_dir, Path.GetDirectoryName(ZipUpdater.BackupDirFor(install)));
+        }
+
         // ── ハッシュと展開（実ファイル） ──────────────────────────────────
 
         [Fact]

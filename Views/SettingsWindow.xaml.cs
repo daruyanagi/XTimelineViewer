@@ -125,8 +125,11 @@ namespace XTimelineViewer.Views
         /// <summary>メニューの更新バッジを更新するコールバック。</summary>
         internal Action? UpdateMenuBadge { get; set; }
 
-        /// <summary>アプリを終了して winget でアップデートを開始するコールバック。</summary>
-        internal Action? ExitAndRunWingetUpdate { get; set; }
+        /// <summary>
+        /// winget に更新を委ねてアプリを終了するコールバック。
+        /// winget を起こせなかったときは終了せず false を返す（#412）。
+        /// </summary>
+        internal Func<bool>? ExitAndRunWingetUpdate { get; set; }
 
         public SettingsWindow(IntPtr ownerHwnd, AppSettings settings, string settingsFolder)
         {

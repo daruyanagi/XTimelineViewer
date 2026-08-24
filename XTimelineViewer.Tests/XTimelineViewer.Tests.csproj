@@ -35,6 +35,8 @@
     <Compile Include="..\Services\ZipUpdater.cs" Link="Services\ZipUpdater.cs" />
     <Compile Include="..\Services\UpdateSwap.cs" Link="Services\UpdateSwap.cs" />
     <Compile Include="..\Services\ZipUpdateRunner.cs" Link="Services\ZipUpdateRunner.cs" />
+    <Compile Include="..\Services\UpdateSource.cs" Link="Services\UpdateSource.cs" />
+    <Compile Include="..\Services\WingetUpdate.cs" Link="Services\WingetUpdate.cs" />
     <Compile Include="..\Services\ExtensionStore.cs" Link="Services\ExtensionStore.cs" />
     <Compile Include="..\Services\ExtensionStateStore.cs" Link="Services\ExtensionStateStore.cs" />
     <Compile Include="..\Services\ExtensionInstaller.cs" Link="Services\ExtensionInstaller.cs" />
