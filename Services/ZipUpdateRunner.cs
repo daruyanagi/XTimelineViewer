@@ -35,12 +35,24 @@ namespace XTimelineViewer.Services
         /// この環境で自前更新をしてよいか。
         /// 駄目なときはボタンを「リリースページを開く」のままにする。
         /// </summary>
+        /// <param name="canCreateDirIn">
+        /// 親にフォルダーを作れるかの判定。テストから「親には作れない」状況を
+        /// 作るためにある（ACL をいじらずに済ませる）。既定は実物の探り。
+        /// </param>
         internal static Eligibility CheckEligibility(
-            InstallChannel channel, bool isPackaged, string installDir)
+            InstallChannel channel, bool isPackaged, string installDir,
+            Func<string, bool>? canCreateDirIn = null)
         {
             if (isPackaged) return Eligibility.Packaged;
             if (channel == InstallChannel.Winget) return Eligibility.ManagedByWinget;
             if (!ZipUpdater.CanWriteTo(installDir)) return Eligibility.NotWritable;
+
+            // 展開先も退避先も親に作る。親に作れないなら始めるだけ無駄（#412）。
+            // 親が無い（ドライブ直下に展開している）場合は置き場を作れない。
+            var parent = Path.GetDirectoryName(installDir.TrimEnd(Path.DirectorySeparatorChar));
+            if (parent is null) return Eligibility.NotWritable;
+            if (!(canCreateDirIn ?? ZipUpdater.CanCreateDirIn)(parent)) return Eligibility.NotWritable;
+
             return Eligibility.Ok;
         }
 

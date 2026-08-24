@@ -18,6 +18,10 @@ namespace XTimelineViewer.Services
     /// winget 版はここを通さない。winget 管理下のフォルダーを自前で書き換えると
     /// 「インストール済みバージョン」の管理情報とズレるため、winget に任せる。
     ///
+    /// <b>.sha256 は改ざん対策ではない。</b>ZIP と同じリリースに置いてあるので、
+    /// 配信元を取られたら両方書き換えられる。ここで防げるのは転送中の破損だけ。
+    /// 改ざんまで見るならコード署名（#336）が要る。それが入るまでの割り切り（#412）。
+    ///
     /// UI に依存させない。テストプロジェクト（net8.0）からリンクして検証するため。
     /// </summary>
     internal sealed class ZipUpdater
@@ -166,6 +170,37 @@ namespace XTimelineViewer.Services
         /// <summary>置き換え前に旧版を退避する先。</summary>
         internal static string BackupDirFor(string installDir)
             => installDir.TrimEnd(Path.DirectorySeparatorChar) + ".old";
+
+        /// <summary>
+        /// フォルダーを作れるか（#412）。
+        ///
+        /// ステージング（<c>.update</c>）とバックアップ（<c>.old</c>）は
+        /// インストール先ではなく<b>その親</b>に作られる。親を見ずに始めると、
+        /// 90 MB 落とし終えてから転ぶ。
+        ///
+        /// ファイルではなくフォルダーで試すのは、<c>C:\</c> 直下のような
+        /// 「フォルダーは作れるがファイルは置けない」場所を取りこぼさないため。
+        /// ZIP をドライブ直下に展開している人は珍しくない。
+        /// </summary>
+        internal static bool CanCreateDirIn(string dir)
+        {
+            // Directory.CreateDirectory は途中のフォルダーごと作ってしまう。
+            // 無い場所に対して true を返したうえ、消し残しも出る。
+            if (!Directory.Exists(dir)) return false;
+
+            try
+            {
+                var probe = Path.Combine(dir, $".xtv-dir-probe-{Guid.NewGuid():N}");
+                Directory.CreateDirectory(probe);
+                Directory.Delete(probe);
+                return true;
+            }
+            catch
+            {
+                // 権限が無い・読み取り専用など。理由は問わず「自前更新はしない」でよい。
+                return false;
+            }
+        }
 
         /// <summary>
         /// 書き込めるか（Program Files 配下だと昇格が要る）。

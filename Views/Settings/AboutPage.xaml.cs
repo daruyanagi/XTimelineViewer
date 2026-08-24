@@ -402,7 +402,12 @@ namespace XTimelineViewer.Views.Settings
                 if (await confirmDlg.ShowAsync() != ContentDialogResult.Primary) return;
 
                 AppLog.Debug("UpdateCheck: winget upgrade を起動してアプリを終了する");
-                _parent.ExitAndRunWingetUpdate?.Invoke();
+                if (_parent.ExitAndRunWingetUpdate?.Invoke() != true)
+                {
+                    // 起こせなかった。黙って閉じない（#412）。
+                    AppLog.Debug("UpdateCheck: winget を起こせなかった");
+                    ShowError();
+                }
             };
 
             async Task RunSelfUpdateAsync()

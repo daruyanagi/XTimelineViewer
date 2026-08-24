@@ -139,15 +139,13 @@ namespace XTimelineViewer.Views
             settingsWin.UpdateExtensionAsync      = UpdateExtensionAsync;
             settingsWin.CommitExtensionAsync  = CommitExtensionAsync;
 
+            // winget を予約してから終了する（#412）。
+            // 起こせなかったのに終了すると、押したのに何も起きずに消えただけになる。
             settingsWin.ExitAndRunWingetUpdate = () =>
             {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName        = "cmd.exe",
-                    Arguments       = "/c timeout /t 2 /nobreak > nul && winget upgrade daruyanagi.XTimelineViewer",
-                    UseShellExecute = true,
-                });
+                if (!WingetUpdate.TryStart(Environment.ProcessId)) return false;
                 Application.Current.Exit();
+                return true;
             };
 
             // 親ウィンドウのテーマを引き継ぐ
