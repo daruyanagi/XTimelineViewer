@@ -613,7 +613,7 @@ namespace XTimelineViewer.Views
                     var handle = parts[0];
                     var status = parts[1];
                     var hit = _videoMp4ByStatus.TryGetValue(status, out var mp4Url);
-                    LogDebug($"saveVideo status={status} handle={handle} hit={hit} mapTotal={_videoMp4ByStatus.Count}");
+                    LogDiag($"saveVideo status={status} handle={handle} hit={hit} mapTotal={_videoMp4ByStatus.Count}");
                     if (hit)
                         DownloadMediaAsync(senderWebView, handle, status, mp4Url!, "mp4", "videoSaved").FireAndForget(nameof(DownloadMediaAsync));
                     else
@@ -730,7 +730,9 @@ namespace XTimelineViewer.Views
         // WebResourceResponseReceived から呼ぶ。失敗しても無視（動画DL 側で「取得できません」に degrade）。
         internal async Task CaptureVideoVariantsAsync(CoreWebView2WebResourceResponseReceivedEventArgs args)
         {
-            // 一時診断（動画DL 調査）: 操作名を URL 末尾から抜く。
+            // 調査用（動画DL・#310）: 操作名を URL 末尾から抜く。
+            // ここから出る行は diag.log 行き（#414）。応答のたびに出るので、
+            // error.log に混ぜると例外の履歴を押し流してしまう。
             var uri = args.Request.Uri;
             var op = uri;
             var q = op.IndexOf('?'); if (q >= 0) op = op[..q];
@@ -738,7 +740,7 @@ namespace XTimelineViewer.Views
             try
             {
                 using var raStream = await args.Response.GetContentAsync();
-                if (raStream is null) { LogDebug($"gql {op} status={args.Response.StatusCode} content=NULL"); return; }
+                if (raStream is null) { LogDiag($"gql {op} status={args.Response.StatusCode} content=NULL"); return; }
                 byte[] bytes;
                 using (var netStream = raStream.AsStreamForRead())
                 using (var ms = new MemoryStream())
@@ -746,7 +748,7 @@ namespace XTimelineViewer.Views
                     await netStream.CopyToAsync(ms);
                     bytes = ms.ToArray();
                 }
-                if (bytes.Length == 0) { LogDebug($"gql {op} status={args.Response.StatusCode} content=EMPTY"); return; }
+                if (bytes.Length == 0) { LogDiag($"gql {op} status={args.Response.StatusCode} content=EMPTY"); return; }
                 var pairs = await Task.Run(() =>
                 {
                     var list = new List<(string id, string url)>();
@@ -773,15 +775,17 @@ namespace XTimelineViewer.Views
                         snip = text.Substring(from, Math.Min(320, text.Length - from)).Replace("\n", " ").Replace("\r", "");
                     }
                 }
-                catch { /* 診断用の抜き出しに失敗しても、下の LogDebug は出す */ }
-                LogDebug($"gql {op} bytes={bytes.Length} hasVI={hasVI} hasMp4={hasMp4} videos={pairs.Count} mapTotal={_videoMp4ByStatus.Count}"
+                catch { /* 診断用の抜き出しに失敗しても、下の LogDiag は出す */ }
+                LogDiag($"gql {op} bytes={bytes.Length} hasVI={hasVI} hasMp4={hasMp4} videos={pairs.Count} mapTotal={_videoMp4ByStatus.Count}"
                        + (pairs.Count > 0 ? " ids=" + string.Join(",", pairs.Select(p => p.id).Take(5)) : "")
                        + (snip != "" ? " SNIP=" + snip : ""));
             }
             catch (Exception ex)
             {
-                LogDebug($"gql {op} EXCEPTION {ex.GetType().Name}: {ex.Message}");
-                LogError("CaptureVideoVariants", ex);
+                // GetContentAsync は「内容が残っていない」ときに投げる。応答が
+                // 差し替わって中断された場合などに起きる、想定内の失敗（#415）。
+                // error.log に積むと、本当に見たい例外がこれで埋まる。
+                LogDiag($"gql {op} EXCEPTION {ex.GetType().Name}: {ex.Message}");
             }
         }
 
