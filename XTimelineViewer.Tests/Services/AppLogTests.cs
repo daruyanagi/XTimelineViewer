@@ -196,6 +196,87 @@ namespace XTimelineViewer.Tests.Services
             }
         }
 
+        // --- 行き先の分離（#414） ---------------------------------------------------
+        // 調査用の行は毎秒のように出る。error.log に混ぜると 1 MB × 2 世代が
+        // 半日で一周し、例外の履歴が残らない。実測（v2.0.4）で error.log
+        // 16,022 行のうち 15,343 行が調査用で、UnhandledException の記録は 0 件だった。
+
+        private string DiagFile => Path.Combine(_dir, "diag.log");
+
+        [Fact]
+        public void Diag_GoesToDiagLog_NotErrorLog()
+        {
+            try
+            {
+                AppLog.Initialize(_file);
+                AppLog.Diag("gql HomeLatestTimeline bytes=1234");
+
+                Assert.False(File.Exists(_file));   // 例外ログは汚さない
+                Assert.Contains("gql HomeLatestTimeline", File.ReadAllText(DiagFile));
+            }
+            finally
+            {
+                ResetToSink();
+            }
+        }
+
+        [Fact]
+        public void Diag_SitsNextToTheErrorLog()
+        {
+            // 報告を頼むときに「あのフォルダーの中身」で済ませたい。
+            try
+            {
+                AppLog.Initialize(_file);
+                Assert.Equal(_dir, Path.GetDirectoryName(AppLog.DiagFilePath));
+            }
+            finally
+            {
+                ResetToSink();
+            }
+        }
+
+        [Fact]
+        public void Diag_Volume_DoesNotPushOutTheExceptionHistory()
+        {
+            // #414 の本体。調査用の行がいくら出ても、例外の記録が流れないこと。
+            try
+            {
+                AppLog.Initialize(_file, maxBytes: 1000);
+                AppLog.Error("Ctx", new InvalidOperationException("boom"));
+
+                for (int i = 0; i < 2000; i++)
+                    AppLog.Diag($"gql HomeLatestTimeline bytes=99999 videos=0 mapTotal={i}");
+
+                Assert.Contains("boom", File.ReadAllText(_file));      // 例外は残っている
+                Assert.False(File.Exists(_file + ".1"));               // 押し出されてもいない
+                Assert.True(File.Exists(DiagFile + ".1"));             // 一周したのは調査用の方
+            }
+            finally
+            {
+                ResetToSink();
+            }
+        }
+
+        [Fact]
+        public void SessionHeader_IsWrittenToBothFiles()
+        {
+            // 片方だけ見て版が分からないと、結局もう片方を探すことになる。
+            try
+            {
+                AppLog.Initialize(_file);
+                AppLog.SetSessionHeader("=== HEADER ===");
+                AppLog.Error("Ctx", new InvalidOperationException("boom"));
+                AppLog.Diag("gql x");
+
+                Assert.StartsWith("=== HEADER ===", File.ReadAllLines(_file)[0]);
+                Assert.StartsWith("=== HEADER ===", File.ReadAllLines(DiagFile)[0]);
+            }
+            finally
+            {
+                ResetToSink();
+            }
+        }
+
         [Fact]
         public void SessionHeader_SurvivesMidSessionRotation()
         {

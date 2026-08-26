@@ -733,6 +733,9 @@ namespace XTimelineViewer.Views
         // 一時診断用（動画DL の GraphQL 働受調査、#310）。
         private static void LogDebug(string msg) => AppLog.Debug(msg);
 
+        /// <summary>量の出る調査用の 1 行（#414）。diag.log へ流す。</summary>
+        private static void LogDiag(string msg) => AppLog.Diag(msg);
+
         /// <summary>
         /// 現在アクティブなアカウントの X スクリーンネームをセッションからライブ取得する。
         /// 左ナビの「プロフィール」リンク（AppTabBar_Profile_Link）は委任アカウント切り替え後も
