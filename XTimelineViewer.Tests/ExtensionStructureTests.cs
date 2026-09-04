@@ -102,6 +102,53 @@ namespace XTimelineViewer.Tests
             }
         }
 
+        // ── 設定ページの行き先（#420） ────────────────────────────────────
+        // 拡張機能の登録は CoreWebView2Profile 単位。登録されていない
+        // プロファイルで chrome-extension:// を開くとブロックされる。
+        // 決め打ちに戻すと、#136〜#420 の 3 か月と同じ状態に戻る。
+
+        private static string OptionsDialogBody
+            => BodyOf(WebView2Cs, "internal async Task ShowExtensionSettingsDialogAsync(");
+
+        [Fact]
+        public void Options_OpenInTheGivenProfile_NotAHardcodedOne()
+        {
+            var body = OptionsDialogBody;
+
+            Assert.DoesNotContain("GetOrCreateProfileEnvAsync(\"", body, StringComparison.Ordinal);
+            Assert.Contains("GetOrCreateProfileEnvAsync(profileId)", body, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void Options_RegisterTheExtensionsBeforeNavigating()
+        {
+            // ペインを 1 つも持たないプロファイルには拡張機能が入っていない。
+            // env を差し替えるだけでは、そのプロファイルで同じブロックが起きる。
+            var body = OptionsDialogBody;
+
+            // 遷移そのもの（optWebView.Source への代入）で測る。
+            // "chrome-extension://" で探すと、その語を含むコメントを拾ってしまう。
+            var load = body.IndexOf("LoadExtensionsAsync(optWebView, profileId)", StringComparison.Ordinal);
+            var nav  = body.IndexOf("optWebView.Source", StringComparison.Ordinal);
+
+            Assert.True(load >= 0, "設定ページを開くプロファイルへ拡張機能を読み込んでいません（#420）");
+            Assert.True(nav  >= 0, "設定ページへの遷移が見つかりません");
+            Assert.True(load < nav, "読み込みより先に遷移しています。登録前に開くとブロックされます。");
+            Assert.Contains("chrome-extension://", body, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void ActiveProfile_FallsBackWhenNoPaneIsFocused()
+        {
+            // _focusedPane は起動直後 null。ペインを一度もクリックせずに
+            // 拡張機能ボタンを押した人が、決め打ち時代と同じ目に遭わないこと。
+            var body = BodyOf(WebView2Cs, "private string ActiveExtensionProfileId()");
+
+            Assert.Contains("_focusedPane", body, StringComparison.Ordinal);
+            Assert.Contains("_configs", body, StringComparison.Ordinal);
+            Assert.Contains("LastUsedProfileId", body, StringComparison.Ordinal);
+        }
+
         [Fact]
         public void Uninstall_DropsTheSurfacedMarkBeforeTheIdIsUnavailable()
         {

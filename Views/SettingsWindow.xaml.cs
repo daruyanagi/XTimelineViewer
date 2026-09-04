@@ -39,7 +39,8 @@ namespace XTimelineViewer.Views
         internal List<ExtensionInfo> Extensions { get; set; } = [];
 
         /// <summary>拡張機能の設定ダイアログを開くコールバック。MainWindow が提供する。</summary>
-        internal Func<ExtensionInfo, Microsoft.UI.Xaml.XamlRoot, Task>? OpenExtensionSettingsAsync { get; set; }
+        /// <summary>拡張機能の設定ページを開く。プロファイルごとに別物なので ID を渡す（#420）。</summary>
+        internal Func<ExtensionInfo, string, Microsoft.UI.Xaml.XamlRoot, Task>? OpenExtensionSettingsAsync { get; set; }
 
         /// <summary>外部ブラウザー設定に従って URI を開くコールバック。MainWindow が提供する。</summary>
         internal Func<Uri, Task>? LaunchUriAsync { get; set; }

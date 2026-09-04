@@ -329,30 +329,10 @@ namespace XTimelineViewer.Views.Settings
                 };
             }
 
-            var buttonsPanel = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Spacing     = 8,
-            };
-
-            if (ext.OptionsPage is not null && ext.ExtensionId is not null)
-            {
-                var settingsBtn = new Button
-                {
-                    Content = R.Get("ExtSettings_OpenSettings"),
-                };
-                settingsBtn.Click += async (_, _) =>
-                {
-                    if (_parent?.OpenExtensionSettingsAsync is not null && XamlRoot is not null)
-                        await _parent.OpenExtensionSettingsAsync(ext, XamlRoot);
-                };
-                buttonsPanel.Children.Add(settingsBtn);
-            }
-
-            // 拡張機能カードのリンクボタン（Chrome Web Store 等）は場所をとるため削除
-
-            if (buttonsPanel.Children.Count > 0)
-                card.Content = buttonsPanel;
+            // 拡張機能カードのリンクボタン（Chrome Web Store 等）は場所をとるため削除。
+            // ［設定］は見出しではなくプロファイル行それぞれに置く（#420）。
+            // 拡張機能の設定はプロファイルごとに別物なので、見出しに 1 つだけ
+            // 置くと「どれに効くのか」を表せない。
 
             AddToggleRows(card, ext);
 
@@ -398,16 +378,48 @@ namespace XTimelineViewer.Views.Settings
                 AutomationProperties.SetName(toggle, $"{ext.Name} / {profile.Name}");
                 AutomationProperties.SetAutomationId(toggle, $"ExtToggle_{key}_{profile.Id}");
 
+                var row = new StackPanel
+                {
+                    Orientation       = Orientation.Horizontal,
+                    Spacing           = 8,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+
+                // 設定ページはプロファイルごとに別物なので、行ごとに開かせる（#420）。
+                // 複数プロファイルへ一度に同じ設定を入れることは WebView2 の
+                // 構造上できない（拡張機能のストレージがプロファイル単位）。
+                if (ext.OptionsPage is not null && ext.ExtensionId is not null)
+                {
+                    var settingsBtn = new Button { Content = R.Get("ExtSettings_OpenSettings") };
+                    AutomationProperties.SetName(settingsBtn,
+                        string.Format(R.Get("ExtSettings_Format_Profile"), ext.Name, profile.Name));
+                    AutomationProperties.SetAutomationId(settingsBtn, $"ExtOptions_{key}_{profile.Id}");
+
+                    // 無効にしてあるプロファイルでは設定ページを開けない。
+                    settingsBtn.IsEnabled = toggle.IsOn;
+                    toggle.Toggled += (sender, _) => settingsBtn.IsEnabled = ((ToggleSwitch)sender).IsOn;
+
+                    var profileId = profile.Id;
+                    settingsBtn.Click += async (_, _) =>
+                    {
+                        if (_parent?.OpenExtensionSettingsAsync is not null && XamlRoot is not null)
+                            await _parent.OpenExtensionSettingsAsync(ext, profileId, XamlRoot);
+                    };
+                    row.Children.Add(settingsBtn);
+                }
+
                 toggle.Toggled += async (sender, _) =>
                 {
                     if (_parent.SetExtensionEnabledAsync is null) return;
                     await _parent.SetExtensionEnabledAsync(key, profile.Id, ((ToggleSwitch)sender).IsOn);
                 };
 
+                row.Children.Add(toggle);
+
                 card.Items.Add(new CommunityToolkit.WinUI.Controls.SettingsCard
                 {
                     Header  = profile.Name,
-                    Content = toggle,
+                    Content = row,
                 });
             }
 
