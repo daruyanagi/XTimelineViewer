@@ -208,10 +208,12 @@
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollMode="Disabled"
                           VerticalScrollBarVisibility="Hidden"
-                          SizeChanged="TimelineScroll_SizeChanged">
+                          SizeChanged="TimelineScroll_SizeChanged"
+                          ViewChanged="TimelineScroll_ViewChanged">
                 <StackPanel x:Name="TimelinePanel"
                             Orientation="Horizontal"
-                            Padding="4"/>
+                            Padding="4"
+                            LayoutUpdated="TimelinePanel_LayoutUpdated"/>
             </ScrollViewer>
         </Grid>
 

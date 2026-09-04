@@ -104,8 +104,9 @@ namespace XTimelineViewer.Views
             await InitSearchWebView(webView, profileId);
             webView.Source = new Uri(initialUrl);
 
-            foreach (var p in Panes)
-                p.WebView.Visibility = Visibility.Collapsed;
+            // 投稿ダイアログと同じ理由（WebView2 の HWND が Popup より前面に来る）で、
+            // ダイアログを開いている間はタイムライン WebView2 を隠す。
+            SuppressPaneWebViews();
             try
             {
                 var result = await ShowDialogAsync(dlg);
@@ -124,8 +125,7 @@ namespace XTimelineViewer.Views
             finally
             {
                 _activeSearchDialog = null;
-                foreach (var p in Panes)
-                    p.WebView.Visibility = Visibility.Visible;
+                ResumePaneWebViews();
 
                 try { webView.Close(); } catch { /* 後始末。既に外れている・閉じていても構わない */ }
             }

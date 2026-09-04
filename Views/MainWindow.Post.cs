@@ -214,8 +214,7 @@ namespace XTimelineViewer.Views
 
             // WebView2 の Win32 HWND は XAML Popup より常に前面に描画されるため、
             // ダイアログ表示中はタイムライン WebView2 を非表示にして Z-order 問題を回避する
-            foreach (var p in Panes)
-                p.WebView.Visibility = Visibility.Collapsed;
+            SuppressPaneWebViews();
             try
             {
                 await ShowDialogAsync(dlg);
@@ -229,8 +228,7 @@ namespace XTimelineViewer.Views
                 if (currentIsWarm) ReturnWarmToHost(webView, rootPanel, selectedProfileId);
                 else { try { rootPanel.Children.Remove(webView); webView.Close(); } catch { /* 後始末。既に外れている・閉じていても構わない */ } }
 
-                foreach (var p in Panes)
-                    p.WebView.Visibility = Visibility.Visible;
+                ResumePaneWebViews();
 
                 // 投稿アカウントの記憶。#285: 有効時は誤爆防止のため、次回はプライマリへ戻す。
                 var nextProfileId = selectedProfileId;
