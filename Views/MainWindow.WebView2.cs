@@ -386,11 +386,18 @@ namespace XTimelineViewer.Views
         /// 登録はプロファイルごとに永続化されるので、<b>フォルダーを消すだけでは
         /// 各プロファイルに登録が残る</b>。先に全プロファイルから登録を外し、
         /// それからフォルダーを消す。順序を逆にすると、登録だけ残って壊れた状態になる。
+        ///
+        /// <b>拡張機能単位の状態を持つ入れ物は、ここで全部片付ける。</b>
+        /// 一つでも取りこぼすと、入れ直したときに壊れた形で残る（#419）。
+        /// 取りこぼしは <c>ExtensionStructureTests</c> が見張っている。
         /// </summary>
         internal async Task<bool> UninstallExtensionAsync(string key)
         {
             var targets = _liveExtensions.Where(kv => string.Equals(kv.Key.Key, key, StringComparison.OrdinalIgnoreCase))
                                          .ToList();
+
+            // 登録を外す前に控える。外した後では ext.Id を引けない。
+            var surfacedIds = targets.Select(kv => kv.Value.Id).ToList();
 
             foreach (var (id, ext) in targets)
             {
@@ -419,6 +426,16 @@ namespace XTimelineViewer.Views
                 (btn.Parent as Panel)?.Children.Remove(btn);
             _loadedExtensions.RemoveAll(e =>
                 string.Equals(Path.GetFileName(e.DirectoryPath), key, StringComparison.OrdinalIgnoreCase));
+
+            // 「もう一覧へ出した」印も落とす（#419）。
+            // 展開済み拡張機能の ID は Chromium がフォルダーの絶対パスから決めるので、
+            // 同じものを入れ直すと ID も同じになる。残したままだと
+            // AddExtensionButton が二度と呼ばれず、再インストールしても一覧に出ない。
+            foreach (var id in surfacedIds) _surfacedExtensionIds.Remove(id);
+
+            // 読み込みに失敗して知らせた記録も落とす。残すと、入れ直して
+            // また失敗したときに黙って読み込まれないだけになる。
+            _reportedExtensionErrors.Remove(dir);
 
             AppLog.Debug($"Extension: {key} をアンインストールした");
             return true;
