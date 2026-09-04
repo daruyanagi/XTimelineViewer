@@ -15,6 +15,10 @@
   <!-- App menu items -->
   <data name="Menu_NewProfile" xml:space="preserve"><value>新規プロファイルの作成</value></data>
   <data name="Menu_Settings" xml:space="preserve"><value>設定</value></data>
+  <data name="Menu_Feedback" xml:space="preserve"><value>フィードバックを送る</value></data>
+  <data name="Feedback_AppVersion" xml:space="preserve"><value>アプリバージョン</value></data>
+  <data name="Feedback_Architecture" xml:space="preserve"><value>アーキテクチャ</value></data>
+  <data name="Feedback_Symptoms" xml:space="preserve"><value>具体的な症状</value></data>
   <data name="Menu_Theme" xml:space="preserve"><value>テーマ</value></data>
 
   <!-- Add timeline menu -->
@@ -273,6 +277,7 @@
   <data name="About_Channel_Winget" xml:space="preserve"><value>winget 版</value></data>
   <data name="About_Channel_Zip" xml:space="preserve"><value>ZIP 版</value></data>
   <data name="About_Channel_Packaged" xml:space="preserve"><value>パッケージ版</value></data>
+  <data name="About_Feedback" xml:space="preserve"><value>お使いの環境をあらかじめ書き込んだ状態で、GitHub の報告ページを開きます</value></data>
   <data name="About_License" xml:space="preserve"><value>ライセンス</value></data>
   <data name="About_Components" xml:space="preserve"><value>利用しているコンポーネント</value></data>
   <data name="About_Acknowledgements" xml:space="preserve"><value>謝辞</value></data>

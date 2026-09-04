@@ -66,19 +66,44 @@ namespace XTimelineViewer
         /// </summary>
         private static string BuildSessionHeader()
         {
-            var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?";
-            var channel = PackageContext.Channel switch
-            {
-                InstallChannel.Winget   => "winget",
-                InstallChannel.Packaged => "packaged",
-                _                       => "zip",
-            };
-
-            return $"=== XTimelineViewer v{version} ({channel}) "
+            return $"=== XTimelineViewer v{AppVersion()} ({ChannelName()}) "
                  + $"WinAppSDK={SafeProbe(WinAppSdkVersion)} WebView2={SafeProbe(WebView2Version)} "
                  + $"{RuntimeInformation.ProcessArchitecture} {Environment.OSVersion.VersionString} "
                  + $"=== {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
         }
+
+        internal static string AppVersion()
+            => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?";
+
+        internal static string ChannelName() => PackageContext.Channel switch
+        {
+            InstallChannel.Winget   => "winget",
+            InstallChannel.Packaged => "packaged",
+            _                       => "zip",
+        };
+
+        /// <summary>
+        /// 報告に添える環境（#426）。ログの見出し（#340）と同じものを使う。
+        /// あちらは実際に切り分けへ使ったものだけを集めてあるので、
+        /// 別立てにすると片方だけ古くなる。
+        /// </summary>
+        internal static (string Label, string Value)[] DescribeEnvironment() =>
+        [
+            (R.Get("Feedback_AppVersion"),   $"v{AppVersion()} ({ChannelName()})"),
+            ("Windows App SDK",              SafeProbe(WinAppSdkVersion)),
+            ("WebView2",                     SafeProbe(WebView2Version)),
+            (R.Get("Feedback_Architecture"), RuntimeInformation.ProcessArchitecture.ToString()),
+            ("OS",                           Environment.OSVersion.VersionString),
+        ];
+
+        /// <summary>
+        /// 環境をあらかじめ入れた新規 issue の URL（#426）。
+        /// メニューとバージョン情報ページの両方から開くので、ここに 1 つだけ置く。
+        /// </summary>
+        internal static string FeedbackIssueUrl()
+            => Services.FeedbackUrl.For(
+                   Services.AppUrls.NewIssue,
+                   Services.FeedbackUrl.BuildBody(DescribeEnvironment(), R.Get("Feedback_Symptoms")));
 
         /// <summary>
         /// 見出しの組み立てで落ちないこと。
