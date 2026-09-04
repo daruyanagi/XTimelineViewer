@@ -280,6 +280,7 @@ namespace XTimelineViewer.Views
             ThemeDarkItem.Text      = R.Get("Theme_Dark");
             UpdateThemeRadioState();
             AppSettingsMenuItem.Text = R.Get("Menu_Settings");
+            FeedbackMenuItem.Text    = R.Get("Menu_Feedback");
 
             NewProfileMenuItem.Text           = R.Get("Menu_NewProfile");
             AddTimelineSubMenu.Text           = R.Get("Menu_AddTimeline");

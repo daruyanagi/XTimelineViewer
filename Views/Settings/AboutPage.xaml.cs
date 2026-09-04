@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -49,7 +49,19 @@ namespace XTimelineViewer.Views.Settings
             // ── 2. 更新を確認 ────────────────────────────────────────────────
             BuildUpdateSection(currentVersion, AppUrls.LatestRelease);
 
-            // ── 3. ライセンス ────────────────────────────────────────────────
+            // ── 3. フィードバック ────────────────────────────────────────────
+            // メニューの一番下にも同じものがある（#426）。困ったときの導線を
+            // 1 つに絞らない。URL の組み立ては App.FeedbackIssueUrl() に一本化。
+            var feedbackCard = BuildLinkCard(
+                R.Get("Menu_Feedback"), R.Get("About_Feedback"), App.FeedbackIssueUrl());
+            feedbackCard.HeaderIcon = new FontIcon
+            {
+                Glyph      = "\uED15",
+                FontFamily = new FontFamily("Segoe Fluent Icons"),
+            };
+            RootPanel.Children.Add(feedbackCard);
+
+            // ── 4. ライセンス ────────────────────────────────────────────────
             var licenseCard = new CommunityToolkit.WinUI.Controls.SettingsCard
             {
                 Header     = R.Get("About_License"),

@@ -15,6 +15,10 @@
   <!-- App menu items -->
   <data name="Menu_NewProfile" xml:space="preserve"><value>New Profile</value></data>
   <data name="Menu_Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="Menu_Feedback" xml:space="preserve"><value>Send feedback</value></data>
+  <data name="Feedback_AppVersion" xml:space="preserve"><value>App version</value></data>
+  <data name="Feedback_Architecture" xml:space="preserve"><value>Architecture</value></data>
+  <data name="Feedback_Symptoms" xml:space="preserve"><value>Symptoms</value></data>
   <data name="Menu_Theme" xml:space="preserve"><value>Theme</value></data>
 
   <!-- Add timeline menu -->
@@ -273,6 +277,7 @@
   <data name="About_Channel_Winget" xml:space="preserve"><value>winget</value></data>
   <data name="About_Channel_Zip" xml:space="preserve"><value>ZIP</value></data>
   <data name="About_Channel_Packaged" xml:space="preserve"><value>packaged</value></data>
+  <data name="About_Feedback" xml:space="preserve"><value>Opens the report page on GitHub with your environment already filled in</value></data>
   <data name="About_License" xml:space="preserve"><value>License</value></data>
   <data name="About_Components" xml:space="preserve"><value>Components Used</value></data>
   <data name="About_Acknowledgements" xml:space="preserve"><value>Acknowledgements</value></data>

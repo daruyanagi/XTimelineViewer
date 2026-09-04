@@ -43,6 +43,7 @@
     <Compile Include="..\Services\ExtensionInstallRunner.cs" Link="Services\ExtensionInstallRunner.cs" />
     <Compile Include="..\Services\ExtensionUpdater.cs" Link="Services\ExtensionUpdater.cs" />
     <Compile Include="..\Services\AppUrls.cs" Link="Services\AppUrls.cs" />
+    <Compile Include="..\Services\FeedbackUrl.cs" Link="Services\FeedbackUrl.cs" />
     <Compile Include="..\PackageContext.cs" Link="PackageContext.cs" />
     <Compile Include="..\Services\EdgeService.cs"    Link="Services\EdgeService.cs" />
     <Compile Include="..\Services\UrlHelper.cs"      Link="Services\UrlHelper.cs" />

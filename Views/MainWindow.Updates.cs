@@ -210,6 +210,20 @@ namespace XTimelineViewer.Views
             OpenSettingsWindow("About");
         }
 
+        /// <summary>
+        /// フィードバックを送る（#426）。環境を入れた新規 issue をブラウザーで開く。
+        ///
+        /// 以前は旧 About ダイアログにリンクがあったが、#138 で設定ページへ
+        /// 移したときに引き継がれず消えていた。困ったときに辿り着きやすいよう
+        /// メニューの一番下に置き、バージョン情報ページにも同じものを並べる。
+        /// </summary>
+        private void FeedbackMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            AppLog.Debug("Feedback: 報告ページを開く（メニュー）");
+            LaunchUriByEdgeProfileAsync(new Uri(App.FeedbackIssueUrl()))
+                .FireAndForget(nameof(FeedbackMenuItem_Click));
+        }
+
         private static string? FindWinget()
         {
             var candidate = Path.Combine(

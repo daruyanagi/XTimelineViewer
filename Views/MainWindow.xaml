@@ -157,6 +157,13 @@
                                     <FontIcon Glyph="&#xE713;" FontFamily="Segoe Fluent Icons"/>
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
+                            <!-- フィードバックはメニューの一番下（#426）。
+                                 日常的に押すものではないので、設定より下に置く。 -->
+                            <MenuFlyoutItem x:Name="FeedbackMenuItem" Click="FeedbackMenuItem_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xED15;" FontFamily="Segoe Fluent Icons"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>
