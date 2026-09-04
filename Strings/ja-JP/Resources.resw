@@ -185,6 +185,7 @@
 
   <!-- Extension settings -->
   <data name="ExtSettings_Format" xml:space="preserve"><value>{0} の設定</value></data>
+  <data name="ExtSettings_Format_Profile" xml:space="preserve"><value>{0} の設定（{1}）</value></data>
   <data name="ExtSettings_Homepage" xml:space="preserve"><value>ホームページを開く</value></data>
   <data name="ExtSettings_StoreLink" xml:space="preserve"><value>Chrome Web Store で開く</value></data>
   <data name="ExtSettings_OpenSettings" xml:space="preserve"><value>設定を開く</value></data>

@@ -57,8 +57,8 @@ namespace XTimelineViewer.Views
 
             // 拡張機能情報とコールバックを設定
             settingsWin.Extensions = _loadedExtensions;
-            settingsWin.OpenExtensionSettingsAsync = (info, xamlRoot) =>
-                ShowExtensionSettingsDialogAsync(info, xamlRoot, LaunchUriByEdgeProfileAsync);
+            settingsWin.OpenExtensionSettingsAsync = (info, profileId, xamlRoot) =>
+                ShowExtensionSettingsDialogAsync(info, profileId, xamlRoot, LaunchUriByEdgeProfileAsync);
             settingsWin.LaunchUriAsync = LaunchUriByEdgeProfileAsync;
 
             // プロファイル情報とコールバックを設定

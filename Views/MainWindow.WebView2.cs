@@ -677,7 +677,8 @@ namespace XTimelineViewer.Views
 
             btn.Click += async (_, _) =>
             {
-                await ShowExtensionSettingsDialogAsync(info, Content.XamlRoot, LaunchUriByEdgeProfileAsync);
+                await ShowExtensionSettingsDialogAsync(
+                    info, ActiveExtensionProfileId(), Content.XamlRoot, LaunchUriByEdgeProfileAsync);
             };
 
             // 設定ボタン（末尾）の左隣に挿入
@@ -685,8 +686,44 @@ namespace XTimelineViewer.Views
             RightToolbar.Children.Insert(insertIdx, btn);
         }
 
+        /// <summary>
+        /// 拡張機能の設定ページを開く（#420）。
+        ///
+        /// <b>拡張機能の設定はプロファイルごとに別物。</b> WebView2 は拡張機能の
+        /// ストレージをプロファイル単位で持つので、まとめて 1 つにはできない。
+        /// どのプロファイルの設定を触っているのかをタイトルに出す。
+        ///
+        /// 以前は <c>"default"</c> 決め打ちだった（#136 の当時はプロファイルが
+        /// 1 つしか無く、それで正しかった）。#157 でマルチプロファイルが入った
+        /// あとは、どのペインも使っていないプロファイルを開きにいくことになり、
+        /// 拡張機能が登録されていないので <c>chrome-extension://…</c> が
+        /// ブロックされていた。
+        /// </summary>
+        /// <summary>
+        /// 拡張機能の設定を開く相手のプロファイル（#420）。
+        ///
+        /// <b>起動直後は <c>_focusedPane</c> が null。</b> ペインを一度も
+        /// クリックしていない状態で拡張機能ボタンを押されても、
+        /// 使われていないプロファイルを開かないようにする。
+        /// </summary>
+        private string ActiveExtensionProfileId()
+        {
+            if (_focusedPane?.Config.ProfileId is { Length: > 0 } focused) return focused;
+            if (_configs.FirstOrDefault()?.ProfileId is { Length: > 0 } first) return first;
+            if (_appSettings.LastUsedProfileId is { Length: > 0 } last) return last;
+            return "default";
+        }
+
+        /// <summary>画面に出す用のプロファイル名。見つからなければ ID をそのまま。</summary>
+        private string ProfileNameOf(string profileId)
+        {
+            var name = _profiles.FirstOrDefault(p => p.Id == profileId)?.Name;
+            return string.IsNullOrWhiteSpace(name) ? profileId : name;
+        }
+
         internal async Task ShowExtensionSettingsDialogAsync(
-            ExtensionInfo info, Microsoft.UI.Xaml.XamlRoot xamlRoot, Func<Uri, Task> launchUri)
+            ExtensionInfo info, string profileId,
+            Microsoft.UI.Xaml.XamlRoot xamlRoot, Func<Uri, Task> launchUri)
         {
             if (info.OptionsPage is null || info.ExtensionId is null) return;
 
@@ -699,7 +736,8 @@ namespace XTimelineViewer.Views
 
             var dlg = new ContentDialog
             {
-                Title                = string.Format(R.Get("ExtSettings_Format"), info.Name),
+                Title                = string.Format(R.Get("ExtSettings_Format_Profile"),
+                                                     info.Name, ProfileNameOf(profileId)),
                 Content              = optWebView,
                 SecondaryButtonText  = homepageUri is not null ? linkText : null,
                 CloseButtonText      = R.Get("Button_Close"),
@@ -713,8 +751,13 @@ namespace XTimelineViewer.Views
                     _ = launchUri(homepageUri);
                 };
 
-            var env = await GetOrCreateProfileEnvAsync("default");
+            var env = await GetOrCreateProfileEnvAsync(profileId);
             await optWebView.EnsureCoreWebView2Async(env);
+
+            // ペインを 1 つも持たないプロファイルには、拡張機能がまだ登録されていない。
+            // 登録されていないプロファイルで chrome-extension:// を開くとブロックされる。
+            // 既に読み込み済みなら中で弾かれるので、素直に呼んでよい。
+            await LoadExtensionsAsync(optWebView, profileId);
             var isDark = xamlRoot.Content is FrameworkElement fe
                 && fe.ActualTheme == ElementTheme.Dark;
             optWebView.CoreWebView2.Profile.PreferredColorScheme = isDark
