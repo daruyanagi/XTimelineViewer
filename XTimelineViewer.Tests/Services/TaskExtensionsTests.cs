@@ -36,6 +36,31 @@ namespace XTimelineViewer.Tests.Services
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// 書き込み中でも読めるように開く。
+        ///
+        /// <b><c>File.ReadAllText</c> は使えない。</b>あちらは共有指定が
+        /// <c>FileShare.Read</c> で「他に書き手がいないこと」を要求する。
+        /// FireAndForget の記録は別スレッドの継続から入るので、
+        /// 読みと書きが重なった瞬間に
+        /// 「別のプロセスで使用されているため…」で落ちる。
+        /// 待たない処理を待たずに読むテストなので、重なるのは正常な動作。
+        /// CI で実際に踏んだ（run 33844639439）。
+        ///
+        /// 眠らせて誤魔化さないこと。頻度が下がるだけで直らないし、
+        /// テストが遅くなる。
+        /// </summary>
+        private static string ReadWhileWritable(string path)
+        {
+            using var fs = new FileStream(
+                path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(fs);
+            return reader.ReadToEnd();
+        }
+
+        private static bool HasContent(string path)
+            => File.Exists(path) && ReadWhileWritable(path).Length > 0;
+
         private async Task<string> WaitForLogAsync()
         {
             // FireAndForget は待たない設計なので、記録されるまで少しだけ待つ
@@ -43,12 +68,12 @@ namespace XTimelineViewer.Tests.Services
             {
                 if (File.Exists(_file))
                 {
-                    var text = File.ReadAllText(_file);
+                    var text = ReadWhileWritable(_file);
                     if (text.Length > 0) return text;
                 }
                 await Task.Delay(20);
             }
-            return File.Exists(_file) ? File.ReadAllText(_file) : string.Empty;
+            return File.Exists(_file) ? ReadWhileWritable(_file) : string.Empty;
         }
 
         [Fact]
@@ -67,7 +92,7 @@ namespace XTimelineViewer.Tests.Services
             Task.CompletedTask.FireAndForget("MyContext");
 
             await Task.Delay(100);
-            Assert.False(File.Exists(_file) && File.ReadAllText(_file).Length > 0);
+            Assert.False(HasContent(_file));
         }
 
         [Fact]
