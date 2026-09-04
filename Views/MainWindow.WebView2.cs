@@ -727,7 +727,15 @@ namespace XTimelineViewer.Views
         {
             if (info.OptionsPage is null || info.ExtensionId is null) return;
 
-            var optWebView = new WebView2 { Width = 480, MinHeight = 200 };
+            // 大きさは親ウィンドウに合わせる（#420）。480x200 の決め打ちでは
+            // 設定ページが窮屈で、少し項目があるだけで縦にスクロールさせていた。
+            // かといって大きく決め打ちすると、小さいウィンドウではみ出す。
+            var rootSize   = xamlRoot.Size;
+            var optWebView = new WebView2
+            {
+                Width  = Math.Clamp(rootSize.Width  * 0.75, 560, 960),
+                Height = Math.Clamp(rootSize.Height * 0.70, 360, 720),
+            };
 
             Uri.TryCreate(info.HomepageUrl, UriKind.Absolute, out var homepageUri);
             var linkText = homepageUri?.Host.Contains("chromewebstore.google.com") == true
@@ -743,6 +751,10 @@ namespace XTimelineViewer.Views
                 CloseButtonText      = R.Get("Button_Close"),
                 XamlRoot             = xamlRoot
             };
+
+            // ContentDialog の既定の最大幅は 548。これを上げないと、上で
+            // 計算した幅がそこで頭打ちになって効かない。
+            dlg.Resources["ContentDialogMaxWidth"] = 1200d;
 
             if (homepageUri is not null)
                 dlg.SecondaryButtonClick += (s, e) =>
