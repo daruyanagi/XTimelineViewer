@@ -69,6 +69,12 @@ namespace XTimelineViewer.Views
         /// <summary>winget が利用可能かどうか（unpackaged のみ意味がある）。</summary>
         internal bool HasWinget { get; set; }
 
+        /// <summary>拡張機能ページを開いたときの自動更新チェック（#432）。</summary>
+        internal Func<string, bool>?      IsExtensionUpdateCheckDue  { get; set; }
+        internal Func<string, (Services.ExtensionUpdateCheck.Cached State, string? Tag)>?
+                                         CachedExtensionUpdate      { get; set; }
+        internal Action<string, string?>? RecordExtensionUpdateCheck { get; set; }
+
         /// <summary>最新バージョンを取得するコールバック（winget 版は winget、それ以外は GitHub Releases）。</summary>
         internal Func<Task<Version?>>? FetchLatestVersionAsync { get; set; }
 

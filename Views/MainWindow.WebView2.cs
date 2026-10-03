@@ -501,6 +501,28 @@ namespace XTimelineViewer.Views
         /// 拡張機能に新しい版があるかを調べる（#406）。
         /// 入手先（#404）を記録していないもの（手で直置きしたもの）は対象外。
         /// </summary>
+        /// <summary>
+        /// 今この拡張機能を調べるべきか（#432）。
+        /// 拡張機能ページを開いたときの自動チェックの可否。
+        /// </summary>
+        internal bool IsExtensionUpdateCheckDue(string key)
+            => ExtensionUpdateCheck.IsDue(
+                   _appSettings.ExtensionStates.TryGetValue(key, out var st) ? st : null,
+                   DateTimeOffset.Now);
+
+        /// <summary>前回調べた結果（#432）。叩き直さずに出すためのもの。</summary>
+        internal (ExtensionUpdateCheck.Cached State, string? Tag) CachedExtensionUpdate(string key)
+            => ExtensionUpdateCheck.CachedResult(
+                   _appSettings.ExtensionStates.TryGetValue(key, out var st) ? st : null,
+                   ExtensionUpdater.InstalledVersion(Path.Combine(GetExtensionsDir(), key)));
+
+        /// <summary>調べた結果を残す（#432）。tag が null なら「最新だった」。</summary>
+        internal void RecordExtensionUpdateCheck(string key, string? tag)
+        {
+            ExtensionUpdateCheck.Record(_appSettings.ExtensionStates, key, tag, DateTimeOffset.Now);
+            SaveSettings();
+        }
+
         internal async Task<(bool HasUpdate, string? Tag)> CheckExtensionUpdateAsync(
             string key, CancellationToken ct)
         {

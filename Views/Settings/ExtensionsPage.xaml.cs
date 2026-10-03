@@ -462,14 +462,21 @@ namespace XTimelineViewer.Views.Settings
         }
 
         /// <summary>
-        /// 更新の確認と実行（#406）。
+        /// 更新の確認と実行（#406 / #432）。
         ///
-        /// 開くたびに自動で調べには行かない。拡張機能の数だけ GitHub を叩くことになり、
-        /// レート制限にも当たる。押されたときだけ調べる。
+        /// ページを開いたときに自動で調べる。ただし<b>開くたびには調べない</b>。
+        /// GitHub の API は認証なしだと 1 時間 60 回で、拡張機能 1 つにつき 1 回叩く
+        /// （アプリ本体の更新チェックも同じ枠）。#406 の時点ではここを嫌って手動のみに
+        /// していたが、24 時間ぶんキャッシュすれば問題は消える（#432）。
+        ///
+        /// 前回の結果はすぐ出し、期限切れのものだけ裏で叩き直す。
+        /// 失敗は黙って無視する。回線が死んでいるときに設定が開けないのは論外。
         /// </summary>
         private void AddUpdateRow(
             CommunityToolkit.WinUI.Controls.SettingsExpander card, string key, string name)
         {
+            if (_parent is null) return;
+
             var status = new TextBlock
             {
                 VerticalAlignment = VerticalAlignment.Center,
@@ -491,7 +498,15 @@ namespace XTimelineViewer.Views.Settings
             panel.Children.Add(updateBtn);
             panel.Children.Add(checkBtn);
 
-            checkBtn.Click += async (_, _) =>
+            void ShowResult(bool hasUpdate, string? tag)
+            {
+                status.Text = hasUpdate
+                    ? string.Format(R.Get("Extensions_Update_Available"), tag)
+                    : R.Get("Extensions_Update_UpToDate");
+                updateBtn.Visibility = hasUpdate ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            async Task CheckAsync()
             {
                 checkBtn.IsEnabled = false;
                 status.Text = R.Get("Extensions_Update_Checking");
@@ -500,16 +515,17 @@ namespace XTimelineViewer.Views.Settings
                     using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(30));
                     var (hasUpdate, tag) = await _parent!.CheckExtensionUpdateAsync!(key, cts.Token);
 
-                    status.Text = hasUpdate
-                        ? string.Format(R.Get("Extensions_Update_Available"), tag)
-                        : R.Get("Extensions_Update_UpToDate");
-                    updateBtn.Visibility = hasUpdate ? Visibility.Visible : Visibility.Collapsed;
+                    // 調べ直すのは 24 時間後。結果は「最新だった」も含めて残す（#432）。
+                    _parent.RecordExtensionUpdateCheck?.Invoke(key, hasUpdate ? tag : null);
+                    ShowResult(hasUpdate, tag);
                 }
                 finally
                 {
                     checkBtn.IsEnabled = true;
                 }
-            };
+            }
+
+            checkBtn.Click += async (_, _) => await CheckAsync();
 
             updateBtn.Click += async (_, _) =>
             {
@@ -542,6 +558,18 @@ namespace XTimelineViewer.Views.Settings
                 Description = R.Get("Extensions_Update_Desc"),
                 Content     = panel,
             });
+
+            // 前回の結果をすぐ出す（#432）。叩かないので一瞬で出る。
+            // 「最新だった」も出すこと。出さないと、調べていないのと見分けがつかない。
+            var cached = _parent.CachedExtensionUpdate?.Invoke(key);
+            if (cached?.State == Services.ExtensionUpdateCheck.Cached.UpdateAvailable)
+                ShowResult(true, cached.Value.Tag);
+            else if (cached?.State == Services.ExtensionUpdateCheck.Cached.UpToDate)
+                ShowResult(false, null);
+
+            // 期限切れのものだけ裏で調べ直す。待たない。
+            if (_parent.IsExtensionUpdateCheckDue?.Invoke(key) == true)
+                CheckAsync().FireAndForget(nameof(AddUpdateRow));
         }
 
         private async Task UninstallAsync(string key, string name, UIElement card)
