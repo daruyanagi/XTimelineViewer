@@ -2,7 +2,14 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
-    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <!--
+      下限は 19041（Windows 10 2004）。Windows App SDK 1.8 自体は 17763 まで
+      支えるが、#431（Windows Share からの受信）で使う外部ロケーション MSIX の
+      登録が 19041 以上を要求するため、そちらに合わせる（#436）。
+      切り捨てるのは実質 Enterprise/IoT LTSC 2019 のみ。1903 / 1909 は
+      一般向けサポートが 2021 年に終了している。
+    -->
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     <RootNamespace>XTimelineViewer</RootNamespace>
     <Platforms>x64;arm64</Platforms>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>

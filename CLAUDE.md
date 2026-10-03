@@ -4,7 +4,7 @@
 
 ## 技術スタック
 
-- **WinUI 3 / Windows App SDK 1.8**（`WindowsAppSDKSelfContained` = 自己完結）、**.NET 8**（`net8.0-windows10.0.19041.0`、最小 OS 10.0.17763.0）
+- **WinUI 3 / Windows App SDK 1.8**（`WindowsAppSDKSelfContained` = 自己完結）、**.NET 8**（`net8.0-windows10.0.19041.0`、最小 OS 10.0.19041.0）
 - ターゲット: **x64 / arm64**
 - MVVM: `CommunityToolkit.Mvvm`、設定 UI に `CommunityToolkit.WinUI.Controls.SettingsControls`
 - 描画コンテンツ: `Microsoft.Web.WebView2`（Edge Dev/WebView2 Runtime を利用）
