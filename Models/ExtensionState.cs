@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace XTimelineViewer.Models
@@ -38,5 +39,17 @@ namespace XTimelineViewer.Models
 
         /// <summary>実際に落とした資産の URL（#404）。どの成果物を入れたのかの記録。</summary>
         public string? SourceAssetUrl { get; set; }
+
+        /// <summary>
+        /// 最後に更新を調べた時刻（#432）。
+        /// ページを開くたびに GitHub を叩かないための記録。
+        /// </summary>
+        public DateTimeOffset? LastUpdateCheck { get; set; }
+
+        /// <summary>
+        /// 調べた時点で見つかった新しい版のタグ（#432）。最新だったら null。
+        /// 次に開いたときは、叩き直さずにこれを出す。
+        /// </summary>
+        public string? CachedUpdateTag { get; set; }
     }
 }
