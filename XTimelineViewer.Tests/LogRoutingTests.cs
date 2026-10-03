@@ -33,6 +33,7 @@ namespace XTimelineViewer.Tests
         }
 
         private static readonly string PostCs = File.ReadAllText(FindRepoFile("Views/MainWindow.Post.cs"));
+        private static readonly string AppCs  = File.ReadAllText(FindRepoFile("App.xaml.cs"));
 
         /// <summary>波かっこを数えてメソッド本体を切り出す。</summary>
         private static string BodyOf(string source, string signature)
@@ -51,6 +52,31 @@ namespace XTimelineViewer.Tests
                     return source[open..(i + 1)];
             }
             throw new InvalidOperationException($"{signature} の本体を閉じられません");
+        }
+
+        /// <summary>
+        /// メンバーの中身を切り出す。<c>=&gt;</c> の式形式と波かっこの両方を扱う。
+        ///
+        /// 式形式に <see cref="BodyOf"/> をかけると、次に現れる <c>{</c> を拾って
+        /// <b>後続メソッドの本体を返してしまう</b>（実際に踏んだ）。
+        /// </summary>
+        private static string MemberBodyOf(string source, string signature)
+        {
+            var at = source.IndexOf(signature, StringComparison.Ordinal);
+            Assert.True(at >= 0, $"{signature} が見つかりません");
+
+            var after = at + signature.Length;
+            var arrow = source.IndexOf("=>", after, StringComparison.Ordinal);
+            var brace = source.IndexOf('{', after);
+
+            if (arrow >= 0 && (brace < 0 || arrow < brace))
+            {
+                var end = source.IndexOf(';', arrow);
+                Assert.True(end >= 0, $"{signature} の式を閉じられません");
+                return source[arrow..(end + 1)];
+            }
+
+            return BodyOf(source, signature);
         }
 
         private static string CaptureVideoVariants
@@ -73,6 +99,33 @@ namespace XTimelineViewer.Tests
             // 実測では SearchTimeline の 45.8%（107 件中 49 件）がこれで、
             // error.log に載っていた例外 76 件は全部この 1 か所から出ていた。
             Assert.DoesNotContain("LogError(", CaptureVideoVariants);
+        }
+
+        // ── 環境情報（#427） ─────────────────────────────────────────────
+        // ログの見出しとフィードバック本文に載る。間違っていると、
+        // 報告を受け取った側が実在しない版を見ることになる。
+
+        [Fact]
+        public void WindowsAppSdkVersion_IsNotTakenFromWinUi()
+        {
+            // Microsoft.UI.Xaml.Application があるのは Microsoft.WinUI.dll で、
+            // その FileVersion は WinUI 3 自身の版（3.0.0.2608）。
+            // Windows App SDK の 1.x とは別系統なので、SDK の版として出すと
+            // 実在しない版になる。実際にそうなっていた（#427）。
+            var body = MemberBodyOf(AppCs, "private static string WinAppSdkVersion()");
+
+            Assert.DoesNotContain("Microsoft.UI.Xaml.Application", body, StringComparison.Ordinal);
+            Assert.DoesNotContain("FileVersion", body, StringComparison.Ordinal);
+            Assert.Contains("WindowsAppRuntime.ReleaseInfo", body, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void WindowsAppSdkVersion_UsesTheReleaseNotTheRuntimeBinary()
+        {
+            // RuntimeInfo.AsString は 8000.946.1701.0 のようなランタイム
+            // バイナリの版で、SDK の版ではない（実測）。
+            var body = MemberBodyOf(AppCs, "private static string WinAppSdkVersion()");
+            Assert.DoesNotContain("RuntimeInfo", body, StringComparison.Ordinal);
         }
 
         [Fact]

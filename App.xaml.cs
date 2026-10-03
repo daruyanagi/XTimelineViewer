@@ -118,9 +118,23 @@ namespace XTimelineViewer
         private static string WebView2Version()
             => CoreWebView2Environment.GetAvailableBrowserVersionString();
 
+        /// <summary>
+        /// Windows App SDK の版（#427）。
+        ///
+        /// 以前は <c>Microsoft.UI.Xaml.Application</c> のあるアセンブリ
+        /// （<c>Microsoft.WinUI.dll</c>）の FileVersion を読んでいた。あれは
+        /// <b>WinUI 3 自身の版</b>で、報告を受け取った側からは実在しない
+        /// Windows App SDK の版（<c>3.0.0.2608</c>）に見えていた。WinUI 3 は
+        /// UWP 時代の WinUI 2.x の続きで 3.x から始まっており、
+        /// Windows App SDK の 1.x とは別系統に振られている。
+        ///
+        /// 正規の API は自己完結・unpackaged でもそのまま呼べる（実測）。
+        /// 返るのは <c>1.8.804</c> のような版で、csproj の
+        /// <c>1.8.260804001</c> と文字列としては一致しないが、
+        /// <c>1.8</c> は一致し <c>804</c> は日付部分（2026-08-04）に対応する。
+        /// </summary>
         private static string WinAppSdkVersion()
-            => FileVersionInfo.GetVersionInfo(typeof(Microsoft.UI.Xaml.Application).Assembly.Location).FileVersion
-               ?? "?";
+            => Microsoft.Windows.ApplicationModel.WindowsAppRuntime.ReleaseInfo.AsString;
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
