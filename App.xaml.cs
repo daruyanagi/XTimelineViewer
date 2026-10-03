@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.Windows.AppLifecycle;
 using Microsoft.Web.WebView2.Core;
 using System;
 using System.Diagnostics;
@@ -20,6 +21,19 @@ namespace XTimelineViewer
         // non-100% DPI displays (125%, 150%, 200%).
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool SetProcessDpiAwarenessContext(nint value);
+
+        // 既存ウィンドウを前に出す（#435）。WinUI の Activate() と AppWindow.Show() では
+        // 別プロセスからの要求で前面に来ないため、Win32 を直接呼ぶ。
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(nint hWnd, int nCmdShow);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(nint hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool IsIconic(nint hWnd);
+
+        private const int SW_RESTORE = 9;
 
         private Window? _window;
 
@@ -136,6 +150,93 @@ namespace XTimelineViewer
         private static string WinAppSdkVersion()
             => Microsoft.Windows.ApplicationModel.WindowsAppRuntime.ReleaseInfo.AsString;
 
+        /// <summary>
+        /// 既に動いているインスタンスがあれば、そちらへ活性化を渡す（#435）。
+        /// 渡したら true。呼び出し元はそのまま戻って終了する。
+        ///
+        /// <b><c>RedirectActivationToAsync</c> を STA でそのまま待つと固まる。</b>
+        /// スレッドプールで走らせ、こちらはセマフォで待つ（公式の推奨どおり）。
+        /// 渡し終える前にプロセスが消えると、受け取る側が引数を読み切れずに
+        /// RPC が落ちるので、完了を待ってから終わること。
+        /// </summary>
+        private bool RedirectToExistingInstance()
+        {
+            try
+            {
+                var keyInstance = AppInstance.FindOrRegisterForKey(SingleInstanceKey);
+
+                if (keyInstance.IsCurrent)
+                {
+                    // 代表側。2 つ目以降の起動はここへ回ってくる。
+                    AppInstance.GetCurrent().Activated += OnRedirectedActivation;
+                    return false;
+                }
+
+                var activationArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
+                var done = new System.Threading.SemaphoreSlim(0, 1);
+
+                _ = System.Threading.Tasks.Task.Run(async () =>
+                {
+                    try { await keyInstance.RedirectActivationToAsync(activationArgs); }
+                    catch (Exception ex) { AppLog.Error("SingleInstance.Redirect", ex); }
+                    finally { done.Release(); }
+                });
+
+                // 渡し終えるまで待つ。先に消えると、受け取る側が引数を
+                // 読み切れずに RPC が落ちる。
+                done.Wait(TimeSpan.FromSeconds(10));
+
+                // ここで終わらせる。OnLaunched から戻るだけでは終わらない。
+                // ウィンドウを作っていなくてもメッセージループは回り続け、
+                // 見えないプロセスが起動のたびに積み上がる（実際にそうなった）。
+                Process.GetCurrentProcess().Kill();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // 単一インスタンス化に失敗しても起動は続ける。
+                // ここで諦めると、アプリが一切立ち上がらなくなる。
+                AppLog.Error("SingleInstance", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 2 つ目の起動から渡されたときに、こちらのウィンドウを前へ出す（#435）。
+        ///
+        /// <b>この通知は UI スレッドには来ない。</b> ウィンドウに触る前に移すこと。
+        /// </summary>
+        private void OnRedirectedActivation(object? sender, AppActivationArguments e)
+        {
+            _window?.DispatcherQueue.TryEnqueue(BringToFront);
+        }
+
+        private void BringToFront()
+        {
+            if (_window is null) return;
+
+            try
+            {
+                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
+
+                // 最小化されていたら戻す。しないと前面に出しても見えない。
+                if (IsIconic(hwnd)) ShowWindow(hwnd, SW_RESTORE);
+
+                SetForegroundWindow(hwnd);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Error("SingleInstance.BringToFront", ex);
+            }
+        }
+
+        /// <summary>
+        /// 単一インスタンスの鍵（#435）。
+        /// 配布経路（ZIP / winget）ごとに分けない。同じ利用者のデータを
+        /// 2 プロセスで掴むのを防ぐのが目的なので、経路が違っても 1 つにする。
+        /// </summary>
+        private const string SingleInstanceKey = "XTimelineViewer";
+
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
             // 更新の仕上げ役として起動されたときは、UI を出さずに差し替えだけ行って終わる（#328）。
@@ -147,6 +248,14 @@ namespace XTimelineViewer
                     .FireAndForget(nameof(FinishUpdateAsync));
                 return;
             }
+
+            // 2 つ目以降の起動は、既にいる方へ渡して自分は消える（#435）。
+            // 同じプロファイルフォルダーを 2 プロセスで掴むと WebView2 の
+            // 拡張機能登録が壊れうる。#419 / #420 の調査でも混入を疑う場面があった。
+            //
+            // 必ず --finish-update の判定より後に置くこと。仕上げ役は
+            // 別プロセスとして走る必要があり、ここで畳んでは更新が止まる。
+            if (RedirectToExistingInstance()) return;
 
             // WinAppSDK 1.6+ の Microsoft.Windows.Globalization 経由で packaged / unpackaged
             // 両対応の言語上書きを行う（R.Initialize 内で設定）。リソース読み込み前に呼ぶこと。
