@@ -25,7 +25,7 @@ namespace XTimelineViewer.Views
         private async void PostBtn_Click(object _, RoutedEventArgs __)
         {
             if (_appSettings.OpenComposerInBrowser)
-                LaunchUriByEdgeProfileAsync(new Uri("https://x.com/compose/post")).FireAndForget(nameof(LaunchUriByEdgeProfileAsync));
+                LaunchUriByEdgeProfileAsync(new Uri(ComposeUrl.Base)).FireAndForget(nameof(LaunchUriByEdgeProfileAsync));
             else
                 await OpenPostDialogAsync();
         }
@@ -106,7 +106,7 @@ namespace XTimelineViewer.Views
             Grid.SetRow(wv, 1);
             ((Grid)Content).Children.Add(wv);
             _composeReadyViews.Remove(wv);
-            try { wv.Source = new Uri("https://x.com/compose/post"); } catch { }  // 下書きリセット
+            try { wv.Source = new Uri(ComposeUrl.Base); } catch { }  // 下書きリセット
             _composeWarmWebView   = wv;
             _composeWarmProfileId = profileId;
         }
@@ -526,7 +526,7 @@ namespace XTimelineViewer.Views
                 }
             };
 
-            webView.Source = new Uri("https://x.com/compose/post");
+            webView.Source = new Uri(ComposeUrl.Base);
         }
 
         // ── Keyboard shortcuts ────────────────────────────────────────────────
@@ -667,7 +667,7 @@ namespace XTimelineViewer.Views
                 case "movePanePrev": MoveTimelinePane(senderWebView, -1); break;
                 case "newPost":
                     if (_appSettings.OpenComposerInBrowser)
-                        LaunchUriByEdgeProfileAsync(new Uri("https://x.com/compose/post")).FireAndForget(nameof(LaunchUriByEdgeProfileAsync));
+                        LaunchUriByEdgeProfileAsync(new Uri(ComposeUrl.Base)).FireAndForget(nameof(LaunchUriByEdgeProfileAsync));
                     else
                         OpenPostDialogAsync(senderWebView).FireAndForget(nameof(OpenPostDialogAsync));
                     break;
