@@ -36,14 +36,42 @@ namespace XTimelineViewer
                 Debug.WriteLine($"[R] PrimaryLanguageOverride FAILED: {ex.Message}");
             }
 
-            _manager = new ResourceManager();
-            _map     = _manager.MainResourceMap.GetSubtree("Resources");
+            (_manager, _map) = OpenResources();
 
             // 実行中の言語切り替え (#117) を確実にするため、明示的な ResourceContext で解決する。
             // システム選択時も明示的に修飾子を設定する。クリア（""）した PrimaryLanguageOverride が
             // 反映されず英語のまま残るケースがあるため、既定の修飾子に依存しない。
             _context = _manager.CreateResourceContext();
             _context.QualifierValues["Language"] = languageOverride ?? SystemLocale;
+        }
+
+        /// <summary>
+        /// リソースを開く（#431）。
+        ///
+        /// <b>パッケージ ID を持つと、既定の <see cref="ResourceManager"/> は
+        /// パッケージ側の PRI を見る。</b> このアプリの配布は unpackaged で、
+        /// Share の受信（#431）のために空の MSIX で ID だけ付ける形を採るため、
+        /// パッケージ側に文言は入っていない。そのまま呼ぶと
+        /// <c>ResourceMap が見つかりません</c>（0x80073B1F）で起動に失敗する。
+        ///
+        /// まず既定を試し、見つからなければ exe の隣の <c>resources.pri</c> を開く。
+        /// 本物の MSIX にした場合も、先に既定が当たるので壊れない。
+        /// </summary>
+        private static (ResourceManager Manager, ResourceMap Map) OpenResources()
+        {
+            try
+            {
+                var manager = new ResourceManager();
+                return (manager, manager.MainResourceMap.GetSubtree("Resources"));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[R] 既定の ResourceMap を開けなかった: {ex.Message}");
+            }
+
+            var local = System.IO.Path.Combine(AppContext.BaseDirectory, "resources.pri");
+            var fallback = new ResourceManager(local);
+            return (fallback, fallback.MainResourceMap.GetSubtree("Resources"));
         }
 
         // システム言語から使用するロケールを決定する。

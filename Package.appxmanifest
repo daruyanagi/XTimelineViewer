@@ -52,6 +52,18 @@
             <uap5:ExecutionAlias Alias="xtimelineviewer.exe" />
           </uap5:AppExecutionAlias>
         </uap5:Extension>
+        <!--
+          Windows の共有シートから受け取る（#431）。
+          テキストとリンクだけ。X への投稿は compose の ?text= に流すので、
+          画像やファイルを受け取っても使い道が無い。SupportedFileTypes を
+          書かないことで、ファイルの共有先としては出てこない。
+        -->
+        <uap:Extension Category="windows.shareTarget">
+          <uap:ShareTarget>
+            <uap:DataFormat>Text</uap:DataFormat>
+            <uap:DataFormat>URI</uap:DataFormat>
+          </uap:ShareTarget>
+        </uap:Extension>
       </Extensions>
     </Application>
   </Applications>

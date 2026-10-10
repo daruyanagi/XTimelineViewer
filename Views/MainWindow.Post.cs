@@ -111,7 +111,18 @@ namespace XTimelineViewer.Views
             _composeWarmProfileId = profileId;
         }
 
-        private async Task OpenPostDialogAsync(WebView2? senderWebView = null)
+        /// <summary>
+        /// 共有で受け取った下書きを載せて投稿ダイアログを開く（#431）。
+        /// ウィンドウが出来上がってから呼ぶこと。
+        /// </summary>
+        internal Task OpenPostWithDraftAsync(string draft)
+            => OpenPostDialogAsync(initialText: draft);
+
+        /// <param name="initialText">
+        /// 本文の初期値（#431）。Windows Share から受け取った文言やリンク。
+        /// null なら従来どおり空の compose を開く。
+        /// </param>
+        private async Task OpenPostDialogAsync(WebView2? senderWebView = null, string? initialText = null)
         {
             // ── プロファイルセレクターの構築 ──
             var selectedProfileId = ResolveComposeProfileId();
@@ -144,6 +155,16 @@ namespace XTimelineViewer.Views
                 webView.IsHitTestVisible = true;
                 Canvas.SetZIndex(webView, 0);
                 rootPanel.Children.Add(webView);
+
+                // プリロード済みは空の compose を読み終えている。初期テキストが
+                // あるならそこへ入れ直す（#431）。ハンドラは付いたままなので
+                // AttachComposeBehavior は呼ばない。
+                if (!string.IsNullOrWhiteSpace(initialText))
+                {
+                    _composeReadyViews.Remove(webView);
+                    try { webView.Source = ComposeUri(initialText); }
+                    catch (Exception ex) { LogError("OpenPostDialog(initialText)", ex); }
+                }
             }
             else
             {
@@ -191,7 +212,7 @@ namespace XTimelineViewer.Views
             rootPanel.Children.Add(footer);
 
             if (!currentIsWarm)
-                await AttachComposeBehavior(webView, selectedProfileId);
+                await AttachComposeBehavior(webView, selectedProfileId, initialText);
 
             // ── プロファイル切り替え（切替後は常にオンデマンド生成）──
             profileCombo.SelectionChanged += async (s, args) =>
@@ -375,7 +396,12 @@ namespace XTimelineViewer.Views
         /// 自動クローズは現在開いている投稿ダイアログ（<see cref="_activeComposeDialog"/>）に対して行う。
         /// プリロード（warm）でも投稿ダイアログでも同じ振る舞いを共有する（#244 案A）。
         /// </summary>
-        private async Task AttachComposeBehavior(WebView2 webView, string profileId)
+        /// <summary>組み立ては <see cref="Services.ComposeUrl"/>（UI 非依存・テスト対象）。</summary>
+        private static Uri ComposeUri(string? initialText = null)
+            => new(Services.ComposeUrl.For(initialText));
+
+        private async Task AttachComposeBehavior(
+            WebView2 webView, string profileId, string? initialText = null)
         {
             var env = await GetOrCreateProfileEnvAsync(profileId);
             await webView.EnsureCoreWebView2Async(env);
@@ -526,7 +552,7 @@ namespace XTimelineViewer.Views
                 }
             };
 
-            webView.Source = new Uri("https://x.com/compose/post");
+            webView.Source = ComposeUri(initialText);
         }
 
         // ── Keyboard shortcuts ────────────────────────────────────────────────

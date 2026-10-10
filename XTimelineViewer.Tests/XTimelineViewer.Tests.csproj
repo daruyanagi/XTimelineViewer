@@ -44,6 +44,8 @@
     <Compile Include="..\Services\ExtensionUpdater.cs" Link="Services\ExtensionUpdater.cs" />
     <Compile Include="..\Services\ExtensionUpdateCheck.cs" Link="Services\ExtensionUpdateCheck.cs" />
     <Compile Include="..\Services\AppUrls.cs" Link="Services\AppUrls.cs" />
+    <Compile Include="..\Services\ShareDraft.cs" Link="Services\ShareDraft.cs" />
+    <Compile Include="..\Services\ComposeUrl.cs" Link="Services\ComposeUrl.cs" />
     <Compile Include="..\Services\FeedbackUrl.cs" Link="Services\FeedbackUrl.cs" />
     <Compile Include="..\PackageContext.cs" Link="PackageContext.cs" />
     <Compile Include="..\Services\EdgeService.cs"    Link="Services\EdgeService.cs" />

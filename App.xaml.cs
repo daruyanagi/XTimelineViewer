@@ -208,7 +208,44 @@ namespace XTimelineViewer
         /// </summary>
         private void OnRedirectedActivation(object? sender, AppActivationArguments e)
         {
-            _window?.DispatcherQueue.TryEnqueue(BringToFront);
+            // この通知は UI スレッドには来ない。
+            _window?.DispatcherQueue.TryEnqueue(() =>
+            {
+                BringToFront();
+                HandleShareIfAnyAsync(e).FireAndForget(nameof(HandleShareIfAnyAsync));
+            });
+        }
+
+        /// <summary>
+        /// 共有シートからの起動なら、中身を下書きにして投稿ダイアログを開く（#431）。
+        /// それ以外の起動では何もしない。
+        /// </summary>
+        private async Task HandleShareIfAnyAsync(AppActivationArguments args)
+        {
+            if (args?.Kind != ExtendedActivationKind.ShareTarget) return;
+            if (args.Data is not Windows.ApplicationModel.Activation.ShareTargetActivatedEventArgs share) return;
+
+            var op = share.ShareOperation;
+
+            try
+            {
+                var draft = await SharePayload.ReadDraftAsync(op.Data);
+                AppLog.Debug($"Share: 受け取った（下書き {(draft is null ? "無し" : $"{draft.Length} 文字")}）");
+
+                if (draft is not null && _window is MainWindow main)
+                    await main.OpenPostWithDraftAsync(draft);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Error("Share", ex);
+            }
+            finally
+            {
+                // 下書きを渡し終えてから報告する。先に報告すると、共有元から見て
+                // 終わったことになり、読み出し途中の中身が消えうる。
+                try { op.ReportCompleted(); }
+                catch (Exception ex) { AppLog.Debug($"Share: ReportCompleted に失敗 {ex.Message}"); }
+            }
         }
 
         private void BringToFront()
@@ -267,6 +304,11 @@ namespace XTimelineViewer
 
             _window = new MainWindow();
             _window.Activate();
+
+            // 共有シートから起動された場合は、受け取った中身を下書きにして
+            // 投稿ダイアログを開く（#431）。ウィンドウを出してから。
+            HandleShareIfAnyAsync(AppInstance.GetCurrent().GetActivatedEventArgs())
+                .FireAndForget(nameof(HandleShareIfAnyAsync));
         }
 
         /// <summary>
