@@ -18,3 +18,9 @@ x_timeline_viewer.png
 # UI テスト成果物（実行のたびに生成される）
 test-screenshots/
 test-results.json
+
+# winapp CLI が開発用パッケージ ID を作るときの作業物（#431）。
+# ビルド出力にも AppX/ と AppxManifest.xml を落とすので、
+# ID を使った検証のあとは bin/obj を消してクリーンリビルドすること
+# （残っていると unpackaged 起動が themeresources.xaml を見失う）。
+.winapp/
