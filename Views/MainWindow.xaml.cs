@@ -1,4 +1,4 @@
-using Microsoft.UI.Windowing;
+﻿using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -286,14 +286,22 @@ namespace XTimelineViewer.Views
             AddTimelineSubMenu.Text           = R.Get("Menu_AddTimeline");
             AddHomeTimelineItem.Text          = R.Get("Timeline_Home");
             AddNotificationsTimelineItem.Text = R.Get("Timeline_Notifications");
+            AddMentionsTimelineItem.Text      = R.Get("Timeline_Mentions");
             AddBookmarksTimelineItem.Text     = R.Get("Timeline_Bookmarks");
+            AddLikesTimelineItem.Text         = R.Get("Timeline_Likes");
+            AddProfileTimelineItem.Text       = R.Get("Timeline_ProfilePage");
+            AddMediaTimelineItem.Text         = R.Get("Timeline_Media");
             AddListsTimelineItem.Text         = R.Get("Timeline_Lists");
             // アイコンは既存ペインと同じく URL 種別から導出して一貫性を保つ
             AddHomeIcon.Glyph          = UrlHelper.GetTimelineGlyph(HomeTimelineUrl);
             AddNotificationsIcon.Glyph = UrlHelper.GetTimelineGlyph(NotificationsTimelineUrl);
+            AddMentionsIcon.Glyph      = UrlHelper.GetTimelineGlyph(MentionsTimelineUrl);
             AddBookmarksIcon.Glyph     = UrlHelper.GetTimelineGlyph(BookmarksTimelineUrl);
-            // リスト URL はハンドル依存のため、アイコン導出には代表的な一覧パスを使う
-            AddListsIcon.Glyph         = UrlHelper.GetTimelineGlyph(BuildListsUrl("_"));
+            // ハンドル依存の URL は、アイコン導出に代表のハンドル（_）で組み立てる（#441）
+            AddLikesIcon.Glyph         = UrlHelper.GetTimelineGlyph(HandleTimeline.BuildUrl("_", HandleTimeline.Likes));
+            AddProfileIcon.Glyph       = UrlHelper.GetTimelineGlyph(HandleTimeline.BuildUrl("_", HandleTimeline.Profile));
+            AddMediaIcon.Glyph         = UrlHelper.GetTimelineGlyph(HandleTimeline.BuildUrl("_", HandleTimeline.Media));
+            AddListsIcon.Glyph         = UrlHelper.GetTimelineGlyph(HandleTimeline.BuildUrl("_", HandleTimeline.Lists));
 
             SearchBox.PlaceholderText = R.Get("Search_Placeholder");
             ToolTipService.SetToolTip(SearchBox, R.Get("Search_Tooltip"));

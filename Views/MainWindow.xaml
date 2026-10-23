@@ -131,9 +131,29 @@
                                         <FontIcon x:Name="AddNotificationsIcon" FontFamily="Segoe Fluent Icons"/>
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
+                                <MenuFlyoutItem x:Name="AddMentionsTimelineItem" Click="AddMentionsTimelineItem_Click">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon x:Name="AddMentionsIcon" FontFamily="Segoe Fluent Icons"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
                                 <MenuFlyoutItem x:Name="AddBookmarksTimelineItem" Click="AddBookmarksTimelineItem_Click">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon x:Name="AddBookmarksIcon" FontFamily="Segoe Fluent Icons"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem x:Name="AddLikesTimelineItem" Click="AddLikesTimelineItem_Click">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon x:Name="AddLikesIcon" FontFamily="Segoe Fluent Icons"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem x:Name="AddProfileTimelineItem" Click="AddProfileTimelineItem_Click">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon x:Name="AddProfileIcon" FontFamily="Segoe Fluent Icons"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem x:Name="AddMediaTimelineItem" Click="AddMediaTimelineItem_Click">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon x:Name="AddMediaIcon" FontFamily="Segoe Fluent Icons"/>
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
                                 <MenuFlyoutItem x:Name="AddListsTimelineItem" Click="AddListsTimelineItem_Click">

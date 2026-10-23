@@ -53,7 +53,10 @@ namespace XTimelineViewer.Views
         private void RestoreTimelines()
         {
             foreach (var cfg in TimelineStore.Load(SaveFilePath))
+            {
+                HandleTimeline.MigrateLegacy(cfg);  // 旧 IsListsIndex → HandlePath（#441）
                 AddTimeline(cfg);
+            }
         }
 
 
@@ -109,11 +112,8 @@ namespace XTimelineViewer.Views
 
         internal const string HomeTimelineUrl          = "https://x.com/home";
         internal const string NotificationsTimelineUrl = "https://x.com/notifications";
+        internal const string MentionsTimelineUrl      = "https://x.com/notifications/mentions";
         internal const string BookmarksTimelineUrl     = "https://x.com/i/bookmarks";
-
-        // リスト一覧はアカウント依存の URL（https://x.com/&lt;handle&gt;/lists）。
-        // 実際に追加する URL はクリック時にプロファイルのハンドルから組み立てる。
-        internal static string BuildListsUrl(string handle) => $"https://x.com/{handle}/lists";
 
         // ハンドル依存 URL の組み立てに使うスクリーンネームを解決する。
         // Name はユーザーが編集できるため、検出済みの ScreenName を優先する。
@@ -126,20 +126,40 @@ namespace XTimelineViewer.Views
         private void AddNotificationsTimelineItem_Click(object _, RoutedEventArgs __)
             => AddTimeline(CreateDefaultConfig(NotificationsTimelineUrl));
 
+        private void AddMentionsTimelineItem_Click(object _, RoutedEventArgs __)
+            => AddTimeline(CreateDefaultConfig(MentionsTimelineUrl));
+
         private void AddBookmarksTimelineItem_Click(object _, RoutedEventArgs __)
             => AddTimeline(CreateDefaultConfig(BookmarksTimelineUrl));
 
+        private void AddLikesTimelineItem_Click(object _, RoutedEventArgs __)
+            => AddHandleTimeline(HandleTimeline.Likes);
+
+        private void AddProfileTimelineItem_Click(object _, RoutedEventArgs __)
+            => AddHandleTimeline(HandleTimeline.Profile);
+
+        private void AddMediaTimelineItem_Click(object _, RoutedEventArgs __)
+            => AddHandleTimeline(HandleTimeline.Media);
+
         private void AddListsTimelineItem_Click(object _, RoutedEventArgs __)
+            => AddHandleTimeline(HandleTimeline.Lists);
+
+        /// <summary>
+        /// ハンドル依存タイムラインを追加する（#441）。いいね・プロフィール・
+        /// メディア・リスト共通。初期 URL はキャッシュ済みハンドルの推測で、
+        /// 実ハンドルはペイン読み込み時に EnsureHandleUrlAsync がアクティブ
+        /// アカウントからライブ解決する（#211 の仕組みを一般化）。
+        /// </summary>
+        private void AddHandleTimeline(string handlePath)
         {
             // URL を組み立てる名前付きプロファイルを決める（AddTimeline の既定割り当てと同じ）
             var profile = _profiles.FirstOrDefault(p => p.Id != "default");
             if (profile is null) return;
 
-            // 初期 URL はキャッシュ済みハンドルの推測。実ハンドルはペイン読み込み時に
-            // EnsureListsUrlAsync がアクティブアカウントからライブ解決する (#211)。
-            var cfg = CreateDefaultConfig(BuildListsUrl(ResolveProfileHandle(profile)));
-            cfg.ProfileId    = profile.Id;
-            cfg.IsListsIndex = true;
+            var cfg = CreateDefaultConfig(
+                HandleTimeline.BuildUrl(ResolveProfileHandle(profile), handlePath));
+            cfg.ProfileId  = profile.Id;
+            cfg.HandlePath = handlePath;
             AddTimeline(cfg);
         }
 
@@ -550,17 +570,17 @@ namespace XTimelineViewer.Views
                 if (baseUrlChanged)
                 {
                     cfg.Url = stagedBaseUrl!;
-                    // 具体ページを明示的に固定したので、リスト一覧の自動追従は解除する (#211)
-                    cfg.IsListsIndex = false;
+                    // 具体ページを明示的に固定したので、ハンドル追従は解除する（#211 / #441）
+                    cfg.HandlePath = null;
                     pane.UpdateUrlHeader();
                 }
 
                 var prevProfileId = cfg.ProfileId;
                 cfg.ProfileId = (profileBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "default";
 
-                // リスト一覧（IsListsIndex）はプロファイル切り替え後、再生成したペインの
-                // 読み込み時に EnsureListsUrlAsync がアクティブアカウントのハンドルで
-                // ライブ解決するため、ここでは URL を組み立てない (#211)
+                // ハンドル依存（HandlePath）はプロファイル切り替え後、再生成したペインの
+                // 読み込み時に EnsureHandleUrlAsync がアクティブアカウントのハンドルで
+                // ライブ解決するため、ここでは URL を組み立てない（#211 / #441）
 
                 cfg.Width  = Math.Clamp(widthBox.Value, 100, 2000);
                 pane.Width = cfg.Width;

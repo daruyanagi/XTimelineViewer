@@ -40,6 +40,8 @@ public class UrlHelperTests
     [InlineData("https://x.com/i/history",         "\uE734")] // Bookmark (#329 ブックマークは /i/history へ再編)
     [InlineData("https://x.com/daruyanagi/lists",  "\uE71D")] // BulletedList (per-user lists index)
     [InlineData("https://x.com/i/lists/123",       "\uE71D")] // BulletedList (individual list)
+    [InlineData("https://x.com/daruyanagi/likes",  "\uEB51")] // HeartFill
+    [InlineData("https://x.com/daruyanagi/media",  "\uE8B9")] // Pictures
     [InlineData("https://x.com/messages",          "\uE8BD")] // Chat
     [InlineData("https://x.com/daruyanagi",        "\uE77B")] // Contact
     [InlineData("https://x.com/i/grok",            "\uE774")] // Globe (fallback)

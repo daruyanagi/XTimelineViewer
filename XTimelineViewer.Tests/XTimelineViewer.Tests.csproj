@@ -49,6 +49,7 @@
     <Compile Include="..\PackageContext.cs" Link="PackageContext.cs" />
     <Compile Include="..\Services\EdgeService.cs"    Link="Services\EdgeService.cs" />
     <Compile Include="..\Services\UrlHelper.cs"      Link="Services\UrlHelper.cs" />
+    <Compile Include="..\Services\HandleTimeline.cs" Link="Services\HandleTimeline.cs" />
     <Compile Include="..\Services\SearchQueryHelper.cs" Link="Services\SearchQueryHelper.cs" />
     <Compile Include="..\ViewModels\SettingsViewModel.cs" Link="ViewModels\SettingsViewModel.cs" />
   </ItemGroup>
