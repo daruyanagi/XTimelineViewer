@@ -27,6 +27,10 @@
   <data name="Timeline_Notifications" xml:space="preserve"><value>通知</value></data>
   <data name="Timeline_Bookmarks" xml:space="preserve"><value>ブックマーク</value></data>
   <data name="Timeline_Lists" xml:space="preserve"><value>リスト</value></data>
+  <data name="Timeline_Mentions" xml:space="preserve"><value>@ツイート</value></data>
+  <data name="Timeline_Likes" xml:space="preserve"><value>いいね</value></data>
+  <data name="Timeline_ProfilePage" xml:space="preserve"><value>プロフィール</value></data>
+  <data name="Timeline_Media" xml:space="preserve"><value>メディア</value></data>
 
   <!-- Add profile window -->
   <data name="AddProfile_Title" xml:space="preserve"><value>新しいプロファイルを追加</value></data>

@@ -61,6 +61,8 @@ namespace XTimelineViewer.Services
                 p == "/i/history" || p.StartsWith("/i/history/")) return "\uE734"; // Bookmark
             if (p == "/i/lists" || p.StartsWith("/i/lists/") ||
                 Regex.IsMatch(p, @"^/[^/]+/lists$"))                  return "\uE71D"; // BulletedList (lists index / individual)
+            if (Regex.IsMatch(p, @"^/[^/]+/likes$"))                  return "\uEB51"; // HeartFill (いいね)
+            if (Regex.IsMatch(p, @"^/[^/]+/media$"))                  return "\uE8B9"; // Pictures (メディア)
             if (p.StartsWith("/messages"))                            return "\uE8BD"; // Chat
             if (Regex.IsMatch(p, @"^/[^/]+$"))                        return "\uE77B"; // Contact
             return "\uE774"; // Globe
@@ -84,6 +86,7 @@ namespace XTimelineViewer.Services
                    p == "/i/bookmarks" || p.StartsWith("/i/bookmarks/") ||
                    p == "/i/history" || p.StartsWith("/i/history/") ||
                    p.StartsWith("/i/lists/")      ||
+                   Regex.IsMatch(p, @"^/[^/]+/(likes|media)$") ||
                    IsProfilePath(p);
         }
 

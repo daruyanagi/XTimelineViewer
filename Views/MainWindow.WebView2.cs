@@ -859,7 +859,7 @@ namespace XTimelineViewer.Views
 
         /// <summary>
         /// プロファイルの ScreenName が未保存なら、現在のセッションから補完する。
-        /// リスト URL 解決の正の情報源はライブ取得（<see cref="EnsureListsUrlAsync"/>）だが、
+        /// ハンドル URL 解決の正の情報源はライブ取得（<see cref="EnsureHandleUrlAsync"/>）だが、
         /// このキャッシュは初回ナビゲーションのちらつき低減用の初期推測として残している (#211)。
         /// </summary>
         private async Task BackfillScreenNameAsync(WebView2 webView, string profileId)
@@ -877,25 +877,26 @@ namespace XTimelineViewer.Views
         }
 
         /// <summary>
-        /// リスト一覧タイムライン（<see cref="TimelineConfig.IsListsIndex"/>）の URL を、
-        /// 現在アクティブなアカウントのハンドルでライブ解決する。委任アカウント切り替えにも追従する。
+        /// ハンドル依存タイムライン（<see cref="TimelineConfig.HandlePath"/>）の URL を、
+        /// 現在アクティブなアカウントのハンドルでライブ解決する（#441）。いいね・
+        /// プロフィール・メディア・リスト共通。委任アカウント切り替えにも追従する。
         /// 既に正しい URL ならナビゲートしない。
         /// </summary>
-        private async Task EnsureListsUrlAsync(WebView2 webView, TimelineConfig cfg)
+        private async Task EnsureHandleUrlAsync(WebView2 webView, TimelineConfig cfg)
         {
-            if (!cfg.IsListsIndex) return;
+            if (cfg.HandlePath is not { } path || !HandleTimeline.IsKnown(path)) return;
 
             var handle = await TryReadActiveScreenNameAsync(webView);
             if (handle is not { Length: > 0 }) return;  // ログアウト等は何もしない
 
-            var target = BuildListsUrl(handle);
+            var target = HandleTimeline.BuildUrl(handle, path);
             if (UrlHelper.IsOnBaseUrl(webView.CoreWebView2.Source, target)) return;  // 既に正しい
 
             cfg.Url = target;
             PaneOf(webView)?.UpdateUrlHeader();
             await SaveTimelinesAsync();
             webView.Source = new Uri(target);
-            Debug.WriteLine($"[Lists] Resolved active lists URL: {target}");
+            Debug.WriteLine($"[Handle] Resolved active URL: {target}");
         }
 
         private async Task InitWebViewAsync(WebView2 webView, TimelineConfig cfg)
@@ -1052,11 +1053,11 @@ namespace XTimelineViewer.Views
                             $"window._xtvOpenTimestampInBrowser = {tsFlag};");
 
                         // プロファイルのスクリーンネームが未取得なら、ログイン中セッションから補完する
-                        // （初期推測用のキャッシュ。リスト URL 解決の正は EnsureListsUrlAsync）。
+                        // （初期推測用のキャッシュ。ハンドル URL 解決の正は EnsureHandleUrlAsync）。
                         await BackfillScreenNameAsync(webView, cfg.ProfileId);
 
                         // リスト一覧はアクティブアカウントのハンドルでライブ解決する（委任アカウント対応 #211）
-                        await EnsureListsUrlAsync(webView, cfg);
+                        await EnsureHandleUrlAsync(webView, cfg);
                     }
                 };
 

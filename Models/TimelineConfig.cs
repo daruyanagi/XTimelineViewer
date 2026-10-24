@@ -12,9 +12,16 @@ namespace XTimelineViewer.Models
         public string ProfileId         { get; set; } = "default";
 
         /// <summary>
-        /// 「リスト」メニューから追加した、アクティブアカウントのリスト一覧を追跡するタイムライン。
-        /// X の委任アカウントを考慮し、ハンドルは作成時のキャッシュではなくペイン読み込みごとに
-        /// ライブ取得して URL（https://x.com/&lt;active&gt;/lists）を解決する (#211)。
+        /// ハンドル依存タイムラインのハンドル相対パス（#441）。null は非ハンドル依存。
+        /// "/lists" / "/likes" / "/media" / ""（プロフィール）。委任アカウントを
+        /// 考慮し、作成時のキャッシュではなくペイン読み込みごとにライブ解決した
+        /// ハンドルで URL を組み立て直す（#211 の仕組みを一般化）。
+        /// </summary>
+        public string? HandlePath       { get; set; }
+
+        /// <summary>
+        /// 旧「リスト一覧」フラグ（#211）。<see cref="HandlePath"/> へ一般化した（#441）。
+        /// 既存の timelines.json を読むためだけに残す。復元時に移行する。
         /// </summary>
         public bool   IsListsIndex      { get; set; } = false;
     }
